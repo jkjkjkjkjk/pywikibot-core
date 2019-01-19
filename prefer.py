@@ -233,6 +233,7 @@ P1540: male population
 P1831: electorate
 P2046: area
 P2124: member count
+P2137: total equity
 P2196: students count
 P2250: life expectancy
 P2403: total assets
@@ -256,7 +257,7 @@ if not TEST:
     ]
     point_props = [
                'P348', 'P1082', 'P1114', 'P1538', 'P1539', 'P1540', 'P1831', 'P2046', 'P1833',  'P2124', 'P2131',
-               'P2139', 'P2196', 'P2250', 'P2295', 'P2403', 'P2573', 'P2663', 'P2769', 'P3362', 'P4080', 'P4841' 
+               'P2137', 'P2139', 'P2196', 'P2250', 'P2295', 'P2403', 'P2573', 'P2663', 'P2769', 'P3362', 'P4080', 'P4841' 
     ]
 else:
     start_end_props = ['P141']
