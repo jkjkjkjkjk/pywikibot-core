@@ -42,7 +42,7 @@ The image "Flag.svg" has been uploaded, making the old "Flag.jpg" obsolete:
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import re
 
@@ -64,10 +64,10 @@ class ImageRobot(ReplaceBot):
         @param generator: the pages to work on
         @type generator: iterable
         @param old_image: the title of the old image (without namespace)
-        @type old_image: unicode
+        @type old_image: str
         @param new_image: the title of the new image (without namespace), or
                           None if you want to remove the image
-        @type new_image: unicode or None
+        @type new_image: str or None
         """
         self.availableOptions.update({
             'summary': None,
@@ -90,8 +90,8 @@ class ImageRobot(ReplaceBot):
 
         namespace = self.site.namespaces[6]
         if namespace.case == 'first-letter':
-            case = re.escape(self.old_image[0].upper() +
-                             self.old_image[0].lower())
+            case = re.escape(self.old_image[0].upper()
+                             + self.old_image[0].lower())
             escaped = '[' + case + ']' + re.escape(self.old_image[1:])
         else:
             escaped = re.escape(self.old_image)
@@ -109,9 +109,10 @@ class ImageRobot(ReplaceBot):
         if self.new_image:
             if not self.getOption('loose'):
                 replacements.append((image_regex,
-                                     u'[[%s:%s\\g<parameters>]]'
-                                     % (self.site.namespaces.FILE.custom_name,
-                                        self.new_image)))
+                                     '[[{}:{}\\g<parameters>]]'
+                                     .format(
+                                         self.site.namespaces.FILE.custom_name,
+                                         self.new_image)))
             else:
                 replacements.append((image_regex, self.new_image))
         else:
@@ -130,7 +131,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     old_image = None
     new_image = None
@@ -166,5 +167,5 @@ def main(*args):
         return False
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

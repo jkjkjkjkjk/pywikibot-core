@@ -8,13 +8,13 @@ word is uppercase and the remaining characters and words are lowercase.
 
 Command-line arguments:
 
-&params;
-
 -always           Don't prompt to make changes, just do them.
 
 -titlecase        creates a titlecased redirect version of a given page
                   where all words of the title start with an uppercase
                   character and the remaining characters are lowercase.
+
+&params;
 
 Example:
 
@@ -22,7 +22,7 @@ Example:
 """
 #
 # (C) Yrithinnd, 2006
-# (C) Pywikibot team, 2007-2018
+# (C) Pywikibot team, 2007-2019
 #
 # Distributed under the terms of the MIT license.
 #
@@ -31,7 +31,7 @@ Example:
 #
 # Automatically converted from compat branch by compat2core.py script
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 from pywikibot import i18n, pagegenerators
@@ -39,9 +39,7 @@ from pywikibot.bot import (
     MultipleSitesBot, FollowRedirectPageBot, ExistingPageBot
 )
 
-docuReplacements = {
-    '&params;': pagegenerators.parameterHelp
-}
+docuReplacements = {'&params;': pagegenerators.parameterHelp}  # noqa: N816
 
 
 class CapitalizeBot(MultipleSitesBot, FollowRedirectPageBot, ExistingPageBot):
@@ -72,11 +70,11 @@ class CapitalizeBot(MultipleSitesBot, FollowRedirectPageBot, ExistingPageBot):
         else:
             page_cap = pywikibot.Page(site, page_t.capitalize())
         if page_cap.exists():
-            pywikibot.output(u'%s already exists, skipping...\n'
-                             % page_cap.title(as_link=True))
+            pywikibot.output('{} already exists, skipping...\n'
+                             .format(page_cap.title(as_link=True)))
         else:
-            pywikibot.output(u'%s doesn\'t exist'
-                             % page_cap.title(as_link=True))
+            pywikibot.output("{} doesn't exist"
+                             .format(page_cap.title(as_link=True)))
             if self.user_confirm('Do you want to create a redirect?'):
                 comment = i18n.twtranslate(
                     site,
@@ -93,7 +91,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     options = {}
 
@@ -118,5 +116,5 @@ def main(*args):
         return False
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

@@ -15,17 +15,17 @@ threshold are then moved to another page (the archive), which can be named
 either basing on the thread's name or then name can contain a counter which
 will be incremented when the archive reaches a certain size.
 
-Trancluded template may contain the following parameters:
+Transcluded template may contain the following parameters:
 
  {{TEMPLATE_PAGE
- |archive             =
- |algo                =
- |counter             =
- |maxarchivesize      =
- |minthreadsleft      =
+ |archive =
+ |algo =
+ |counter =
+ |maxarchivesize =
+ |minthreadsleft =
  |minthreadstoarchive =
- |archiveheader       =
- |key                 =
+ |archiveheader =
+ |key =
  }}
 
 Meanings of parameters are:
@@ -33,16 +33,16 @@ Meanings of parameters are:
  archive              Name of the page to which archived threads will be put.
                       Must be a subpage of the current page. Variables are
                       supported.
- algo                 specifies the maximum age of a thread. Must be
+ algo                 Specifies the maximum age of a thread. Must be
                       in the form old(<delay>) where <delay> specifies
                       the age in seconds (s), hours (h), days (d),
-                      weeks(w), or years (y) like 24h or 5d. Default is
+                      weeks (w), or years (y) like 24h or 5d. Default is
                       old(24h).
  counter              The current value of a counter which could be assigned as
-                      variable. Will be actualized by bot. Initial value is 1.
+                      variable. Will be updated by bot. Initial value is 1.
  maxarchivesize       The maximum archive size before incrementing the counter.
                       Value can be given with appending letter like K or M
-                      which indicates KByte or MByte. Default value is 1000M.
+                      which indicates KByte or MByte. Default value is 200K.
  minthreadsleft       Minimum number of threads that should be left on a page.
                       Default value is 5.
  minthreadstoarchive  The minimum number of threads to archive at once. Default
@@ -50,7 +50,7 @@ Meanings of parameters are:
  archiveheader        Content that will be put on new archive pages as the
                       header. This parameter supports the use of variables.
                       Default value is {{talkarchive}}
- key                  A secret key that (if valid) allows archives to not be
+ key                  A secret key that (if valid) allows archives not to be
                       subpages of the page being archived.
 
 Variables below can be used in the value for "archive" in the template above:
@@ -90,12 +90,12 @@ Options (may be omitted):
 """
 #
 # (C) Misza13, 2006-2010
-# (C) xqt, 2009-2018
-# (C) Pywikibot team, 2007-2018
+# (C) xqt, 2009-2019
+# (C) Pywikibot team, 2007-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import datetime
 import locale
@@ -104,6 +104,7 @@ import os
 import re
 import time
 
+from collections import OrderedDict
 from hashlib import md5
 from math import ceil
 
@@ -123,7 +124,7 @@ MW_KEYS = FrozenDict({
     'd': 'days',
     'w': 'weeks',
     'y': 'years',
-    # 'months' and 'minutes' were removed because confusion outweights merit
+    # 'months' and 'minutes' were removed because confusion outweighs merit
 }, 'MW_KEYS is a dict constant')
 
 
@@ -189,7 +190,7 @@ def str2time(string, timestamp=None):
         2w - 2 weeks (14 days)
         1y - 1 year
     @type string: str
-    @param timestamp: a timestamp to calulate a more accurate duration offset
+    @param timestamp: a timestamp to calculate a more accurate duration offset
         used by years
     @type timestamp: datetime.datetime
     @return: the corresponding timedelta object
@@ -258,6 +259,8 @@ def str2size(string):
 
     """
     r = re.search(r'(\d+) *([BkKMT]?)', string)
+    if not r:
+        raise MalformedConfigError("Couldn't parse size: {}".format(string))
     val, unit = (int(r.group(1)), r.group(2))
     if unit == 'M':
         val *= 1024
@@ -267,24 +270,6 @@ def str2size(string):
     if unit != 'T':
         unit = 'B'
     return val, unit
-
-
-def generate_transclusions(site, template, namespaces=[]):
-    """
-    Generate transclusions.
-
-    @param site: the site for the template transclusions
-    @type site: Site
-    @param template: normalized title of the template
-    @type template: unicode
-    @param namespace: namespace filter for transcluded pages
-    @type ns: list
-    """
-    pywikibot.output(u'Fetching template transclusions...')
-    transclusion_page = pywikibot.Page(site, template, ns=10)
-    return transclusion_page.getReferences(only_template_inclusion=True,
-                                           follow_redirects=False,
-                                           namespaces=namespaces)
 
 
 def template_title_regex(tpl_page):
@@ -301,13 +286,13 @@ def template_title_regex(tpl_page):
     marker = '?' if ns.id == 10 else ''
     title = tpl_page.title(with_ns=False)
     if ns.case != 'case-sensitive':
-        title = '[%s%s]%s' % (re.escape(title[0].upper()),
-                              re.escape(title[0].lower()),
-                              re.escape(title[1:]))
+        title = '[{}{}]{}'.format(re.escape(title[0].upper()),
+                                  re.escape(title[0].lower()),
+                                  re.escape(title[1:]))
     else:
         title = re.escape(title)
 
-    return re.compile(r'(?:(?:%s):)%s%s' % (u'|'.join(ns), marker, title))
+    return re.compile(r'(?:(?:%s):)%s%s' % ('|'.join(ns), marker, title))
 
 
 def calc_md5_hexdigest(txt, salt):
@@ -324,21 +309,21 @@ class TZoneUTC(datetime.tzinfo):
 
     """Class building a UTC tzinfo object."""
 
-    def utcoffset(self, dt):  # pylint: disable=unused-argument
+    def utcoffset(self, dt):
         """Subclass implementation, return timedelta(0)."""
         return ZERO
 
-    def tzname(self, dt):  # pylint: disable=unused-argument
+    def tzname(self, dt):
         """Subclass implementation."""
         return 'UTC'
 
-    def dst(self, dt):  # pylint: disable=unused-argument
+    def dst(self, dt):
         """Subclass implementation, return timedelta(0)."""
         return ZERO
 
     def __repr__(self):
         """Return a string representation."""
-        return "%s()" % self.__class__.__name__
+        return '{}()'.format(self.__class__.__name__)
 
 
 class DiscussionThread(object):
@@ -360,14 +345,13 @@ class DiscussionThread(object):
         self.now = now
         self.ts = timestripper
         self.code = self.ts.site.code
-        self.content = ""
+        self.content = ''
         self.timestamp = None
 
     def __repr__(self):
         """Return a string representation."""
-        return '%s("%s",%d bytes)' \
-               % (self.__class__.__name__, self.title,
-                  len(self.content.encode('utf-8')))
+        return '{}("{}",{} bytes)'.format(self.__class__.__name__, self.title,
+                                          len(self.content.encode('utf-8')))
 
     def feed_line(self, line):
         """Add a line to the content and find the newest timestamp."""
@@ -390,29 +374,28 @@ class DiscussionThread(object):
 
     def to_text(self):
         """Return wikitext discussion thread."""
-        return u"== %s ==\n\n%s" % (self.title, self.content)
+        return '== {} ==\n\n{}'.format(self.title, self.content)
 
     def should_be_archived(self, archiver):
         """
         Check whether thread has to be archived.
 
-        @return: archiving reason i18n string or empty string.
-        @rtype: string
+        @return: the archivation reason as a tuple of localization args
+        @rtype: tuple
         """
+        # Archived by timestamp
         algo = archiver.get_attr('algo')
         re_t = re.search(r'^old\((.*)\)$', algo)
         if re_t:
             if not self.timestamp:
-                return ''
-            # TODO: handle this:
-            # return 'unsigned'
+                return None
+            # TODO: handle unsigned
             maxage = str2time(re_t.group(1), self.timestamp)
             if self.now - self.timestamp > maxage:
                 duration = str2localized_duration(archiver.site, re_t.group(1))
-                return i18n.twtranslate(self.code,
-                                        'archivebot-older-than',
-                                        {'duration': duration})
-        return ''
+                return ('duration', duration)
+        # TODO: handle marked with template
+        return None
 
 
 class DiscussionPage(pywikibot.Page):
@@ -457,10 +440,11 @@ class DiscussionPage(pywikibot.Page):
         self.archives = {}
         self.archived_threads = 0
 
-        # Exclude non-thread headings
+        # Exclude unsupported headings (h1, h3, etc):
+        # adding the marker will make them ignored by extract_sections()
         text = self.get()
         marker = findmarker(text)
-        text = re.sub(r'^===', marker + r'===', text, flags=re.M)
+        text = re.sub(r'^((=|={3,})[^=])', marker + r'\1', text, flags=re.M)
 
         # Find threads, avoid archiving categories or interwiki
         header, threads, footer = extract_sections(text, self.site)
@@ -481,8 +465,8 @@ class DiscussionPage(pywikibot.Page):
         # This extra info is not desirable when run under the unittest
         # framework, which may be run either directly or via setup.py
         if pywikibot.calledModuleName() not in ['archivebot_tests', 'setup']:
-            pywikibot.output(u'%d Threads found on %s'
-                             % (len(self.threads), self))
+            pywikibot.output('{} thread(s) found on {}'
+                             .format(len(self.threads), self))
 
     def feed_thread(self, thread, max_archive_size=(250 * 1024, 'B')):
         """Check whether archive size exceeded."""
@@ -504,7 +488,7 @@ class DiscussionPage(pywikibot.Page):
     def update(self, summary, sort_threads=False):
         """Recombine threads and save page."""
         if sort_threads:
-            pywikibot.output(u'Sorting threads...')
+            pywikibot.output('Sorting threads...')
             self.threads.sort(key=lambda t: t.timestamp)
         newtext = re.sub('\n*$', '\n\n', self.header)  # Fix trailing newlines
         for t in self.threads:
@@ -518,28 +502,32 @@ class DiscussionPage(pywikibot.Page):
 
 class PageArchiver(object):
 
-    """
-    A class that encapsulates all archiving methods.
-
-    __init__ expects a pywikibot.Page object.
-    Execute by running the .run() method.
-    """
+    """A class that encapsulates all archiving methods."""
 
     algo = 'none'
 
-    def __init__(self, page, tpl, salt, force=False):
-        """Initializer."""
-        self.attributes = {
-            'algo': ['old(24h)', False],
-            'archive': ['', False],
-            'maxarchivesize': ['1000M', False],
-            'counter': ['1', False],
-            'key': ['', False],
-        }
+    def __init__(self, page, template, salt, force=False):
+        """Initializer.
+
+        param page: a page object to be archived
+        type page: pywikibot.Page
+        param template: a template with configuration settings
+        type template: pywikibot.Page
+        param salt: salt value
+        type salt: str
+        param force: override security value
+        type force: bool
+        """
+        self.attributes = OrderedDict([
+            ('archive', ['', False]),
+            ('algo', ['old(24h)', False]),
+            ('counter', ['1', False]),
+            ('maxarchivesize', ['200K', False]),
+        ])
         self.salt = salt
         self.force = force
         self.site = page.site
-        self.tpl = pywikibot.Page(self.site, tpl)
+        self.tpl = template
         self.timestripper = TimeStripper(site=self.site)
         self.page = DiscussionPage(page, self)
         self.load_config()
@@ -550,7 +538,7 @@ class PageArchiver(object):
         self.archived_threads = 0
         self.month_num2orig_names = {}
         for n, (_long, _short) in enumerate(self.site.months_names):
-            self.month_num2orig_names[n + 1] = {"long": _long, "short": _short}
+            self.month_num2orig_names[n + 1] = {'long': _long, 'short': _short}
 
     def get_attr(self, attr, default=''):
         """Get an archiver attribute."""
@@ -571,7 +559,7 @@ class PageArchiver(object):
         """Return a template with archiver saveable attributes."""
         return '{{%s\n%s\n}}' \
                % (self.tpl.title(with_ns=(self.tpl.namespace() != 10)),
-                  '\n'.join('|%s = %s' % (a, self.get_attr(a))
+                  '\n'.join('|{} = {}'.format(a, self.get_attr(a))
                             for a in self.saveables()))
 
     def key_ok(self):
@@ -583,36 +571,32 @@ class PageArchiver(object):
         """Load and validate archiver template."""
         pywikibot.output('Looking for: {{%s}} in %s' % (self.tpl.title(),
                                                         self.page))
-        for tpl in self.page.templatesWithParams():
-            if tpl[0] == pywikibot.Page(self.site, self.tpl.title(), ns=10):
-                for param in tpl[1]:
-                    item, value = param.split('=', 1)
+        for tpl in self.page.raw_extracted_templates:
+            if tpl[0] == self.tpl.title():
+                for item, value in tpl[1].items():
                     self.set_attr(item.strip(), value.strip())
                 break
         else:
-            raise MissingConfigError(u'Missing or malformed template')
+            raise MissingConfigError('Missing or malformed template')
         if not self.get_attr('algo', ''):
             raise MissingConfigError('Missing argument "algo" in template')
+        if not self.get_attr('archive', ''):
+            raise MissingConfigError('Missing argument "archive" in template')
 
     def feed_archive(self, archive, thread, max_archive_size, params=None):
         """
         Feed the thread to one of the archives.
 
         If it doesn't exist yet, create it.
-        If archive name is an empty string (or None),
-        discard the thread.
-        Also checks for security violations.
+        Also check for security violations.
         """
         title = archive.title()
         page_title = self.page.title()
-        if not title:
-            return
-        if not (self.force
-                or page_title + '/' == title[:len(page_title) + 1]
+        if not (self.force or title.startswith(page_title + '/')
                 or self.key_ok()):
             raise ArchiveSecurityError(
-                u"Archive page %s does not start with page title (%s)!"
-                % (archive, page_title))
+                'Archive page {} does not start with page title ({})!'
+                .format(archive, page_title))
         if title not in self.archives:
             self.archives[title] = DiscussionPage(archive, self, params)
         return self.archives[title].feed_thread(thread, max_archive_size)
@@ -623,8 +607,8 @@ class PageArchiver(object):
         arch_counter = int(self.get_attr('counter', '1'))
         oldthreads = self.page.threads
         self.page.threads = []
-        whys = []
-        pywikibot.output(u'Processing %d threads' % len(oldthreads))
+        whys = set()
+        pywikibot.output('Processing {} threads'.format(len(oldthreads)))
         for t in oldthreads:
             if len(oldthreads) - self.archived_threads \
                <= int(self.get_attr('minthreadsleft', 5)):
@@ -660,14 +644,14 @@ class PageArchiver(object):
                 if self.feed_archive(archive, t, max_arch_size, params):
                     arch_counter += 1
                     self.set_attr('counter', str(arch_counter))
-                whys.append(why)
+                whys.add(why)
                 self.archived_threads += 1
             else:
                 self.page.threads.append(t)
-        return set(whys)
+        return whys
 
     def run(self):
-        """Run the bot."""
+        """Process a single DiscussionPage object."""
         if not self.page.botMayEdit():
             return
         whys = self.analyze_page()
@@ -675,8 +659,8 @@ class PageArchiver(object):
         if self.archived_threads < mintoarchive:
             # We might not want to archive a measly few threads
             # (lowers edit frequency)
-            pywikibot.output(u'Only %d (< %d) threads are old enough. Skipping'
-                             % (self.archived_threads, mintoarchive))
+            pywikibot.output('Only {} (< {}) threads are old enough. Skipping'
+                             .format(self.archived_threads, mintoarchive))
             return
         if whys:
             # Search for the marker template
@@ -706,7 +690,18 @@ class PageArchiver(object):
             self.comment_params['archives'] \
                 = comma.join(a.title(as_link=True)
                              for a in self.archives.values())
-            self.comment_params['why'] = comma.join(whys)
+            # Find out the reasons and return them localized
+            translated_whys = set()
+            for why, arg in whys:
+                # Archived by timestamp
+                if why == 'duration':
+                    translated_whys.add(
+                        i18n.twtranslate(self.site.code,
+                                         'archivebot-older-than',
+                                         {'duration': arg,
+                                          'count': self.archived_threads}))
+                # TODO: handle unsigned or archived by template
+            self.comment_params['why'] = comma.join(translated_whys)
             comment = i18n.twtranslate(self.site.code,
                                        'archivebot-page-summary',
                                        self.comment_params)
@@ -720,7 +715,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     filename = None
     pagename = None
@@ -771,7 +766,7 @@ def main(*args):
             pywikibot.output(
                 'NOTE: the specified page "{0}" does not (yet) exist.'
                 .format(calc))
-        pywikibot.output('key = %s' % calc_md5_hexdigest(calc, salt))
+        pywikibot.output('key = {}'.format(calc_md5_hexdigest(calc, salt)))
         return
 
     if not templates:
@@ -779,15 +774,18 @@ def main(*args):
             additional_text='No template was specified.')
         return False
 
-    for a in templates:
+    for template_name in templates:
         pagelist = []
-        a = pywikibot.Page(site, a, ns=10).title()
+        tmpl = pywikibot.Page(site, template_name, ns=10)
         if not filename and not pagename:
             if namespace is not None:
                 ns = [str(namespace)]
             else:
                 ns = []
-            for pg in generate_transclusions(site, a, ns):
+            pywikibot.output('Fetching template transclusions...')
+            for pg in tmpl.getReferences(only_template_inclusion=True,
+                                         follow_redirects=False,
+                                         namespaces=ns):
                 pagelist.append(pg)
         if filename:
             for pg in open(filename, 'r').readlines():
@@ -796,18 +794,19 @@ def main(*args):
             pagelist.append(pywikibot.Page(site, pagename, ns=3))
         pagelist = sorted(pagelist)
         for pg in iter(pagelist):
-            pywikibot.output(u'Processing %s' % pg)
+            pywikibot.output('Processing {}'.format(pg))
             # Catching exceptions, so that errors in one page do not bail out
             # the entire process
             try:
-                archiver = PageArchiver(pg, a, salt, force)
+                archiver = PageArchiver(pg, tmpl, salt, force)
                 archiver.run()
             except ArchiveBotSiteConfigError as e:
                 # no stack trace for errors originated by pages on-site
-                pywikibot.error('Missing or malformed template in page %s: %s'
-                                % (pg, e))
+                pywikibot.error('Missing or malformed template in page {}: {}'
+                                .format(pg, e))
             except Exception:
-                pywikibot.error('Error occurred while processing page %s' % pg)
+                pywikibot.error('Error occurred while processing page {}'
+                                .format(pg))
                 pywikibot.exception(tb=True)
 
 

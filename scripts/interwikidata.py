@@ -23,11 +23,11 @@ Furthermore, the following command line parameters are supported:
 -summary:         Use your own edit summary for cleaning the page.
 """
 
-# (C) Pywikibot team, 2015-2018
+# (C) Pywikibot team, 2015-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import unicode_literals, absolute_import
+from __future__ import unicode_literals, division, absolute_import
 
 import pywikibot
 
@@ -36,9 +36,7 @@ from pywikibot.bot import ExistingPageBot, SingleSiteBot, suggest_help
 
 # This is required for the text that is shown when you run this script
 # with the parameter -help.
-docuReplacements = {
-    '&params;': pagegenerators.parameterHelp,
-}
+docuReplacements = {'&params;': pagegenerators.parameterHelp}  # noqa: N816
 
 # Allowed namespaces. main, project, template, category
 namespaces = [0, 4, 10, 14]
@@ -72,8 +70,8 @@ class IWBot(ExistingPageBot, SingleSiteBot):
 
     def treat_page(self):
         """Check page."""
-        if (self.current_page.namespace() not in namespaces and
-                not self.getOption('ignore_ns')):
+        if (self.current_page.namespace() not in namespaces
+                and not self.getOption('ignore_ns')):
             output('{page} is not in allowed namespaces, skipping'
                    .format(page=self.current_page.title(
                        as_link=True)))
@@ -121,8 +119,8 @@ class IWBot(ExistingPageBot, SingleSiteBot):
             title = page.title()
             data['sitelinks'][dbname] = {'site': dbname, 'title': title}
             data['labels'][site.lang] = {'language': site.lang, 'value': title}
-        summary = ('Bot: New item with sitelink(s) from %s'
-                   % self.current_page.title(as_link=True, insite=self.repo))
+        summary = ('Bot: New item with sitelink(s) from '
+                   + self.current_page.title(as_link=True, insite=self.repo))
 
         item = pywikibot.ItemPage(self.repo)
         item.editEntity(data, new='item', summary=summary)
@@ -147,8 +145,8 @@ class IWBot(ExistingPageBot, SingleSiteBot):
         dbnames = [iw_site.dbName() for iw_site in self.iwlangs]
         if set(dbnames) - set(self.current_item.sitelinks.keys()):
             if not self.handle_complicated():
-                warning('Interwiki conflict in %s, skipping...' %
-                        self.current_page.title(as_link=True))
+                warning('Interwiki conflict in {}, skipping...'
+                        .format(self.current_page.title(as_link=True)))
                 return False
         output('Cleaning up the page')
         new_text = pywikibot.textlib.removeLanguageLinks(
@@ -160,14 +158,14 @@ class IWBot(ExistingPageBot, SingleSiteBot):
         wd_data = set()
         for iw_page in self.iwlangs.values():
             if not iw_page.exists():
-                warning('Interwiki %s does not exist, skipping...' %
-                        iw_page.title(as_link=True))
+                warning('Interwiki {} does not exist, skipping...'
+                        .format(iw_page.title(as_link=True)))
                 continue
             try:
                 wd_data.add(pywikibot.ItemPage.fromPage(iw_page))
             except pywikibot.NoPage:
-                output('Interwiki %s does not have an item' %
-                       iw_page.title(as_link=True))
+                output('Interwiki {} does not have an item'
+                       .format(iw_page.title(as_link=True)))
         return wd_data
 
     def try_to_add(self):
@@ -177,16 +175,16 @@ class IWBot(ExistingPageBot, SingleSiteBot):
             # will create a new item with interwiki
             return None
         if len(wd_data) > 1:
-            warning('Interwiki conflict in %s, skipping...' %
-                    self.current_page.title(as_link=True))
+            warning('Interwiki conflict in {}, skipping...'
+                    .format(self.current_page.title(as_link=True)))
             return False
         item = list(wd_data).pop()
         if self.current_page.site.dbName() in item.sitelinks:
-            warning('Interwiki conflict in %s, skipping...' %
-                    item.title(as_link=True))
+            warning('Interwiki conflict in {}, skipping...'
+                    .format(item.title(as_link=True)))
             return False
-        output('Adding link to %s' % item.title())
-        item.setSitelink(self.current_page, summary='Added %s' % (
+        output('Adding link to ' + item.title())
+        item.setSitelink(self.current_page, summary='Added ' + (
             self.current_page.title(as_link=True, insite=item.site)))
         return item
 
@@ -197,8 +195,8 @@ class IWBot(ExistingPageBot, SingleSiteBot):
             # todo: add links to item
             return None
         if len(wd_data) > 1:
-            warning('Interwiki conflict in %s, skipping...' %
-                    self.current_page.title(as_link=True))
+            warning('Interwiki conflict in {}, skipping...'
+                    .format(self.current_page.title(as_link=True)))
             return False
         target_item = list(wd_data).pop()
         try:
@@ -218,7 +216,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     local_args = pywikibot.handle_args(args)
     gen_factory = pagegenerators.GeneratorFactory()

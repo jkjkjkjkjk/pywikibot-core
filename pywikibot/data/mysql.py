@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Miscellaneous helper functions for mysql queries."""
 #
-# (C) Pywikibot team, 2016-2018
+# (C) Pywikibot team, 2016-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 
@@ -15,7 +15,7 @@ try:
     import pymysql as mysqldb
 except ImportError:
     try:
-        import MySQLdb as mysqldb
+        import MySQLdb as mysqldb  # noqa: N813
     except ImportError:
         raise ImportError('No supported MySQL library installed. '
                           'Please install PyMySQL.')
@@ -46,7 +46,7 @@ def mysql_query(query, params=None, dbname=None, verbose=None):
 
     @param query: MySQL query to execute
     @type query: str (unicode in py2)
-    @param params: input parametes for the query, if needed
+    @param params: input parameters for the query, if needed
         if list or tuple, %s shall be used as placeholder in the query string.
         if a dict, %(key)s shall be used as placeholder in the query string.
     @type params: tuple, list or dict of str (unicode in py2)
@@ -89,7 +89,7 @@ def mysql_query(query, params=None, dbname=None, verbose=None):
             _query = UnicodeType(_query, encoding='utf-8')
         _query = _query.strip()
         _query = '\n'.join('    {0}'.format(l) for l in _query.splitlines())
-        pywikibot.output('Executing query:\n%s' % _query)
+        pywikibot.output('Executing query:\n' + _query)
 
     cursor.execute(query, params)
 

@@ -8,26 +8,39 @@ working.
 
 This script understands various command-line arguments:
 
+-purge                    Do not touch but purge the page
+
 &params;
 
--purge            Do not touch but purge the page
--botflag          Force botflag in case of edits with changes.
+Touch arguments:
+
+-botflag                  Force botflag in case of edits with changes.
+
+Purge arguments:
+
+-converttitles            Convert titles to other variants if necessary
+-forcelinkupdate          Update the links tables
+-forcerecursivelinkupdate Update the links table, and update the links tables
+                          for any page that uses this page as a template
+-redirects                Automatically resolve redirects
 
 """
 #
-# (C) Pywikibot team, 2009-2017
+# (C) Pywikibot team, 2009-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 
 from pywikibot import pagegenerators
 
 from pywikibot.bot import MultipleSitesBot
+from pywikibot.exceptions import ArgumentDeprecationWarning
+from pywikibot.tools import issue_deprecation_warning
 
-docuReplacements = {'&params;': pagegenerators.parameterHelp}
+docuReplacements = {'&params;': pagegenerators.parameterHelp}  # noqa: N816
 
 
 class TouchBot(MultipleSitesBot):
@@ -45,26 +58,37 @@ class TouchBot(MultipleSitesBot):
         """Touch the given page."""
         try:
             page.touch(botflag=self.getOption('botflag'))
-        except pywikibot.NoPage:
-            pywikibot.error(u"Page %s does not exist."
-                            % page.title(as_link=True))
+        except (pywikibot.NoCreateError, pywikibot.NoPage):
+            pywikibot.error('Page {0} does not exist.'
+                            .format(page.title(as_link=True)))
         except pywikibot.LockedPage:
-            pywikibot.error(u"Page %s is locked."
-                            % page.title(as_link=True))
+            pywikibot.error('Page {0} is locked.'
+                            .format(page.title(as_link=True)))
         except pywikibot.PageNotSaved:
-            pywikibot.error(u"Page %s not saved."
-                            % page.title(as_link=True))
+            pywikibot.error('Page {0} not saved.'
+                            .format(page.title(as_link=True)))
 
 
 class PurgeBot(MultipleSitesBot):
 
     """Purge each page on the generator."""
 
+    def __init__(self, generator, **kwargs):
+        """Initialize a PurgeBot instance with the options and generator."""
+        self.availableOptions = {
+            'converttitles': None,
+            'forcelinkupdate': None,
+            'forcerecursivelinkupdate': None,
+            'redirects': None
+        }
+        super(PurgeBot, self).__init__(generator=generator, **kwargs)
+
     def treat(self, page):
         """Purge the given page."""
-        pywikibot.output(u'Page %s%s purged'
-                         % (page.title(as_link=True),
-                            "" if page.purge() else " not"))
+        pywikibot.output('Page {0}{1} purged'.format(
+            page.title(as_link=True),
+            '' if page.purge(**self.options) else ' not'
+        ))
 
 
 def main(*args):
@@ -74,7 +98,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     gen = None
     options = {}
@@ -85,13 +109,15 @@ def main(*args):
 
     bot_class = TouchBot
     for arg in local_args:
+        if gen_factory.handleArg(arg):
+            continue
         if arg == '-purge':
             bot_class = PurgeBot
         elif arg == '-redir':
-            pywikibot.output(u'-redirect option is deprecated, '
-                             'do not use it anymore.')
-        elif not gen_factory.handleArg(arg) and arg.startswith('-'):
-            # -botflag
+            issue_deprecation_warning(
+                '\n-redir', depth=1, warning_class=ArgumentDeprecationWarning,
+                since='20150514')
+        elif arg.startswith('-'):
             options[arg[1:].lower()] = True
 
     gen = gen_factory.getCombinedGenerator(preload=True)
@@ -105,5 +131,5 @@ def main(*args):
         return False
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

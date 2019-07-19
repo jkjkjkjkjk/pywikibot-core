@@ -15,24 +15,24 @@ Usage:
 """
 #
 # (C) Multichill, 2014
-# (C) Pywikibot team, 2013-2018
+# (C) Pywikibot team, 2013-2019
 #
 # Distributed under the terms of MIT License.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 
 from pywikibot import pagegenerators, WikidataBot
 
-docuReplacements = {'&params;': pywikibot.pagegenerators.parameterHelp}
+docuReplacements = {'&params;': pagegenerators.parameterHelp}  # noqa: N816
 
 
 class IllustrateRobot(WikidataBot):
 
     """A bot to add Wikidata image claims."""
 
-    def __init__(self, generator, wdproperty=u'P18'):
+    def __init__(self, generator, wdproperty='P18'):
         """
         Initializer.
 
@@ -48,12 +48,12 @@ class IllustrateRobot(WikidataBot):
 
         claim = pywikibot.Claim(self.repo, self.wdproperty)
         if claim.type != 'commonsMedia':
-            raise ValueError(u'%s is of type %s, should be commonsMedia'
-                             % (self.wdproperty, claim.type))
+            raise ValueError('{} is of type {}, should be commonsMedia'
+                             .format(self.wdproperty, claim.type))
 
     def treat_page_and_item(self, page, item):
         """Treat a page / item."""
-        pywikibot.output(u'Found %s' % item.title())
+        pywikibot.output('Found ' + item.title())
         imagename = page.properties().get('page_image_free')
 
         if not imagename:
@@ -61,12 +61,12 @@ class IllustrateRobot(WikidataBot):
 
         claims = item.get().get('claims')
         if self.wdproperty in claims:
-            pywikibot.output('Item %s already contains image (%s)'
-                             % (item.title(), self.wdproperty))
+            pywikibot.output('Item {} already contains image ({})'
+                             .format(item.title(), self.wdproperty))
             return
 
         newclaim = pywikibot.Claim(self.repo, self.wdproperty)
-        commonssite = pywikibot.Site("commons", "commons")
+        commonssite = pywikibot.Site('commons', 'commons')
         imagelink = pywikibot.Link(imagename, source=commonssite,
                                    default_namespace=6)
         image = pywikibot.FilePage(imagelink)
@@ -74,8 +74,8 @@ class IllustrateRobot(WikidataBot):
             image = pywikibot.FilePage(image.getRedirectTarget())
 
         if not image.exists():
-            pywikibot.output("%s doesn't exist so I can't link to it"
-                             % image.title(as_link=True))
+            pywikibot.output("{} doesn't exist so I can't link to it"
+                             .format(image.title(as_link=True)))
             return
 
         newclaim.setTarget(image)
@@ -90,19 +90,19 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     # Process global args and prepare generator args parser
     local_args = pywikibot.handle_args(args)
     generator_factory = pagegenerators.GeneratorFactory()
 
-    wdproperty = u'P18'
+    wdproperty = 'P18'
 
     for arg in local_args:
         if arg.startswith('-property'):
             if len(arg) == 9:
                 wdproperty = pywikibot.input(
-                    u'Please enter the property you want to add:')
+                    'Please enter the property you want to add:')
             else:
                 wdproperty = arg[10:]
         else:
@@ -118,5 +118,5 @@ def main(*args):
     return True
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

@@ -6,10 +6,12 @@ Check if they are in the form Something, State, and if so, create a redirect
 from Something, ST.
 
 Specific arguments:
+
 -start:xxx Specify the place in the alphabet to start searching
 -force: Don't ask whether to create pages, just create them.
 
 PRE-REQUISITE : Need to install python-pycountry library.
+
 * Follow the instructions at: https://www.versioneye.com/python/pycountry/0.16
 * Install with pip: pip install pycountry
 """
@@ -19,49 +21,49 @@ PRE-REQUISITE : Need to install python-pycountry library.
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import re
-import sys
 
 import pywikibot
 
+from pywikibot.bot import SingleSiteBot, suggest_help
 from pywikibot import i18n
 
 try:
     import pycountry
-except ImportError:
-    pywikibot.error('This script requires the python-pycountry module')
-    pywikibot.error('See: https://pypi.org/project/pycountry')
-    pywikibot.exception()
-    sys.exit(1)
+except ImportError as e:
+    pycountry = e
 
 
-class StatesRedirectBot(pywikibot.Bot):
+class StatesRedirectBot(SingleSiteBot):
 
     """Bot class used for implementation of re-direction norms."""
 
     def __init__(self, start, force):
         """Initializer.
 
-        Parameters:
-            @param start:xxx Specify the place in the alphabet to start
-            searching.
-            @param force: Don't ask whether to create pages, just create
-            them.
+        @param start:xxx Specify the place in the alphabet to start searching.
+        @type start: str
+        @param force: Don't ask whether to create pages, just create them.
+        @type force: bool
         """
-        site = pywikibot.Site()
-        generator = site.allpages(start=start)
-        super(StatesRedirectBot, self).__init__(generator=generator)
-
+        super(StatesRedirectBot, self).__init__()
+        self.start = start
         self.force = force
 
-        # Created abbrev from pycountry data base
+    def setup(self):
+        """Create abbrev from pycountry data base."""
         self.abbrev = {}
         for subd in pycountry.subdivisions:
             # Used subd.code[3:] to extract the exact code for
             # subdivisional states(ignoring the country code).
             self.abbrev[subd.name] = subd.code[3:]
+
+    @property
+    def generator(self):
+        """Generator used by run() method."""
+        return self.site.allpages(start=self.start)
 
     def treat(self, page):
         """Re-directing process.
@@ -81,23 +83,24 @@ class StatesRedirectBot(pywikibot.Bot):
                     goal = pl.getRedirectTarget().title()
                     if pywikibot.Page(self.site, goal).exists():
                         pywikibot.output(
-                            u"Not creating %s - redirect already exists."
-                            % goal)
+                            'Not creating {0} - redirect already exists.'
+                            .format(goal))
                     else:
                         pywikibot.warning(
-                            u"%s already exists but redirects elsewhere!"
-                            % goal)
+                            '{0} already exists but redirects elsewhere!'
+                            .format(goal))
                 except pywikibot.IsNotRedirectPage:
                     pywikibot.warning(
-                        u"Page %s already exists and is not a redirect "
-                        u"Please check page!"
-                        % pl.title())
+                        'Page {0} already exists and is not a redirect '
+                        'Please check page!'
+                        .format(pl.title()))
                 except pywikibot.NoPage:
                     if page.isRedirectPage():
                         p2 = page.getRedirectTarget()
                         pywikibot.output(
-                            u'Note: goal page is redirect.\nCreating redirect '
-                            u'to "%s" to avoid double redirect.' % p2.title())
+                            'Note: goal page is redirect.\nCreating redirect '
+                            'to "{0}" to avoid double redirect.'
+                            .format(p2.title()))
                     else:
                         p2 = page
                     if self.force or pywikibot.input_yn('Create redirect {0}?'
@@ -115,11 +118,12 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     local_args = pywikibot.handle_args(args)
     start = None
     force = False
+    unknown_parameters = []
 
     # Parse command line arguments
     for arg in local_args:
@@ -128,12 +132,21 @@ def main(*args):
         elif arg == '-force':
             force = True
         else:
-            pywikibot.warning(
-                u'argument "%s" not understood; ignoring.' % arg)
+            unknown_parameters.append(arg)
+
+    if isinstance(pycountry, ImportError):
+        missing_dependencies = ('pycountry',)
+    else:
+        missing_dependencies = None
+
+    if missing_dependencies or unknown_parameters:
+        suggest_help(unknown_parameters=unknown_parameters,
+                     missing_dependencies=missing_dependencies)
+        return
 
     bot = StatesRedirectBot(start, force)
     bot.run()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

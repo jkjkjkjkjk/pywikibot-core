@@ -1,9 +1,9 @@
 Welcome to Pywikibot!
 =====================
 
-.. warning::
+.. note::
 
-    **This documentation is incomplete**, and needs quite some work.
+    This documentation is incomplete, and needs quite some work.
 
     If you are not familiar with Pywikibot, please start at the
     documentation:
@@ -13,7 +13,7 @@ Welcome to Pywikibot!
 
 Pywikibot is a Python library and collection of scripts that automate work on `MediaWiki <https://mediawiki.org>`_ sites.
 
-Pywikibot supports Python 2.7.2+ and 3.4+.
+Pywikibot supports Python 2.7.4+ and 3.4+.
 
 Pywikibot and this documentation are licensed under the :ref:`MIT license <licenses-MIT>`;
 manual pages on mediawiki.org are licensed under the `CC-BY-SA 3.0`_ license.
@@ -53,7 +53,6 @@ For framework developers:
 .. toctree::
    :maxdepth: 1
 
-   api_ref/tests/index
    scripts/scripts.maintenance
 
 

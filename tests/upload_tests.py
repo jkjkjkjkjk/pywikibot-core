@@ -5,11 +5,11 @@ Site upload test.
 These tests write to the wiki.
 """
 #
-# (C) Pywikibot team, 2014-2015
+# (C) Pywikibot team, 2014-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 
@@ -49,8 +49,8 @@ class TestUpload(TestCase):
             """A simple callback not automatically finishing the upload."""
             self.assertCountEqual([w.code for w in warnings], expected_warns)
             # by now we know there are only two but just make sure
-            assert len(warnings) == len(expected_warns)
-            assert len(expected_warns) in [1, 2]
+            self.assertLength(warnings, expected_warns)
+            self.assertIn(len(expected_warns), [1, 2])
             if len(expected_warns) == 2:
                 self.assertEqual(warnings[0].file_key, warnings[1].file_key)
                 self.assertEqual(warnings[0].offset, warnings[1].offset)

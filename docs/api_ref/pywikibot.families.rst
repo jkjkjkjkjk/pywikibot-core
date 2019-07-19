@@ -89,14 +89,6 @@ pywikibot.families.species\_family module
     :undoc-members:
     :show-inheritance:
 
-pywikibot.families.strategy\_family module
-------------------------------------------
-
-.. automodule:: pywikibot.families.strategy_family
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 pywikibot.families.test\_family module
 --------------------------------------
 
@@ -109,14 +101,6 @@ pywikibot.families.vikidia\_family module
 -----------------------------------------
 
 .. automodule:: pywikibot.families.vikidia_family
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-pywikibot.families.wikia\_family module
----------------------------------------
-
-.. automodule:: pywikibot.families.wikia_family
     :members:
     :undoc-members:
     :show-inheritance:

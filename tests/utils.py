@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Test utilities."""
 #
-# (C) Pywikibot team, 2013-2018
+# (C) Pywikibot team, 2013-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import inspect
 import json
@@ -23,6 +23,12 @@ except ImportError:  # Python 2.7
     from collections import Mapping
 from types import ModuleType
 
+try:
+    from cryptography import __version__ as cryptography_version
+    cryptography_version = list(map(int, cryptography_version.split('.')))
+except ImportError:
+    cryptography_version = None
+
 import pywikibot
 from pywikibot.comms import threadedhttp
 from pywikibot import config
@@ -33,8 +39,7 @@ from pywikibot.tools import (
     PY2, PYTHON_VERSION,
     UnicodeType as unicode,
 )
-from tests import _pwb_py
-from tests import unittest
+from tests import _pwb_py, unittest
 
 if not PY2:
     import six
@@ -82,7 +87,7 @@ def allowed_failure(func):
         except AssertionError:
             tb = traceback.extract_tb(sys.exc_info()[2])
             for depth, line in enumerate(tb):
-                if re.match('^assert[A-Z]', line[2]):
+                if re.match('assert[A-Z]', line[2]):
                     break
             tb = traceback.format_list(tb[:depth])
             pywikibot.error('\n' + ''.join(tb)[:-1])  # remove \n at the end
@@ -256,10 +261,10 @@ class AssertAPIErrorContextManager(object):
     """
     Context manager to assert certain APIError exceptions.
 
-    This is build similar to the L{unittest.TestCase.assertError} implementation
-    which creates an context manager. It then calls L{handle} which either
-    returns this manager if no executing object given or calls the callable
-    object.
+    This is build similar to the L{unittest.TestCase.assertError}
+    implementation which creates an context manager. It then calls L{handle}
+    which either returns this manager if no executing object given or calls
+    the callable object.
     """
 
     def __init__(self, code, info, msg, test_case):
@@ -312,7 +317,7 @@ class DryParamInfo(dict):
 
     def parameter(self, module, param_name):
         """Load dry data."""
-        return self[module][param_name]
+        return self[module].get(param_name)
 
     def __getitem__(self, name):
         """Return dry data or a dummy parameter block."""
@@ -393,8 +398,8 @@ class DryRequest(CachedRequest):
 
     def submit(self):
         """Prevented method."""
-        raise Exception(u'DryRequest rejecting request: %r'
-                        % self._params)
+        raise Exception('DryRequest rejecting request: {!r}'
+                        .format(self._params))
 
 
 class DrySite(pywikibot.site.APISite):
@@ -421,7 +426,8 @@ class DrySite(pywikibot.site.APISite):
         aliases = []
         for alias in ('PrefixIndex', ):
             # TODO: Not all follow that scheme (e.g. "BrokenRedirects")
-            aliases.append({'realname': alias.capitalize(), 'aliases': [alias]})
+            aliases.append(
+                {'realname': alias.capitalize(), 'aliases': [alias]})
         self._siteinfo._cache['specialpagealiases'] = (aliases, True)
         self._msgcache = {'*': 'dummy entry', 'hello': 'world'}
 
@@ -559,9 +565,9 @@ class PatchedHttp(object):
 
     This patches the C{http} import in the given module to a class simulating
     C{request} and C{fetch}. It has a C{data} attribute which is either a
-    static value which the requests will return or it's a callable returning the
-    data. If it's a callable it'll be called with the same parameters as the
-    original function in the L{http} module. For fine grained control it's
+    static value which the requests will return or it's a callable returning
+    the data. If it's a callable it'll be called with the same parameters as
+    the original function in the L{http} module. For fine grained control it's
     possible to override/monkey patch the C{before_request} and C{before_fetch}
     methods. By default they just return C{data} directory or call it if it's
     callable.
@@ -637,13 +643,16 @@ def execute(command, data_in=None, timeout=0, error=None):
     @param command: executable to run and arguments to use
     @type command: list of unicode
     """
-    if PYTHON_VERSION[:2] == (2, 7) and PYTHON_VERSION[2] in (2, 3):
-        command.insert(1, '-W ignore:{0}:DeprecationWarning'.format(
-            'Pywikibot will soon drop support for Python 2.7.2 and 2.7.3, '
-            'please update your Python.'))
+    if PY2:
+        command.insert(1, '-W ignore::FutureWarning:pywikibot:125')
+    if cryptography_version and cryptography_version < [1, 3, 4]:
+        command.insert(1, '-W ignore:Old version of cryptography:Warning')
     # Any environment variables added on Windows must be of type
     # str() on Python 2.
-    env = os.environ.copy()
+    if OSWIN32 and PY2:
+        env = {str(k): str(v) for k, v in os.environ.items()}
+    else:
+        env = os.environ.copy()
 
     # Prevent output by test package; e.g. 'max_retries reduced from x to y'
     env[str('PYWIKIBOT_TEST_QUIET')] = str('1')
@@ -677,18 +686,19 @@ def execute(command, data_in=None, timeout=0, error=None):
         # Generate a more informative error
         if OSWIN32 and PY2:
             unicode_env = [(k, v) for k, v in os.environ.items()
-                           if not isinstance(k, str) or
-                           not isinstance(v, str)]
+                           if not isinstance(k, str)
+                           or not isinstance(v, str)]
             if unicode_env:
                 raise TypeError(
-                    '%s: unicode in os.environ: %r' % (e, unicode_env))
+                    '{}: unicode in os.environ: {!r}'.format(e, unicode_env))
 
             child_unicode_env = [(k, v) for k, v in env.items()
-                                 if not isinstance(k, str) or
-                                 not isinstance(v, str)]
+                                 if not isinstance(k, str)
+                                 or not isinstance(v, str)]
             if child_unicode_env:
                 raise TypeError(
-                    '%s: unicode in child env: %r' % (e, child_unicode_env))
+                    '{}: unicode in child env: {!r}'
+                    .format(e, child_unicode_env))
         raise
 
     if data_in is not None:
@@ -719,7 +729,8 @@ def execute(command, data_in=None, timeout=0, error=None):
     data_out = p.communicate()
     return {'exit_code': p.returncode,
             'stdout': data_out[0].decode(config.console_encoding),
-            'stderr': (stderr_lines + data_out[1]).decode(config.console_encoding)}
+            'stderr': (stderr_lines + data_out[1])
+            .decode(config.console_encoding)}
 
 
 def execute_pwb(args, data_in=None, timeout=0, error=None, overrides=None):
@@ -727,7 +738,7 @@ def execute_pwb(args, data_in=None, timeout=0, error=None, overrides=None):
     Execute the pwb.py script and capture outputs.
 
     @param args: list of arguments for pwb.py
-    @type args: list of unicode
+    @type args: typing.Sequence[unicode]
     @param overrides: mapping of pywikibot symbols to test replacements
     @type overrides: dict
     """
@@ -736,10 +747,10 @@ def execute_pwb(args, data_in=None, timeout=0, error=None, overrides=None):
     if overrides:
         command.append('-c')
         overrides = '; '.join(
-            '%s = %s' % (key, value) for key, value in overrides.items())
+            '{} = {}'.format(key, value) for key, value in overrides.items())
         command.append(
-            'import pwb; import pywikibot; %s; pwb.main()'
-            % overrides)
+            'import pwb; import pywikibot; {}; pwb.main()'
+            .format(overrides))
     else:
         command.append(_pwb_py)
 

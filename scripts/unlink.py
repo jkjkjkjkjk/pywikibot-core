@@ -14,18 +14,20 @@ This script understands this command-line argument:
 Any other parameter will be regarded as the title of the page
 that should be unlinked.
 
-Example:
+Example
+-------
+
+Removes links to the page [[Foo bar]] in articles and image
+descriptions:
 
     python pwb.py unlink "Foo bar" -namespace:0 -namespace:6
-        Removes links to the page [[Foo bar]] in articles and image
-        descriptions.
 """
 #
-# (C) Pywikibot team, 2007-2017
+# (C) Pywikibot team, 2007-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 from pywikibot.bot import SingleSiteBot
@@ -38,17 +40,17 @@ class UnlinkBot(SingleSiteBot, BaseUnlinkBot):
 
     summary_key = 'unlink-unlinking'
 
-    @property
-    def summary_parameters(self):
-        """Return the title parameter."""
-        return {'title': self.pageToUnlink.title()}
-
     def __init__(self, pageToUnlink, **kwargs):
         """Initialize a UnlinkBot instance with the given page to unlink."""
         super(UnlinkBot, self).__init__(**kwargs)
         self.pageToUnlink = pageToUnlink
         self.generator = pageToUnlink.getReferences(
             namespaces=self.getOption('namespaces'), content=True)
+
+    @property
+    def summary_parameters(self):
+        """Return the title parameter."""
+        return {'title': self.pageToUnlink.title()}
 
     def treat_page(self):
         """Remove links pointing to the configured page from the given page."""
@@ -62,7 +64,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     # This temporary string is used to read the title
     # of the page that should be unlinked.
@@ -92,5 +94,5 @@ def main(*args):
         return False
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

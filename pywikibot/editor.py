@@ -1,14 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 """Text editor class for your favourite editor."""
-from __future__ import absolute_import, unicode_literals
-
 #
 # (C) Gerrit Holl, 2004
 # (C) Pywikibot team, 2004-2018
 #
 # Distributed under the terms of the MIT license.
 #
+from __future__ import absolute_import, division, unicode_literals
 
 import codecs
 import os
@@ -63,7 +62,7 @@ class TextEditor(object):
 
         # See T102465 for problems relating to using config.editor unparsed.
         command = [config.editor] + command + [file_name]
-        pywikibot.log(u'Running editor: %s' % TextEditor._concat(command))
+        pywikibot.log('Running editor: %s' % TextEditor._concat(command))
         return command
 
     @staticmethod
@@ -84,14 +83,14 @@ class TextEditor(object):
         Halts the thread's operation until the editor is closed.
 
         @param text: the text to be edited
-        @type text: unicode
+        @type text: str
         @param jumpIndex: position at which to put the caret
         @type jumpIndex: int
         @param highlight: each occurrence of this substring will be highlighted
-        @type highlight: unicode
+        @type highlight: str
         @return: the modified text, or None if the user didn't save the text
             file in his text editor
-        @rtype: unicode or None
+        @rtype: str or None
         """
         if config.editor:
             handle, tempFilename = tempfile.mkstemp()
@@ -108,8 +107,9 @@ class TextEditor(object):
                     # Nothing changed
                     return None
                 else:
-                    with codecs.open(tempFilename, 'r',
-                                     encoding=config.editor_encoding) as temp_file:
+                    with codecs.open(
+                        tempFilename, 'r', encoding=config.editor_encoding
+                    ) as temp_file:
                         newcontent = temp_file.read()
                     return newcontent
             finally:
@@ -124,4 +124,5 @@ class TextEditor(object):
                 'are typically part of Python but may be packaged separately '
                 'on your platform.\n' % gui)
 
-        return pywikibot.ui.editText(text, jumpIndex=jumpIndex, highlight=highlight)
+        return pywikibot.ui.editText(
+            text, jumpIndex=jumpIndex, highlight=highlight)

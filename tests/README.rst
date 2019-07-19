@@ -3,12 +3,12 @@ Pywikibot tests
 ===============
 
 The Pywikibot tests are based on the `unittest framework
-<https://docs.python.org/2/library/unittest.html>`_,
+<https://docs.python.org/3/library/unittest.html>`_,
 and are compatible with `nose <https://nose.readthedocs.org/>`_.
 
 The tests package provides a function load_tests that supports the
 `load tests protocol
-<https://docs.python.org/2/library/unittest.html#load-tests-protocol>`_.
+<https://docs.python.org/3/library/unittest.html#load-tests-protocol>`_.
 The default ordering begins with tests of underlying components, then tests
 site and page semantics, and finishes with tests of the scripts and finally
 any tests which have not been inserted into the ordered list of tests.
@@ -228,10 +228,6 @@ To enable 'write' tests, set PYWIKIBOT_TEST_WRITE=1
 Enabling only 'edit failure' tests or 'write' tests won't enable the other tests
 automatically.
 
-Some tests are also using VCR.py, which means that these tests are dry and all
-requests are recorded and used later, being stored in 'tests/cassettes'.
-To avoid using recorded requests and to run live tests set PYWIKIBOT_LIVE_TESTS=1
-
 Decorators
 =====================
 
@@ -362,4 +358,3 @@ Other class attributes
 - ``user = True`` : test class needs to login to site
 - ``sysop = True`` : test class needs to login to site as a sysop
 - ``write = True`` : test class needs to write to a site
-- ``vcr = True``: test class uses VCR.py to record requests for dry testing

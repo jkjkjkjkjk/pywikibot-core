@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Tests for isbn script."""
 #
-# (C) Pywikibot team, 2014-2018
+# (C) Pywikibot team, 2014-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 
@@ -85,7 +85,8 @@ class TestCosmeticChangesISBN(DefaultDrySiteTestCase):
 
     def test_ignore_invalid_isbn(self):
         """Test fixing ISBN numbers with an invalid ISBN."""
-        cc = CosmeticChangesToolkit(self.site, namespace=0, ignore=CANCEL_MATCH)
+        cc = CosmeticChangesToolkit(self.site, namespace=0,
+                                    ignore=CANCEL_MATCH)
 
         text = cc.fix_ISBN(' ISBN 0975229LOL ISBN 9780975229804 ')
         self.assertEqual(text, ' ISBN 0975229LOL ISBN 978-0-9752298-0-4 ')
@@ -230,7 +231,8 @@ def userPut_dummy(self, page, oldtext, newtext, **kwargs):
     TestIsbnBot.newtext = newtext
 
 
-class TestIsbnWikibaseBot(ScriptMainTestCase, WikibaseTestCase, TWNBotTestCase):
+class TestIsbnWikibaseBot(ScriptMainTestCase, WikibaseTestCase,
+                          TWNBotTestCase):
 
     """Test isbnbot on Wikibase site with non-write patching."""
 
@@ -253,15 +255,15 @@ class TestIsbnWikibaseBot(ScriptMainTestCase, WikibaseTestCase, TWNBotTestCase):
                     prop_page = pywikibot.PropertyPage(cls.get_repo(),
                                                        claim.getID())
                     prop_page.get()
-                    if ('ISBN-10' in prop_page.labels.values() and
-                            claim.getTarget() == '097522980x'):
+                    if ('ISBN-10' in prop_page.labels.values()
+                            and claim.getTarget() == '097522980x'):
                         return
             raise unittest.SkipTest(
-                u'%s: "ISBN-10" property was not found in '
-                u'"IsbnWikibaseBotUnitTest" item page' % cls.__name__)
+                '{}: "ISBN-10" property was not found in '
+                '"IsbnWikibaseBotUnitTest" item page'.format(cls.__name__))
         raise unittest.SkipTest(
-            u'%s: "IsbnWikibaseBotUnitTest" item page was not found'
-            % cls.__name__)
+            '{}: "IsbnWikibaseBotUnitTest" item page was not found'
+            .format(cls.__name__))
 
     def setUp(self):
         """Patch Claim.setTarget and ItemPage.editEntity which write."""

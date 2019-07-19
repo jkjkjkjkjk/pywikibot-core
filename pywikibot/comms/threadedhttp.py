@@ -1,30 +1,29 @@
 # -*- coding: utf-8 -*-
 """Http backend layer, formerly providing a httplib2 wrapper."""
-from __future__ import absolute_import, unicode_literals
-
 #
-# (C) Pywikibot team, 2007-2018
+# (C) Pywikibot team, 2007-2019
 #
 # Distributed under the terms of the MIT license.
 #
+from __future__ import absolute_import, division, unicode_literals
+
 
 __docformat__ = 'epytext'
 
 # standard python libraries
 import codecs
 import re
-import sys
 
 import pywikibot
-from pywikibot.tools import deprecated, UnicodeMixin
+from pywikibot.tools import deprecated, PY2, UnicodeMixin
 
-if sys.version_info[0] > 2:
+if not PY2:
     from urllib.parse import urlparse
 else:
     from urlparse import urlparse
 
 
-_logger = "comm.threadedhttp"
+_logger = 'comm.threadedhttp'
 
 
 class HttpRequest(UnicodeMixin):
@@ -36,7 +35,7 @@ class HttpRequest(UnicodeMixin):
     * an exception
     """
 
-    def __init__(self, uri, method="GET", params=None, body=None, headers=None,
+    def __init__(self, uri, method='GET', params=None, body=None, headers=None,
                  callbacks=None, charset=None, **kwargs):
         """
         Initializer.
@@ -149,12 +148,14 @@ class HttpRequest(UnicodeMixin):
         """Detect the response encoding."""
         if not hasattr(self, '_encoding'):
             if not self.charset and not self.header_encoding:
-                pywikibot.log(u"Http response doesn't contain a charset.")
+                pywikibot.log("Http response doesn't contain a charset.")
                 charset = 'latin1'
             else:
                 charset = self.charset
-            if (self.header_encoding and codecs.lookup(self.header_encoding) !=
-                    (codecs.lookup(charset) if charset else None)):
+            if (self.header_encoding
+                and codecs.lookup(
+                    self.header_encoding) != (
+                        codecs.lookup(charset) if charset else None)):
                 if charset:
                     pywikibot.warning(
                         'Encoding "{0}" requested but "{1}" '
@@ -171,8 +172,8 @@ class HttpRequest(UnicodeMixin):
             else:
                 self._encoding = None
 
-            if charset and (isinstance(self._encoding, Exception) or
-                            not self._encoding):
+            if charset and (isinstance(self._encoding, Exception)
+                            or not self._encoding):
                 try:
                     self.raw.decode(charset)
                 except UnicodeError as e:

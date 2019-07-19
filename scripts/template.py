@@ -5,8 +5,10 @@ Very simple script to replace a template with another one.
 
 It also converts the old MediaWiki boilerplate format to the new format.
 
-Syntax: python pwb.py template [-remove] [xml[:filename]] oldTemplate \
-            [newTemplate]
+Syntax:
+
+    python pwb.py template [-remove] [xml[:filename]] oldTemplate \
+        [newTemplate]
 
 Specify the template on the command line. The program will pick up the template
 page, and look for all pages using it. It will then automatically loop over
@@ -39,7 +41,7 @@ Command line options:
 
 -timestamp:  (With -onlyuser or -skipuser). Only check for a user where his
              edit is not older than the given timestamp. Timestamp must be
-             writen in MediaWiki timestamp format which is "%Y%m%d%H%M%S".
+             written in MediaWiki timestamp format which is "%Y%m%d%H%M%S".
              If this parameter is missed, all edits are checked but this is
              restricted to the last 100 edits.
 
@@ -55,7 +57,6 @@ Command line options:
 
 other:       First argument is the old template name, second one is the new
              name.
-
              If you want to address a template which has spaces, put quotation
              marks around it, or use underscores.
 
@@ -63,7 +64,7 @@ Examples
 --------
 
 If you have a template called [[Template:Cities in Washington]] and want to
-change it to [[Template:Cities in Washington state]], start
+change it to [[Template:Cities in Washington state]], start:
 
     python pwb.py template "Cities in Washington" "Cities in Washington state"
 
@@ -80,7 +81,7 @@ Note that -namespace: is a global Pywikibot parameter
 
 This next example substitutes the template lived with a supplied edit summary.
 It only performs substitutions in main article namespace and doesn't prompt to
-start replacing. Note that -putthrottle: is a global Pywikibot parameter.
+start replacing. Note that -putthrottle: is a global Pywikibot parameter:
 
     python pwb.py template -putthrottle:30 -namespace:0 lived -subst -always \
         -summary:"BOT: Substituting {{lived}}, see [[WP:SUBST]]."
@@ -108,11 +109,11 @@ user talk pages (namespace #3):
 # (C) Daniel Herding, 2004
 # (C) Rob W.W. Hooft, 2003-2005
 # (C) xqt, 2009-2018
-# (C) Pywikibot team, 2004-2018
+# (C) Pywikibot team, 2004-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from itertools import chain
 import re
@@ -161,7 +162,7 @@ class XmlDumpTemplatePageGenerator(XMLDumpPageGenerator):
         for template in self.templates:
             template_pattern = template.title(with_ns=False)
             if mysite.namespaces[10].case == 'first-letter':
-                template_pattern = '[%s%s]%s' % (
+                template_pattern = '[{0}{1}]{2}'.format(
                     template_pattern[0].upper(), template_pattern[0].lower(),
                     template_pattern[1:])
             template_pattern = re.sub(' ', '[_ ]', template_pattern)
@@ -247,7 +248,8 @@ class TemplateRobot(ReplaceBot):
             else:
                 template = pywikibot.Page(self.site, new, ns=10)
                 if not template.exists():
-                    pywikibot.warning(u'Template "%s" does not exist.' % new)
+                    pywikibot.warning('Template "{0}" does not exist.'
+                                      .format(new))
                     if not pywikibot.input_yn('Do you want to proceed anyway?',
                                               default=False,
                                               automatic_quit=False):
@@ -269,7 +271,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     template_names = []
     templates = {}
@@ -303,7 +305,7 @@ def main(*args):
         elif arg.startswith('-xml'):
             if len(arg) == 4:
                 xmlfilename = pywikibot.input(
-                    u'Please enter the XML dump\'s filename: ')
+                    "Please enter the XML dump's filename: ")
             else:
                 xmlfilename = arg[5:]
         elif arg.startswith('-addcat:'):
@@ -377,8 +379,8 @@ def main(*args):
     bot.run()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
         main()
     except Exception:
-        pywikibot.error("Fatal error:", exc_info=True)
+        pywikibot.error('Fatal error:', exc_info=True)

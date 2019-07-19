@@ -37,18 +37,17 @@ Furthermore, the following command line parameters are supported:
 
 Example
 -------
-1.
-# This is a script to add a template to the top of the pages with
-# category:catname
-# Warning! Put it in one line, otherwise it won't work correctly.
+
+1. This is a script to add a template to the top of the pages with
+category:catname
+Warning! Put it in one line, otherwise it won't work correctly:
 
     python pwb.py add_text -cat:catname -summary:"Bot: Adding a template" \
         -text:"{{Something}}" -except:"\{\{([Tt]emplate:|)[Ss]omething" -up
 
-2.
-# Command used on it.wikipedia to put the template in the page without any
-# category.
-# Warning! Put it in one line, otherwise it won't work correctly.
+2. Command used on it.wikipedia to put the template in the page without any
+category.
+Warning! Put it in one line, otherwise it won't work correctly:
 
     python pwb.py add_text -except:"\{\{([Tt]emplate:|)[Cc]ategorizzare" \
         -text:"{{Categorizzare}}" -excepturl:"class='catlinks'>" -uncat \
@@ -57,16 +56,15 @@ Example
 
 #
 # (C) Filnik, 2007-2010
-# (C) Pywikibot team, 2007-2018
+# (C) Pywikibot team, 2007-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import codecs
 import re
 import sys
-import time
 
 import pywikibot
 
@@ -74,9 +72,7 @@ from pywikibot import config, i18n, pagegenerators, textlib
 from pywikibot.bot_choice import QuitKeyboardInterrupt
 from pywikibot.tools.formatter import color_format
 
-docuReplacements = {
-    '&params;': pagegenerators.parameterHelp,
-}
+docuReplacements = {'&params;': pagegenerators.parameterHelp}  # noqa: N816
 
 
 def get_text(page, old, create):
@@ -112,7 +108,7 @@ def put_text(page, new, summary, count, asynchronous=False):
     except pywikibot.ServerError:
         if count <= config.max_retries:
             pywikibot.output('Server Error! Wait..')
-            time.sleep(config.retry_wait)
+            pywikibot.sleep(config.retry_wait)
             return None
         else:
             raise pywikibot.ServerError(
@@ -143,7 +139,7 @@ def add_text(page, addText, summary=None, regexSkip=None,
         summary = i18n.twtranslate(site, 'add_text-adding',
                                    {'adding': addText[:200]})
     if putText:
-        pywikibot.output(u'Loading %s...' % page.title())
+        pywikibot.output('Loading {}...'.format(page.title()))
 
     text = get_text(page, oldTextGiven, create)
     if text is None:
@@ -158,7 +154,7 @@ def add_text(page, addText, summary=None, regexSkip=None,
             pywikibot.output(
                 'Exception! regex (or word) used with -exceptUrl '
                 'is in the page. Skip!\n'
-                'Match was: %s' % result)
+                'Match was: {}'.format(result))
             return (False, False, always)
     if regexSkip is not None:
         result = re.findall(regexSkip, text)
@@ -166,7 +162,7 @@ def add_text(page, addText, summary=None, regexSkip=None,
             pywikibot.output(
                 'Exception! regex (or word) used with -except '
                 'is in the page. Skip!\n'
-                'Match was: %s' % result)
+                'Match was: {}'.format(result))
             return (False, False, always)
     # If not up, text put below
     if not up:
@@ -184,7 +180,7 @@ def add_text(page, addText, summary=None, regexSkip=None,
             newtext = textlib.removeLanguageLinks(newtext, site)
 
             # Adding the text
-            newtext += u"%s%s" % (config.line_separator, addText)
+            newtext += '{}{}'.format(config.line_separator, addText)
             # Reputting the categories
             newtext = textlib.replaceCategoryLinks(newtext,
                                                    categoriesInside, site,
@@ -193,7 +189,7 @@ def add_text(page, addText, summary=None, regexSkip=None,
             newtext = textlib.replaceLanguageLinks(newtext, interwikiInside,
                                                    site)
         else:
-            newtext += u"%s%s" % (config.line_separator, addText)
+            newtext += '{}{}'.format(config.line_separator, addText)
     else:
         newtext = addText + config.line_separator + text
 
@@ -241,9 +237,9 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
-    # If none, the var is setted only for check purpose.
+    # If none, the var is set only for check purpose.
     summary = None
     addText = None
     regexSkip = None
@@ -305,5 +301,5 @@ def main(*args):
                                            create=talkPage)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

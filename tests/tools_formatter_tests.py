@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Tests for the C{pywikibot.tools.formatter} module."""
 #
-# (C) Pywikibot team, 2015
+# (C) Pywikibot team, 2015-2018
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from pywikibot.tools import formatter
 from pywikibot.tools import UnicodeMixin
@@ -97,7 +97,8 @@ class TestColorFormat(TestCase):
     def test_bytes_format(self):
         """Test that using `bytes` is not allowed."""
         self.assertRaises(TypeError, formatter.color_format, b'{0}', 'a')
-        self.assertRaises(TypeError, formatter.color_format, b'{black}{0}', 'a')
+        self.assertRaises(TypeError, formatter.color_format, b'{black}{0}',
+                          'a')
 
     def test_variant_colors(self):
         """Test variant colors with {color} parameter."""

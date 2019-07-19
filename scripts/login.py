@@ -6,7 +6,7 @@ Script to log the bot in to a wiki account.
 Suggestion is to make a special account to use for bot use only. Make
 sure this bot account is well known on your home wiki before using.
 
-Parameters:
+The following parameters are supported:
 
    -family:FF
    -lang:LL     Log in to the LL language of the FF family.
@@ -16,7 +16,7 @@ Parameters:
    -all         Try to log in on all sites where a username is defined in
                 user-config.py.
 
-   -logout      Log out of the curren site. Combine with -all to log out of
+   -logout      Log out of the current site. Combine with -all to log out of
                 all sites, or with -family and -lang to log out of a specific
                 site.
 
@@ -56,11 +56,11 @@ subdirectory.
 """
 #
 # (C) Rob W.W. Hooft, 2003
-# (C) Pywikibot team, 2003-2017
+# (C) Pywikibot team, 2003-2018
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from os.path import join
 
@@ -104,7 +104,7 @@ def _oauth_login(site):
                             'consumer': consumer_key})
         pywikibot.output('NOTE: To use OAuth, you need to copy the '
                          'following line to your user-config.py:')
-        pywikibot.output('authenticate[\'%(hostname)s\'] = %(oauth_token)s' %
+        pywikibot.output("authenticate['%(hostname)s'] = %(oauth_token)s" %
                          {'hostname': site.hostname(),
                           'oauth_token': oauth_token})
 
@@ -116,7 +116,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     password = None
     sysop = False
@@ -126,22 +126,23 @@ def main(*args):
     autocreate = False
     unknown_args = []
     for arg in pywikibot.handle_args(args):
-        if arg.startswith("-pass"):
+        if arg.startswith('-pass'):
             if len(arg) == 5:
                 password = pywikibot.input(
                     'Password for all accounts (no characters will be shown):',
                     password=True)
             else:
                 password = arg[6:]
-        elif arg == "-sysop":
+        elif arg == '-sysop':
             sysop = True
-        elif arg == "-all":
+        elif arg == '-all':
             logall = True
-        elif arg == "-force":
-            pywikibot.output(u"To force a re-login, please delete the revelant "
-                             u"lines from '%s' (or the entire file) and try again." %
-                             join(config.base_dir, 'pywikibot.lwp'))
-        elif arg == "-logout":
+        elif arg == '-force':
+            pywikibot.output('To force a re-login, please delete the '
+                             "revelant lines from '{0}' (or the entire file) "
+                             'and try again.'
+                             .format(join(config.base_dir, 'pywikibot.lwp')))
+        elif arg == '-logout':
             logout = True
         elif arg == '-oauth':
             oauth = True
@@ -188,9 +189,10 @@ def main(*args):
                         pywikibot.output(
                             'Not logged in on {0}.'.format(site))
             except SiteDefinitionError:
-                pywikibot.output(u'%s.%s is not a valid site, please remove it'
-                                 ' from your config' % (lang, family_name))
+                pywikibot.output('{0}.{1} is not a valid site, '
+                                 'please remove it from your config'
+                                 .format(lang, family_name))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

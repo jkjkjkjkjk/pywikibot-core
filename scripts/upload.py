@@ -3,7 +3,7 @@
 """
 Script to upload images to wikipedia.
 
-Arguments:
+The following parameters are supported:
 
   -keep         Keep the filename as is
   -filename:    Target filename without the namespace prefix
@@ -52,11 +52,11 @@ parameter, and for a description.
 """
 #
 # (C) Rob W.W. Hooft, Andre Engels 2003-2004
-# (C) Pywikibot team, 2003-2018
+# (C) Pywikibot team, 2003-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import codecs
 import math
@@ -66,6 +66,10 @@ import re
 import pywikibot
 from pywikibot.bot import suggest_help
 from pywikibot.specialbots import UploadRobot
+
+
+CHUNK_SIZE_REGEX = re.compile(
+    r'^-chunked(?::(\d+(?:\.\d+)?)[ \t]*(k|ki|m|mi)?b?)?$', re.I)
 
 
 def get_chunk_size(match):
@@ -100,9 +104,9 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
-    url = u''
+    url = ''
     description = []
     summary = None
     keep_filename = False
@@ -113,8 +117,6 @@ def main(*args):
     aborts = set()
     ignorewarn = set()
     chunk_size = 0
-    chunk_size_regex = re.compile(
-        r'^-chunked(?::(\d+(?:\.\d+)?)[ \t]*(k|ki|m|mi)?b?)?$', re.I)
     recursive = False
     description_file = None
 
@@ -150,15 +152,14 @@ def main(*args):
             else:
                 ignorewarn = True
         elif arg == '-chunked':
-            match = chunk_size_regex.match(option)
+            match = CHUNK_SIZE_REGEX.match(option)
             chunk_size = get_chunk_size(match)
         elif arg == '-descfile':
             description_file = value
-        elif arg and not value:
-            if not url:
-                url = arg
-            else:
-                description.append(arg)
+        elif not url:
+            url = option
+        else:
+            description.append(option)
 
     description = ' '.join(description)
 
@@ -171,7 +172,7 @@ def main(*args):
                          encoding=pywikibot.config.textfile_encoding) as f:
             description = f.read().replace('\r\n', '\n')
 
-    while not ("://" in url or os.path.exists(url)):
+    while not ('://' in url or os.path.exists(url)):
         if not url:
             error = 'No input filename given.'
         else:
@@ -183,10 +184,10 @@ def main(*args):
             break
         else:
             pywikibot.output(error)
-        url = pywikibot.input(u'URL, file or directory where files are now:')
+        url = pywikibot.input('URL, file or directory where files are now:')
 
-    if always and ((aborts is not True and ignorewarn is not True) or
-                   not description or url is None):
+    if always and (aborts is not True and ignorewarn is not True
+                   or not description or url is None):
         additional = ''
         missing = []
         if url is None:
@@ -222,5 +223,5 @@ def main(*args):
     bot.run()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

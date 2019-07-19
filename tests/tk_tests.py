@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Tests for the Tk UI."""
 #
-# (C) Pywikibot team, 2008-2015
+# (C) Pywikibot team, 2008-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import os
 
@@ -16,9 +16,9 @@ from tests.aspects import unittest, TestCase, DefaultSiteTestCase
 
 if os.environ.get('PYWIKIBOT_TEST_GUI', '0') == '1':
     if not PY2:
-        import tkinter as Tkinter
+        import tkinter
     else:
-        import Tkinter
+        import Tkinter as tkinter  # noqa: N813
     from pywikibot.userinterfaces.gui import EditBoxWindow, Tkdialog
 
 
@@ -27,13 +27,6 @@ class TestTkdialog(TestCase):
     """Test Tkdialog."""
 
     net = True
-
-    @classmethod
-    def setUpClass(cls):
-        """Set up test class."""
-        if os.environ.get('PYWIKIBOT_TEST_GUI', '0') != '1':
-            raise unittest.SkipTest('Tkdialog tests are disabled on Travis-CI')
-        super(TestTkdialog, cls).setUpClass()
 
     def testTkdialog(self):
         """Test Tk dialog."""
@@ -50,24 +43,23 @@ class TestTkinter(DefaultSiteTestCase):
 
     net = True
 
-    @classmethod
-    def setUpClass(cls):
-        """Set up test class."""
-        if os.environ.get('PYWIKIBOT_TEST_GUI', '0') != '1':
-            raise unittest.SkipTest('Tkinter tests are disabled on Travis-CI')
-        super(TestTkinter, cls).setUpClass()
-
     def testTkinter(self):
         """Test Tkinter window."""
-        root = Tkinter.Tk()
-        root.resizable(width=Tkinter.FALSE, height=Tkinter.FALSE)
-        root.title("pywikibot GUI")
-        page = pywikibot.Page(pywikibot.Site(), u'Main Page')
+        root = tkinter.Tk()
+        root.resizable(width=tkinter.FALSE, height=tkinter.FALSE)
+        root.title('pywikibot GUI')
+        page = pywikibot.Page(pywikibot.Site(), 'Main Page')
         content = page.get()
         myapp = EditBoxWindow(root)
-        myapp.bind("<Control-d>", myapp.debug)
+        myapp.bind('<Control-d>', myapp.debug)
         v = myapp.edit(content, highlight=page.title())
         assert v is None
+
+
+def setUpModule():  # noqa: N802
+    """Skip Travis tests if PYWIKIBOT_TEST_GUI variable is not set."""
+    if os.environ.get('PYWIKIBOT_TEST_GUI', '0') != '1':
+        raise unittest.SkipTest('Tkinter tests are disabled on Travis-CI')
 
 
 if __name__ == '__main__':  # pragma: no cover

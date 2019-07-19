@@ -5,7 +5,7 @@
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import re
 
@@ -61,11 +61,46 @@ class TestGenerateUserFiles(TestCase):
     def test_get_site_and_lang(self):
         """Test get_site_and_lang function with parameters."""
         family, code, user = guf.get_site_and_lang(
-            default_family='test', default_lang='foo', default_username='bar',
+            default_family='wikisource', default_lang='foo',
+            default_username='bar',
             force=True)
-        self.assertEqual(family, 'test')
-        self.assertEqual(code, 'test')
+        self.assertEqual(family, 'wikisource')
+        self.assertEqual(code, 'en')
         self.assertEqual(user, 'bar')
+
+    def test_parse_sections(self):
+        """Test parse_sections regex."""
+        sections = guf.parse_sections()
+        self.assertGreater(len(sections), 10)
+        first = sections[0]
+        last = sections[-1]
+        self.assertEqual('ACCOUNT SETTINGS', first.head)
+        self.assertIn(first.head, first.section)
+        self.assertIn(first.info[:10], first.section)
+        self.assertEqual('OBSOLETE SETTINGS', last.head)
+        self.assertIn(last.head, last.section)
+        self.assertIn(last.info[:10], last.section)
+
+    def test_copy_sections_not_found(self):
+        """Test copy_sections function for sections not in config text."""
+        config_text = guf.copy_sections()
+        for section in guf.DISABLED_SECTIONS | guf.OBSOLETE_SECTIONS:
+            self.assertNotIn(section, config_text)
+
+    def test_copy_sections_found(self):
+        """Test copy_sections function for sections found in config text."""
+        config_text = guf.copy_sections()
+        self.assertIsNotNone(config_text)
+        for section in ('LOGFILE SETTINGS',
+                        'EXTERNAL SCRIPT PATH SETTINGS',
+                        'INTERWIKI SETTINGS',
+                        'FURTHER SETTINGS',
+                        'HTTP SETTINGS',
+                        'REPLICATION BOT SETTINGS',
+                        ):
+            self.assertIn(section, config_text)
+        lines = config_text.splitlines()
+        self.assertGreater(len(lines), 350)
 
 
 if __name__ == '__main__':  # pragma: no cover

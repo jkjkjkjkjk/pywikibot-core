@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Test OAuth functionality."""
 #
-# (C) Pywikibot team, 2015
+# (C) Pywikibot team, 2015-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import os
 
@@ -38,11 +38,11 @@ class OAuthSiteTestCase(TestCase):
         super(OAuthSiteTestCase, self).setUp()
         self.site = self.get_site()
         if not self.site.has_extension('OAuth'):
-            raise unittest.SkipTest('OAuth extension not loaded on test site')
+            self.skipTest('OAuth extension not loaded on test site')
         tokens = self._get_oauth_tokens()
         if tokens is None:
-            raise unittest.SkipTest('OAuth tokens not set')
-        self.assertEqual(len(tokens), 4)
+            self.skipTest('OAuth tokens not set')
+        self.assertLength(tokens, 4)
         self.consumer_token = tokens[:2]
         self.access_token = tokens[2:]
 

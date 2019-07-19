@@ -2,15 +2,28 @@ version: "2"
 
 checks:
   argument-count:
-    enabled: false
+    config:
+      threshold: 7
   file-lines:
-    enabled: false
+    config:
+      threshold: 900
+  method-count:
+    config:
+      threshold: 30
+  method-lines:
+    config:
+      threshold: 30
+
+plugins:
+  duplication:
+    enabled: true
+    config:
+      count_threshold: 3
 
 exclude_patterns:
 - "docs/"
 - "!docs/conf.py"
 - "scripts/archive/"
-- "ez_setup.py"
 - "*.rst"
 - "*.txt"
 

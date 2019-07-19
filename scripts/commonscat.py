@@ -8,10 +8,7 @@ another language page, the bot will use it.
 
 You could probably use it at articles as well, but this isn't tested.
 
-This bot uses pagegenerators to get a list of pages. The following options are
-supported:
-
-&params;
+The following parameters are supported:
 
 -always           Don't prompt you for each replacement. Warning message
                   has not to be confirmed. ATTENTION: Use this with care!
@@ -21,6 +18,11 @@ supported:
 
 -checkcurrent     Work on all category pages that use the primary commonscat
                   template.
+
+This bot uses pagegenerators to get a list of pages. The following options are
+supported:
+
+&params;
 
 For example to go through all categories:
 
@@ -33,37 +35,23 @@ For example to go through all categories:
 # *Found one template. Add this template
 # *Found more templates. Ask the user <- still have to implement this
 #
-# TODO:
-# *Update interwiki's at commons
-# *Collect all possibilities also if local wiki already has link.
-# *Better support for other templates (translations) / redundant templates.
-# *Check mode, only check pages which already have the template
-# *More efficient like interwiki.py
-# *Possibility to update other languages in the same run
-#
-# Porting notes:
-#
-# *Ported from compat to core
-# *Replaced now-deprecated Page methods
-# *Fixed way of finding interlanguage links in findCommonscatLink()
-# *Removed unused and now possibly broken updateInterwiki() method
-#
-# Ported by Allen Guo <Guoguo12@gmail.com>
+# Ported from compat to core by Allen Guo <Guoguo12@gmail.com>
 # November 2013
 #
 # (C) Multichill, 2008-2009
-# (C) Xqt, 2009-2018
-# (C) Pywikibot team, 2008-2018
+# (C) Xqt, 2009-2019
+# (C) Pywikibot team, 2008-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import re
 
 import pywikibot
 
-from pywikibot import i18n, pagegenerators, Bot
+from pywikibot import i18n, pagegenerators
+from pywikibot.bot import SingleSiteBot
 
 from scripts.add_text import add_text
 
@@ -78,7 +66,7 @@ commonscatTemplates = {
     'af': ('CommonsKategorie', ['commonscat']),
     'an': ('Commonscat', ['Commons cat']),
     'ar': ('تصنيف كومنز',
-           ['Commonscat', 'تصنيف كومونز', 'Commons cat', 'CommonsCat']),
+           ['Commonscat', 'تصنيف كومونز', 'تك', 'Commons cat', 'CommonsCat']),
     'arz': ('Commons cat', ['Commoncat']),
     'az': ('CommonsKat', ['Commonscat']),
     'bn': ('কমন্সক্যাট', ['Commonscat']),
@@ -142,7 +130,8 @@ commonscatTemplates = {
     'sl': ('Kategorija v Zbirki',
            ['Commonscat', 'Kategorija v zbirki', 'Commons cat',
             'Katzbirke']),
-    'sr': ('Commons category', ['Commonscat', 'Commons cat']),
+    'sr': ('Commons category',
+           ['Commonscat', 'Commons cat', 'Категорија на Остави']),
     'sq': ('Commonscat', ['Commonskat', 'Commonsart', 'CommonsCat']),
     'sv': ('Commonscat',
            ['Commonscat-rad', 'Commonskat', 'Commons cat', 'Commonscatbox',
@@ -225,47 +214,33 @@ ignoreTemplates = {
 }
 
 
-class CommonscatBot(Bot):
+class CommonscatBot(SingleSiteBot):
 
     """Commons categorisation bot."""
 
-    def __init__(self, generator, **kwargs):
+    def __init__(self, **kwargs):
         """Initializer."""
         self.availableOptions.update({
             'summary': None,
         })
         super(CommonscatBot, self).__init__(**kwargs)
-        self.generator = generator
-        self.site = pywikibot.Site()
 
     def treat(self, page):
         """Load the given page, do some changes, and save it."""
         if not page.exists():
-            pywikibot.output('Page %s does not exist. Skipping.'
-                             % page.title(as_link=True))
+            pywikibot.output('Page {} does not exist. Skipping.'
+                             .format(page.title(as_link=True)))
         elif page.isRedirectPage():
-            pywikibot.output('Page %s is a redirect. Skipping.'
-                             % page.title(as_link=True))
+            pywikibot.output('Page {} is a redirect. Skipping.'
+                             .format(page.title(as_link=True)))
         elif page.isCategoryRedirect():
-            pywikibot.output('Page %s is a category redirect. Skipping.'
-                             % page.title(as_link=True))
+            pywikibot.output('Page {} is a category redirect. Skipping.'
+                             .format(page.title(as_link=True)))
         elif page.isDisambig():
-            pywikibot.output('Page %s is a disambiguation. Skipping.'
-                             % page.title(as_link=True))
+            pywikibot.output('Page {} is a disambiguation. Skipping.'
+                             .format(page.title(as_link=True)))
         else:
             self.addCommonscat(page)
-
-    @classmethod
-    def getCommonscatTemplate(cls, code=None):
-        """Get the template name of a site. Expects the site code.
-
-        Return as tuple containing the primary template and its alternatives.
-
-        """
-        if code in commonscatTemplates:
-            return commonscatTemplates[code]
-        else:
-            return commonscatTemplates[u'_default']
 
     def skipPage(self, page):
         """Determine if the page should be skipped."""
@@ -295,63 +270,66 @@ class CommonscatBot(Bot):
         """
         self.current_page = page
         # Get the right templates for this page
-        primaryCommonscat, commonscatAlternatives = self.getCommonscatTemplate(
-            page.site.code)
+        primaryCommonscat, commonscatAlternatives = i18n.translate(
+            page.site.code, commonscatTemplates,
+            fallback=i18n.DEFAULT_FALLBACK)
         commonscatLink = self.getCommonscatLink(page)
         if commonscatLink:
-            pywikibot.output('Commonscat template is already on %s'
-                             % page.title())
+            pywikibot.output('Commonscat template is already on '
+                             + page.title())
             (currentCommonscatTemplate,
              currentCommonscatTarget, LinkText, Note) = commonscatLink
             checkedCommonscatTarget = self.checkCommonscatLink(
                 currentCommonscatTarget)
+
             if (currentCommonscatTarget == checkedCommonscatTarget):
                 # The current commonscat link is good
-                pywikibot.output('Commonscat link at %s to Category:%s is ok'
-                                 % (page.title(), currentCommonscatTarget))
-                return True
-            elif checkedCommonscatTarget != '':
+                pywikibot.output('Commonscat link at {} to Category:{} is ok'
+                                 .format(page.title(),
+                                         currentCommonscatTarget))
+                return
+
+            if checkedCommonscatTarget:
                 # We have a new Commonscat link, replace the old one
                 self.changeCommonscat(page, currentCommonscatTemplate,
                                       currentCommonscatTarget,
                                       primaryCommonscat,
                                       checkedCommonscatTarget, LinkText, Note)
-                return True
-            else:
-                # Commonscat link is wrong
-                commonscatLink = self.findCommonscatLink(page)
-                if (commonscatLink != ''):
-                    self.changeCommonscat(page, currentCommonscatTemplate,
-                                          currentCommonscatTarget,
-                                          primaryCommonscat, commonscatLink)
-                # TODO: if the commonsLink == '', should it be removed?
+                return
+
+            # Commonscat link is wrong
+            commonscatLink = self.findCommonscatLink(page)
+            if commonscatLink:
+                self.changeCommonscat(page, currentCommonscatTemplate,
+                                      currentCommonscatTarget,
+                                      primaryCommonscat, commonscatLink)
+            # TODO: if the commonsLink == '', should it be removed?
 
         elif self.skipPage(page):
-            pywikibot.output('Found a template in the skip list. Skipping %s'
-                             % page.title())
+            pywikibot.output('Found a template in the skip list. Skipping '
+                             + page.title())
         else:
             commonscatLink = self.findCommonscatLink(page)
-            if (commonscatLink != ''):
+            if commonscatLink:
                 if commonscatLink == page.title():
                     textToAdd = '{{%s}}' % primaryCommonscat
                 else:
                     textToAdd = '{{%s|%s}}' % (primaryCommonscat,
                                                commonscatLink)
-                rv = add_text(page, textToAdd,
-                              self.getOption('summary'),
-                              always=self.getOption('always'))
-                self.options['always'] = rv[2]
-                return True
-        return True
+                _, _, always = add_text(page, textToAdd,
+                                        self.getOption('summary'),
+                                        always=self.getOption('always'))
+                self.options['always'] = always
 
-    def changeCommonscat(self, page=None, oldtemplate='', oldcat='',
-                         newtemplate='', newcat='', linktitle='',
-                         description=NotImplemented):  # pylint: disable=unused-argument
+    def changeCommonscat(
+            self, page=None, oldtemplate='', oldcat='',
+            newtemplate='', newcat='', linktitle='',
+            description=NotImplemented):
         """Change the current commonscat template and target."""
         if oldcat == '3=S' or linktitle == '3=S':
             return  # TODO: handle additional param on de-wiki
-        if not linktitle and (page.title().lower() in oldcat.lower() or
-                              oldcat.lower() in page.title().lower()):
+        if not linktitle and (page.title().lower() in oldcat.lower()
+                              or oldcat.lower() in page.title().lower()):
             linktitle = oldcat
         if linktitle and newcat != page.title(with_ns=False):
             newtext = re.sub(r'(?i)\{\{%s\|?[^{}]*(?:\{\{.*\}\})?\}\}'
@@ -386,7 +364,8 @@ class CommonscatBot(Bot):
         In Pywikibot >=2.0, page.interwiki() now returns Link objects,
         not Page objects
 
-        @rtype: unicode, name of a valid commons category
+        @return: name of a valid commons category
+        @rtype: str
         """
         for ipageLink in page.langlinks():
             ipage = pywikibot.page.Page(ipageLink)
@@ -402,11 +381,11 @@ class CommonscatBot(Bot):
                  possibleCommonscat, linkText, Note) = commonscatLink
                 checkedCommonscat = self.checkCommonscatLink(
                     possibleCommonscat)
-                if (checkedCommonscat != ''):
+                if checkedCommonscat:
                     pywikibot.output(
-                        'Found link for %s at [[%s:%s]] to %s.'
-                        % (page.title(), ipage.site.code,
-                           ipage.title(), checkedCommonscat))
+                        'Found link for {} at [[{}:{}]] to {}.'
+                        .format(page.title(), ipage.site.code, ipage.title(),
+                                checkedCommonscat))
                     return checkedCommonscat
             except pywikibot.BadTitle:
                 # The interwiki was incorrect
@@ -418,8 +397,9 @@ class CommonscatBot(Bot):
 
         @rtype: tuple of (<templatename>, <target>, <linktext>, <note>)
         """
-        primaryCommonscat, commonscatAlternatives = self.getCommonscatTemplate(
-            wikipediaPage.site.code)
+        primaryCommonscat, commonscatAlternatives = i18n.translate(
+            wikipediaPage.site.code, commonscatTemplates,
+            fallback=i18n.DEFAULT_FALLBACK)
         commonscatTemplate = ''
         commonscatTarget = ''
         commonscatLinktext = ''
@@ -442,7 +422,7 @@ class CommonscatBot(Bot):
                         commonscatLinktext, commonscatNote)
         return None
 
-    def checkCommonscatLink(self, name=""):
+    def checkCommonscatLink(self, name=''):
         """Return the name of a valid commons category.
 
         If the page is a redirect this function tries to follow it.
@@ -450,59 +430,61 @@ class CommonscatBot(Bot):
 
         """
         pywikibot.log('getCommonscat: ' + name)
+        commonsSite = self.site.image_repository()
+
         try:
-            commonsSite = self.site.image_repository()
             # This can throw a pywikibot.BadTitle
             commonsPage = pywikibot.Page(commonsSite, 'Category:' + name)
-
-            if not commonsPage.exists():
-                pywikibot.output('Commons category does not exist. '
-                                 'Examining deletion log...')
-                logpages = commonsSite.logevents(logtype='delete',
-                                                 page=commonsPage)
-                for logitem in logpages:
-                    loguser = logitem.user()
-                    logcomment = logitem.comment()
-                    # Some logic to extract the target page.
-                    regex = (
-                        r'moved to \[\[\:?Category:'
-                        r'(?P<newcat1>[^\|\}]+)(\|[^\}]+)?\]\]|'
-                        r'Robot: Changing Category:(.+) '
-                        r'to Category:(?P<newcat2>.+)')
-                    m = re.search(regex, logcomment, flags=re.I)
-                    if m:
-                        if m.group('newcat1'):
-                            return self.checkCommonscatLink(m.group('newcat1'))
-                        elif m.group('newcat2'):
-                            return self.checkCommonscatLink(m.group('newcat2'))
-                    else:
-                        pywikibot.output(
-                            "getCommonscat: %s deleted by %s. Couldn't find "
-                            'move target in "%s"'
-                            % (commonsPage, loguser, logcomment))
-                        return ''
-                return ''
-            elif commonsPage.isRedirectPage():
-                pywikibot.log('getCommonscat: The category is a redirect')
-                return self.checkCommonscatLink(
-                    commonsPage.getRedirectTarget().title(with_ns=False))
-            elif 'Category redirect' in commonsPage.templates():
-                pywikibot.log(
-                    'getCommonscat: The category is a category redirect')
-                for template in commonsPage.templatesWithParams():
-                    if (
-                        template[0].title(with_ns=False) == 'Category redirect'
-                        and len(template[1]) > 0
-                    ):
-                        return self.checkCommonscatLink(template[1][0])
-            elif commonsPage.isDisambig():
-                pywikibot.log('getCommonscat: The category is disambiguation')
-                return ''
-            else:
-                return commonsPage.title(with_ns=False)
         except pywikibot.BadTitle:
             # Funky title so not correct
             return ''
+
+        if not commonsPage.exists():
+            pywikibot.output('Commons category does not exist. '
+                             'Examining deletion log...')
+            logpages = commonsSite.logevents(logtype='delete',
+                                             page=commonsPage)
+            for logitem in logpages:
+                loguser = logitem.user()
+                logcomment = logitem.comment()
+                # Some logic to extract the target page.
+                regex = (
+                    r'moved to \[\[\:?Category:'
+                    r'(?P<newcat1>[^\|\}]+)(\|[^\}]+)?\]\]|'
+                    r'Robot: Changing Category:(.+) '
+                    r'to Category:(?P<newcat2>.+)')
+                m = re.search(regex, logcomment, flags=re.I)
+                if m:
+                    if m.group('newcat1'):
+                        return self.checkCommonscatLink(m.group('newcat1'))
+                    elif m.group('newcat2'):
+                        return self.checkCommonscatLink(m.group('newcat2'))
+                else:
+                    pywikibot.output(
+                        "getCommonscat: {} deleted by {}. Couldn't find "
+                        'move target in "{}"'
+                        .format(commonsPage, loguser, logcomment))
+                    return ''
+            return ''
+        elif commonsPage.isRedirectPage():
+            pywikibot.log('getCommonscat: The category is a redirect')
+            return self.checkCommonscatLink(
+                commonsPage.getRedirectTarget().title(with_ns=False))
+        elif (pywikibot.Page(commonsPage.site,
+              'Template:Category redirect') in commonsPage.templates()):
+            pywikibot.log(
+                'getCommonscat: The category is a category redirect')
+            for template in commonsPage.templatesWithParams():
+                if (
+                    template[0].title(with_ns=False) == 'Category redirect'
+                    and len(template[1]) > 0
+                ):
+                    return self.checkCommonscatLink(template[1][0])
+        elif commonsPage.isDisambig():
+            pywikibot.log('getCommonscat: The category is disambiguation')
+            return ''
+
+        return commonsPage.title(with_ns=False)
 
 
 def main(*args):
@@ -512,7 +494,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     options = {}
     checkcurrent = False
@@ -537,9 +519,8 @@ def main(*args):
 
     if checkcurrent:
         site = pywikibot.Site()
-        primaryCommonscat, commonscatAlternatives = \
-            CommonscatBot.getCommonscatTemplate(
-                site.code)
+        primaryCommonscat, commonscatAlternatives = i18n.translate(
+            site.code, commonscatTemplates, fallback=i18n.DEFAULT_FALLBACK)
         template_page = pywikibot.Page(site, 'Template:' + primaryCommonscat)
         generator = template_page.getReferences(namespaces=14,
                                                 only_template_inclusion=True)
@@ -549,7 +530,7 @@ def main(*args):
     if generator:
         if not genFactory.nopreload:
             generator = pagegenerators.PreloadingGenerator(generator)
-        bot = CommonscatBot(generator, **options)
+        bot = CommonscatBot(generator=generator, **options)
         bot.run()
         return True
     else:

@@ -3,11 +3,13 @@
 """
 Edit a Wikipedia article with your favourite editor.
 
- TODO: - non existing pages
-       - edit conflicts
-       - minor edits
-       - watch/unwatch
-       - ...
+TODO:
+
+ - non existing pages
+ - edit conflicts
+ - minor edits
+ - watch/unwatch
+ - ...
 
 The following parameters are supported:
 
@@ -23,11 +25,11 @@ The following parameters are supported:
 """
 #
 # (C) Gerrit Holl, 2004
-# (C) Pywikibot team, 2004-2018
+# (C) Pywikibot team, 2004-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import argparse
 import os
@@ -79,7 +81,7 @@ class ArticleEditor(object):
             self.page = self.page.getRedirectTarget()
 
     def handle_edit_conflict(self, new):
-        """When an edit conflict occures save the new text to a file."""
+        """When an edit conflict occurs save the new text to a file."""
         fn = os.path.join(tempfile.gettempdir(), self.page.title())
         with open(fn, 'w') as fp:
             fp.write(new)
@@ -117,7 +119,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     app = ArticleEditor(*args)
     app.run()

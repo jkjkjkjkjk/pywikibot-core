@@ -20,20 +20,22 @@ it with tr(1) and upper case it again with tr(1)
 
 The following parameters are supported:
 
-&params;
-
     -always        Always commit changes without asking you to accept them
 
     -filter:       Filter the article text through this program, can be
                    given multiple times to filter through multiple programs in
                    the order which they are given
+
+The following generators and filters are supported:
+
+&params;
 """
 #
-# (C) Pywikibot team, 2008-2018
+# (C) Pywikibot team, 2008-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import os
 import pipes
@@ -48,9 +50,7 @@ from pywikibot.tools import UnicodeType
 
 # This is required for the text that is shown when you run this script
 # with the parameter -help.
-docuReplacements = {
-    '&params;': pagegenerators.parameterHelp
-}
+docuReplacements = {'&params;': pagegenerators.parameterHelp}  # noqa: N816
 
 
 class PiperBot(MultipleSitesBot, ExistingPageBot, NoRedirectPageBot,
@@ -82,7 +82,7 @@ class PiperBot(MultipleSitesBot, ExistingPageBot, NoRedirectPageBot,
         """Pipe a given text through a given program.
 
         @return: processed text after piping
-        @rtype: unicode
+        @rtype: str
         """
         if not isinstance(text, str):  # py2-py3 compatibility
             text = text.encode('utf-8')

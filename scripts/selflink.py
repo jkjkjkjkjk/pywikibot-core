@@ -3,19 +3,21 @@
 """
 This bot searches for selflinks and allows removing them.
 
-These command line parameters can be used to specify which pages to work on:
-
-&params;
+The following parameters are supported:
 
 -always           Unlink always but don't prompt you for each replacement.
                   ATTENTION: Use this with care!
+
+These command line parameters can be used to specify which pages to work on:
+
+&params;
 """
 #
-# (C) Pywikibot team, 2006-2018
+# (C) Pywikibot team, 2006-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 
@@ -25,9 +27,7 @@ from pywikibot.specialbots import BaseUnlinkBot
 
 # This is required for the text that is shown when you run this script
 # with the parameter -help.
-docuReplacements = {
-    '&params;': parameterHelp,
-}
+docuReplacements = {'&params;': parameterHelp}  # noqa: N816
 
 
 class _BoldChoice(Choice):
@@ -67,8 +67,8 @@ class SelflinkBot(MultipleSitesBot, BaseUnlinkBot):
         # https://de.wikipedia.org/w/index.php?diff=next&oldid=35721641
         if '<imagemap>' in self.current_page.text:
             pywikibot.output(
-                u'Skipping page %s because it contains an image map.'
-                % self.current_page.title(as_link=True))
+                'Skipping page {0} because it contains an image map.'
+                .format(self.current_page.title(as_link=True)))
             return
         self.unlink(self.current_page)
 
@@ -80,7 +80,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     # Process global args and prepare generator args parser
     local_args = pywikibot.handle_args(args)
@@ -103,5 +103,5 @@ def main(*args):
     return True
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

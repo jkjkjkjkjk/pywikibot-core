@@ -8,19 +8,21 @@ version of a given page where title consists of 2 or 3 titlecased words.
 
 Command-line arguments:
 
-&params;
-
 -surnames_last    Creates a "Given Names Surnames" redirect version of a
                   given page where title is "Surnames, Given Names".
 
-Example: "python pwb.py surnames_redirects -start:B"
+&params;
+
+Example:
+
+    python pwb.py surnames_redirects -start:B
 """
 #
-# (C) Pywikibot team, 2017-2018
+# (C) Pywikibot team, 2017-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from difflib import SequenceMatcher
 
@@ -28,7 +30,7 @@ import pywikibot
 from pywikibot import i18n, pagegenerators
 from pywikibot.bot import FollowRedirectPageBot, ExistingPageBot
 
-docuReplacements = {'&params;': pagegenerators.parameterHelp}
+docuReplacements = {'&params;': pagegenerators.parameterHelp}  # noqa: N816
 
 
 class SurnamesBot(ExistingPageBot, FollowRedirectPageBot):
@@ -83,11 +85,11 @@ class SurnamesBot(ExistingPageBot, FollowRedirectPageBot):
 
             new_page = pywikibot.Page(site, possible_name)
             if new_page.exists():
-                pywikibot.output('%s already exists, skipping...'
-                                 % new_page.title(as_link=True))
+                pywikibot.output('{0} already exists, skipping...'
+                                 .format(new_page.title(as_link=True)))
             else:
-                pywikibot.output('%s doesn\'t exist'
-                                 % new_page.title(as_link=True))
+                pywikibot.output("{0} doesn't exist"
+                                 .format(new_page.title(as_link=True)))
                 choice = pywikibot.input_yn(
                     'Do you want to create a redirect?')
                 if choice:
@@ -106,7 +108,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     options = {}
 
@@ -127,5 +129,5 @@ def main(*args):
         pywikibot.bot.suggest_help(missing_generator=True)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

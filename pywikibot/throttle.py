@@ -5,7 +5,7 @@
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import math
 import threading
@@ -15,7 +15,7 @@ import pywikibot
 from pywikibot import config
 from pywikibot.tools import deprecated
 
-_logger = "wiki.throttle"
+_logger = 'wiki.throttle'
 
 # global process identifier
 #
@@ -85,7 +85,7 @@ class Throttle(object):
         """Count running processes for site and set process_multiplicity."""
         global pid
         mysite = self.mysite
-        pywikibot.debug(u"Checking multiplicity: pid = %(pid)s" % globals(),
+        pywikibot.debug('Checking multiplicity: pid = %(pid)s' % globals(),
                         _logger)
         with self.lock:
             processes = []
@@ -133,7 +133,7 @@ class Throttle(object):
             try:
                 f = open(self.ctrlfilename, 'w')
                 for p in processes:
-                    f.write("%(pid)s %(time)s %(site)s\n" % p)
+                    f.write('%(pid)s %(time)s %(site)s\n' % p)
             except IOError:
                 pass
             else:
@@ -181,7 +181,10 @@ class Throttle(object):
         return thisdelay
 
     def waittime(self, write=False):
-        """Return waiting time in seconds if a query would be made right now."""
+        """Return waiting time in seconds.
+
+        The result is for a query that would be made right now.
+        """
         # Take the previous requestsize in account calculating the desired
         # delay this time
         thisdelay = self.getDelay(write=write)
@@ -227,7 +230,7 @@ class Throttle(object):
         try:
             with open(self.ctrlfilename, 'w') as f:
                 for p in processes:
-                    f.write("%(pid)s %(time)s %(site)s\n" % p)
+                    f.write('%(pid)s %(time)s %(site)s\n' % p)
         except IOError:
             return
 
@@ -240,9 +243,9 @@ class Throttle(object):
         if seconds <= 0:
             return
 
-        message = (u"Sleeping for %(seconds).1f seconds, %(now)s" % {
+        message = ('Sleeping for %(seconds).1f seconds, %(now)s' % {
             'seconds': seconds,
-            'now': time.strftime("%Y-%m-%d %H:%M:%S",
+            'now': time.strftime('%Y-%m-%d %H:%M:%S',
                                  time.localtime())
         })
         if seconds > config.noisysleep:
@@ -298,8 +301,8 @@ class Throttle(object):
         started = time.time()
         with self.lock:
             waittime = self.retry_after or lagtime or 5
-            # wait not more than 120 seconds
-            delay = min(waittime, 120)
+            # wait not more than retry_max seconds
+            delay = min(waittime, config.retry_max)
             # account for any time we waited while acquiring the lock
             wait = delay - (time.time() - started)
             self.wait(wait)

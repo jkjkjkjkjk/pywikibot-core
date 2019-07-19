@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 """Tests for the flow module."""
 #
-# (C) Pywikibot team, 2015-2018
+# (C) Pywikibot team, 2015-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from pywikibot.exceptions import NoPage
 from pywikibot.flow import Board, Topic, Post
 from pywikibot.tools import UnicodeType as unicode
 
+from tests import unittest
 from tests.aspects import (
     TestCase,
 )
@@ -168,7 +169,8 @@ class TestFlowFactoryErrors(TestCase):
         real_topic = Topic(self.site, 'Topic:Slbktgav46omarsd')
         fake_topic = Topic(self.site, 'Topic:Abcdefgh12345678')
         # Topic.from_topiclist_data
-        self.assertRaises(TypeError, Topic.from_topiclist_data, self.site, '', {})
+        self.assertRaises(TypeError, Topic.from_topiclist_data, self.site,
+                          '', {})
         self.assertRaises(TypeError, Topic.from_topiclist_data, board, 521, {})
         self.assertRaises(TypeError, Topic.from_topiclist_data, board,
                           'slbktgav46omarsd', [0, 1, 2])
@@ -224,7 +226,7 @@ class TestFlowTopic(TestCase):
         topic = Topic(self.site, 'Topic:U5y4l1rzitlplyc5')
         self.assertEqual(topic.root.uuid, 'u5y4l1rzitlplyc5')
         replies = topic.replies()
-        self.assertEqual(len(replies), 3)
+        self.assertLength(replies, 3)
         self.assertTrue(all(isinstance(reply, Post)
                             for reply in replies))
         self.assertEqual(replies[1].uuid, 'u5y5lysqcvyne4k1')
@@ -242,3 +244,10 @@ class TestFlowTopic(TestCase):
         topic_hidden = Topic(self.site, 'Topic:U5y53rn0dp6h70nw')
         self.assertFalse(topic_hidden.is_locked)
         self.assertTrue(topic_hidden.is_moderated)
+
+
+if __name__ == '__main__':  # pragma: no cover
+    try:
+        unittest.main()
+    except SystemExit:
+        pass

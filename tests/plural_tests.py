@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Test plural module."""
 #
-# (C) Pywikibot team, 2015
+# (C) Pywikibot team, 2015-2018
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from pywikibot import plural
 
@@ -36,10 +36,11 @@ class MetaPluralRulesTest(MetaTestCaseClass):
                     index = rule['plural'](num)
                     self.assertLess(index, rule['nplurals'],
                                     msg='Plural for {0} created an index {1} '
-                                        '(greater than {2})'.format(num, index,
-                                                                    rule['nplurals']))
+                                        '(greater than {2})'
+                                        .format(num, index, rule['nplurals']))
                     num_plurals.add(index)
-                self.assertCountEqual(num_plurals, list(range(rule['nplurals'])))
+                self.assertCountEqual(num_plurals,
+                                      list(range(rule['nplurals'])))
 
             # Don't already fail on creation
             if callable(rule.get('plural')):
@@ -48,7 +49,8 @@ class MetaPluralRulesTest(MetaTestCaseClass):
                 return test_static_rule
 
         for lang, rule in plural.plural_rules.items():
-            cls.add_method(dct, 'test_{0}'.format(lang), create_test(rule),
+            cls.add_method(dct, 'test_{0}'.format(lang.replace('-', '_')),
+                           create_test(rule),
                            doc_suffix='for "{0}"'.format(lang))
         return super(MetaPluralRulesTest, cls).__new__(cls, name, bases, dct)
 

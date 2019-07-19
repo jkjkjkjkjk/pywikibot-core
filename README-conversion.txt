@@ -40,8 +40,25 @@ explicit edit summary message on each put() call.
 
 There is a helper script which does a lot of changes automatically.
 Just call it:
-pwb.py maintenance/compat2core [<script to convert>]
+pwb.py compat2core [<script to convert>]
 and follow the instructions and hints.
+
+== Deprecated methods ==
+
+A lot of object methods have been deprecated; deprecated methods still work,
+but print a warning message in debug mode. You should follow the warning
+message and update your script accordingly because deprecated methods might
+be removed in future releases.
+
+To activate the debugging level just call your script with -debug option like
+-debug:bot or
+-debug:*
+
+Note: The -debug option does not warn when importing deprecated modules.
+A better ability is to set the debugging level in your user-config.py:
+debug_log = ['*'] or
+debug_log = ['bot'] or
+log += ['deprecation']
 
 == Python libraries ==
 
@@ -69,21 +86,11 @@ A third syntax allows easy conversion from a Page object to a FilePage or
 Category, or vice versa: e.g., Category(pageobj) converts a Page to a
 Category, as long as the page is in the category namespace.
 
-The following methods of the Page object have been deprecated (deprecated
-methods still work, but print a warning message in debug mode):
-
-- urlname(): replaced by Page.title(as_url=True)
-- titleWithoutNamespace(): replaced by Page.title(with_ns=False)
-- sectionFreeTitle(): replaced by Page.title(with_section=False)
-- aslink(): replaced by Page.title(as_link=True)
-- encoding(): replaced by Page.site.encoding()
-- put_async(): replaced by Page.put(asynchronous=True)
-
 The following methods of the Page object have been obsoleted and no longer
 work (but these methods don't appear to be used anywhere in the code
 distributed with the bot framework). The functionality of the two obsolete
 methods is easily replaced by using standard search-and-replace techniques.
-If you call them, they will print a warning and do nothing else:
+If you call them, they will raise an NotImplementedError exception:
 
 - removeImage()
 - replaceImage()
@@ -91,9 +98,13 @@ If you call them, they will print a warning and do nothing else:
 The following methods have had their outputs changed:
 
 - getVersionHistory(): Returns a pywikibot.Timestamp object instead of a MediaWiki one
+- templates(): Returns a list of Page objects of templates. In compat we have
+    a list of template title strings.
 - templatesWithParams(): Returns a list of tuples with two items. The first item is
     a Page object of the template, the second is a list of parameters. In compat we have
     a list of tuples with two items. The first item is the template title.
+- linkedPages(): Returns a PageGenerator of Page objects of link targets.
+    In compat we have a list of link target strings.
 
 === FilePage objects ===
 

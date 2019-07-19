@@ -3,42 +3,35 @@
 """
 A bot to remove stale protection templates from pages that are not protected.
 
-Very often sysops block the pages for a setted time but then the forget to
+Very often sysops block the pages for a set time but then the forget to
 remove the warning! This script is useful if you want to remove those useless
 warning left in these pages.
-
-Parameters
-----------
 
 These command line parameters can be used to specify which pages to work on:
 
 &params;
 
--xml              Retrieve information from a local XML dump (pages-articles
-                  or pages-meta-current, see https://dumps.wikimedia.org).
-                  Argument can also be given as "-xml:filename".
-
--protectedpages:  Check all the blocked pages; useful when you have not
-                  categories or when you have problems with them. (add the
-                  namespace after ":" where you want to check - default checks
-                  all protected pages.)
-
--moveprotected:   Same as -protectedpages, for moveprotected pages
-
 Furthermore, the following command line parameters are supported:
 
--always         Doesn't ask every time whether the bot should make the change.
-                Do it always.
+-protectedpages  Check all the blocked pages; useful when you have not
+                 categories or when you have problems with them. (add the
+                 namespace after ":" where you want to check - default checks
+                 all protected pages.)
 
--show           When the bot can't delete the template from the page (wrong
-                regex or something like that) it will ask you if it should show
-                the page on your browser.
-                (attention: pages included may give false positives!)
+-moveprotected   Same as -protectedpages, for moveprotected pages
 
--move           The bot will check if the page is blocked also for the move
-                option, not only for edit
+-always          Doesn't ask every time whether the bot should make the change.
+                 Do it always.
 
---- Example of how to use the script ---
+-show            When the bot can't delete the template from the page (wrong
+                 regex or something like that) it will ask you if it should
+                 show the page on your browser.
+                 (attention: pages included may give false positives!)
+
+-move            The bot will check if the page is blocked also for the move
+                 option, not only for edit
+
+Examples:
 
     python pwb.py blockpageschecker -always
 
@@ -51,11 +44,11 @@ Furthermore, the following command line parameters are supported:
 # (C) Monobi a.k.a. Wikihermit, 2007
 # (C) Filnik, 2007-2011
 # (C) Nicolas Dumazet (NicDumZ), 2008-2009
-# (C) Pywikibot team, 2007-2018
+# (C) Pywikibot team, 2007-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import re
 import time
@@ -87,6 +80,7 @@ templateSemiProtection = {
     'ja': [r'(?<!\<nowiki\>)\{\{(?:[Tt]emplate:|)半保護'
            r'(?:[Ss]|)(?:\|.+|)\}\}(?!\<\/nowiki\>)\s*'],
     'sr': [r'\{\{(?:[Tt]emplate:|[Зз]акључано-анон)\}\}'],
+    'ur': [r'\{\{(?:[Tt]emplate:|سانچہ:|)(نیم\sمحفوظ)\}\}']
 }
 # Regex to get the total-protection template
 templateTotalProtection = {
@@ -102,7 +96,8 @@ templateTotalProtection = {
            r'[Qq]uesta pagina'],
     'ja': [r'(?<!\<nowiki\>)\{\{(?:[Tt]emplate:|)保護(?:性急|)'
            r'(?:[Ss]|)(?:\|.+|)\}\}(?!\<\/nowiki\>)\s*'],
-    'sr': [r'\{\{(?:[Tt]emplate:|[Зз]акључано)\}\}']
+    'sr': [r'\{\{(?:[Tt]emplate:|[Зз]акључано)\}\}'],
+    'ur': [r'\{\{(?:[Tt]emplate:|سانچہ:|)(محفوظ)\}\}']
 }
 
 # Regex to get the semi-protection move template
@@ -137,6 +132,7 @@ templateNoRegex = {
            '{{Protetta}}'],
     'ja': ['{{半保護}}', '{{保護}}', '{{移動半保護}}', '{{移動保護}}', None],
     'sr': ['{{Закључано-анон}}', '{{Закључано}}', None, None, None],
+    'ur': ['{{نیم محفوظ}}', '{{محفوظ}}', None, None, None],
 }
 
 # Category where the bot will check
@@ -165,7 +161,7 @@ categoryToCheck = {
 }
 
 # Check list to block the users that haven't set their preferences
-project_inserted = ['cs', 'fr', 'it', 'ja', 'pt', 'sr', 'zh']
+project_inserted = ['cs', 'fr', 'it', 'ja', 'pt', 'sr', 'ur', 'zh']
 
 # END PREFERENCES
 
@@ -222,7 +218,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     # Loading the comments
     global categoryToCheck, project_inserted
@@ -285,7 +281,7 @@ def main(*args):
     if not generator:
         generator = []
         pywikibot.output('Loading categories...')
-        # Define the category if no other generator has been setted
+        # Define the category if no other generator has been set
         for CAT in categories:
             cat = pywikibot.Category(site, CAT)
             # Define the generator
@@ -382,7 +378,7 @@ def main(*args):
                     text, changes = re.subn(TemplateInThePage[1], TNR[1], text)
 
         elif TSP or TU:
-            # implicitely editRestr[0] = 'autoconfirmed', edit-Semi-protection
+            # implicitly editRestr[0] = 'autoconfirmed', edit-Semi-protection
             if TemplateInThePage[0] == 'autoconfirmed-total' or \
                TemplateInThePage[0] == 'unique':
                 msg = 'The page is editable only for the autoconfirmed users'
@@ -449,7 +445,7 @@ def main(*args):
                                                 text)
 
             elif TSMP or TU:
-                # implicitely moveRestr[0] = 'autoconfirmed',
+                # implicitly moveRestr[0] = 'autoconfirmed',
                 # move-semi-protection
                 if TemplateInThePage[0] == 'autoconfirmed-move' or \
                    TemplateInThePage[0] == 'unique':

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Test generate_family_files script."""
 #
-# (C) Pywikibot team, 2018
+# (C) Pywikibot team, 2018-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from random import choice
 
@@ -43,8 +43,8 @@ class TestGenerateFamilyFiles(DefaultSiteTestCase):
         self.generator_instance = FamilyTestGenerator(
             url=self.site.base_url(''), name='gff-test', dointerwiki='y')
 
-    def test_initial_attibutes(self):
-        """Test inital FamilyFileGenerator attributes."""
+    def test_initial_attributes(self):
+        """Test initial FamilyFileGenerator attributes."""
         self.assertEqual(self.generator_instance.base_url,
                          self.site.base_url(''))
         self.assertEqual(self.generator_instance.name, 'gff-test')
@@ -53,7 +53,7 @@ class TestGenerateFamilyFiles(DefaultSiteTestCase):
         self.assertIsInstance(self.generator_instance.langs, list)
 
     @unittest.expectedFailure  # T194138
-    def test_attibutes_after_run(self):
+    def test_attributes_after_run(self):
         """Test FamilyFileGenerator attributes after run()."""
         self.generator_instance.run()
         langs = [self.site.lang] + self.generator_instance.prefixes

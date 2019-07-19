@@ -10,7 +10,7 @@ Syntax:
 
     python pwb.py redirect action [-arguments ...]
 
-where action can be one of these:
+where action can be one of these
 
 :double:       Shortcut: **do**. Fix redirects which point to other redirects.
 
@@ -55,7 +55,7 @@ and arguments can be:
 -until:title   The possible last page title in each namespace. Page needs not
                exist.
 
--total:n       The maximum count of redirects to work upon. If omitted, there
+-limit:n       The maximum count of redirects to work upon. If omitted, there
                is no limit.
 
 -delete        Prompt the user whether broken redirects should be deleted (or
@@ -72,15 +72,14 @@ and arguments can be:
 #
 # (C) Daniel Herding, 2004
 # (C) Purodha Blissenbach, 2009
-# (C) xqt, 2009-2018
-# (C) Pywikibot team, 2004-2018
+# (C) xqt, 2009-2019
+# (C) Pywikibot team, 2004-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import datetime
-import sys
 
 import pywikibot
 
@@ -89,10 +88,7 @@ from pywikibot.bot import (OptionHandler, SingleSiteBot, ExistingPageBot,
                            RedirectPageBot)
 from pywikibot.exceptions import ArgumentDeprecationWarning
 from pywikibot.textlib import extract_templates_and_params_regex_simple
-from pywikibot.tools import issue_deprecation_warning
-
-if sys.version_info[0] > 2:
-    basestring = (str, )
+from pywikibot.tools import issue_deprecation_warning, UnicodeType
 
 
 def space_to_underscore(link):
@@ -112,7 +108,7 @@ class RedirectGenerator(OptionHandler):
         'offset': -1,
         'page': None,
         'start': None,
-        'total': None,
+        'limit': None,
         'until': None,
         'xml': None,
     }
@@ -127,7 +123,7 @@ class RedirectGenerator(OptionHandler):
         self.offset = self.getOption('offset')
         self.page_title = self.getOption('page')
         self.api_start = self.getOption('start')
-        self.api_number = self.getOption('total')
+        self.api_number = self.getOption('limit')
         self.api_until = self.getOption('until')
         self.xmlFilename = self.getOption('xml')
 
@@ -161,7 +157,7 @@ class RedirectGenerator(OptionHandler):
             readPagesCount += 1
             # always print status message after 10000 pages
             if readPagesCount % 10000 == 0:
-                pywikibot.output(u'%i pages read...' % readPagesCount)
+                pywikibot.output('{0} pages read...'.format(readPagesCount))
             if len(self.namespaces) > 0:
                 if pywikibot.Page(self.site, entry.title).namespace() \
                         not in self.namespaces:
@@ -180,8 +176,8 @@ class RedirectGenerator(OptionHandler):
                 except pywikibot.SiteDefinitionError as e:
                     pywikibot.log(e)
                     pywikibot.output(
-                        u'NOTE: Ignoring {0} which is a redirect ({1}) to an '
-                        u'unknown site.'.format(entry.title, target))
+                        'NOTE: Ignoring {0} which is a redirect ({1}) to an '
+                        'unknown site.'.format(entry.title, target))
                     target_link = None
                 else:
                     if target_link.site != self.site:
@@ -195,8 +191,8 @@ class RedirectGenerator(OptionHandler):
                     source = pywikibot.Link(entry.title, self.site)
                     if target_link.anchor:
                         pywikibot.output(
-                            u'HINT: %s is a redirect with a pipelink.'
-                            % entry.title)
+                            'HINT: {0} is a redirect with a pipelink.'
+                            .format(entry.title))
                     redict[space_to_underscore(source)] = (
                         space_to_underscore(target_link))
         if alsoGetPageTitles:
@@ -214,8 +210,8 @@ class RedirectGenerator(OptionHandler):
             if self.api_number:
                 gen.set_maximum_items(self.api_number)
             for p in gen:
-                done = (self.api_until and
-                        p.title(with_ns=False) >= self.api_until)
+                done = (self.api_until
+                        and p.title(with_ns=False) >= self.api_until)
                 if done:
                     return
                 yield p
@@ -265,9 +261,9 @@ class RedirectGenerator(OptionHandler):
                                             'pageids': apiQ})
             data = gen.submit()
             if 'error' in data:
-                raise RuntimeError("API query error: %s" % data)
+                raise RuntimeError('API query error: {0}'.format(data))
             if data == [] or 'query' not in data:
-                raise RuntimeError("No results given.")
+                raise RuntimeError('No results given.')
             pages = {}
             redirects = {x['from']: x['to']
                          for x in data['query']['redirects']}
@@ -310,7 +306,7 @@ class RedirectGenerator(OptionHandler):
         elif self.xmlFilename:
             # retrieve information from XML dump
             pywikibot.output(
-                u'Getting a list of all redirects and of all page titles...')
+                'Getting a list of all redirects and of all page titles...')
             redirs, pageTitles = self.get_redirects_from_dump(
                 alsoGetPageTitles=True)
             for (key, value) in redirs.items():
@@ -340,15 +336,14 @@ class RedirectGenerator(OptionHandler):
                             break
         elif self.xmlFilename:
             redict = self.get_redirects_from_dump()
-            num = 0
-            for (key, value) in redict.items():
-                num += 1
+            total = len(redict)
+            for num, (key, value) in enumerate(redict.items(), start=1):
                 # check if the value - that is, the redirect target - is a
                 # redirect as well
                 if num > self.offset and value in redict:
+                    pywikibot.output('\nChecking redirect {0} of {1}...'
+                                     .format(num, total))
                     yield key
-                    pywikibot.output(u'\nChecking redirect %i of %i...'
-                                     % (num + 1, len(redict)))
         elif self.page_title:
             yield self.page_title
         else:
@@ -361,14 +356,14 @@ class RedirectGenerator(OptionHandler):
         # this will run forever, until user interrupts it
         if self.offset <= 0:
             self.offset = 1
-        start = (datetime.datetime.utcnow() -
-                 datetime.timedelta(0, self.offset * 3600))
+        start = (datetime.datetime.utcnow()
+                 - datetime.timedelta(0, self.offset * 3600))
         # self.offset hours ago
-        offset_time = start.strftime("%Y%m%d%H%M%S")
+        offset_time = start.strftime('%Y%m%d%H%M%S')
         pywikibot.output('Retrieving {0} moved pages...'
                          ''.format(str(self.api_number)
                                    if self.api_number is not None else 'all'))
-        move_gen = self.site.logevents(logtype="move", start=offset_time)
+        move_gen = self.site.logevents(logtype='move', start=offset_time)
         if self.api_number:
             move_gen.set_maximum_items(self.api_number)
         pywikibot.output('.', newline=False)
@@ -407,23 +402,22 @@ class RedirectRobot(SingleSiteBot, ExistingPageBot, RedirectPageBot):
     def __init__(self, action, **kwargs):
         """Initializer."""
         self.availableOptions.update({
-            'total': float('inf'),
+            'limit': float('inf'),
             'delete': False,
             'sdtemplate': None,
         })
         super(RedirectRobot, self).__init__(**kwargs)
         self.repo = self.site.data_repository()
         self.is_repo = self.repo if self.repo == self.site else None
-        self.exiting = False
         self.sdtemplate = self.get_sd_template()
 
-        # connect the action treat
+        # connect the action treat to treat_page method called by treat
         if action == 'double':
-            self.action_treat = self.fix_1_double_redirect
+            self.treat_page = self.fix_1_double_redirect
         elif action == 'broken':
-            self.action_treat = self.delete_1_broken_redirect
+            self.treat_page = self.delete_1_broken_redirect
         elif action == 'both':
-            self.action_treat = self.fix_double_or_delete_broken_redirect
+            self.treat_page = self.fix_double_or_delete_broken_redirect
         else:
             raise NotImplementedError('No valid action "{0}" found.'
                                       ''.format(action))
@@ -458,7 +452,7 @@ class RedirectRobot(SingleSiteBot, ExistingPageBot, RedirectPageBot):
 
     def init_page(self, item):
         """Ensure that we process page objects."""
-        if isinstance(item, basestring):
+        if isinstance(item, UnicodeType):
             item = pywikibot.Page(self.site, item)
         elif isinstance(item, tuple):
             redir_name, code, target, final = item
@@ -474,8 +468,8 @@ class RedirectRobot(SingleSiteBot, ExistingPageBot, RedirectPageBot):
         if page.site.logged_in(sysop=True):
             page.delete(reason, prompt=False)
         elif self.sdtemplate:
-            pywikibot.output(u"No sysop in user-config.py, "
-                             u"put page to speedy deletion.")
+            pywikibot.output('No sysop in user-config.py, '
+                             'put page to speedy deletion.')
             try:
                 content = page.get(get_redirect=True)
             except pywikibot.SectionError:
@@ -483,29 +477,30 @@ class RedirectRobot(SingleSiteBot, ExistingPageBot, RedirectPageBot):
                                               page.title(with_section=False))
                 content = content_page.get(get_redirect=True)
             content = self.sdtemplate + '\n' + content
-            try:
-                page.put(content, reason)
-            except pywikibot.PageSaveRelatedError as e:
-                pywikibot.error(e)
+            self.userPut(page, page.text, content, summary=reason,
+                         ignore_save_related_errors=True,
+                         ignore_server_errors=True)
 
-    def delete_1_broken_redirect(self, redir_page):
+    def delete_1_broken_redirect(self):
         """Treat one broken redirect."""
+        redir_page = self.current_page
         done = not self.getOption('delete')
         try:
             targetPage = redir_page.getRedirectTarget()
-        except pywikibot.CircularRedirect:
-            pywikibot.output('%s is a circular redirect.' % redir_page.title())
-        except pywikibot.InvalidTitle:
+        except (pywikibot.CircularRedirect,
+                pywikibot.InvalidTitle,
+                RuntimeError):
             pywikibot.exception()
         except pywikibot.InterwikiRedirectPage:
-            pywikibot.output('%s is on another site.' % redir_page.title())
+            pywikibot.output('{0} is on another site.'
+                             .format(redir_page.title()))
         else:
             try:
                 targetPage.get()
             except pywikibot.BadTitle as e:
                 pywikibot.warning(
-                    u'Redirect target %s is not a valid page title.'
-                    % str(e)[10:])
+                    'Redirect target {0} is not a valid page title.'
+                    .format(str(e)[10:]))
             except pywikibot.InvalidTitle:
                 pywikibot.exception()
             except pywikibot.NoPage:
@@ -517,14 +512,14 @@ class RedirectRobot(SingleSiteBot, ExistingPageBot, RedirectPageBot):
                 if movedTarget:
                     if not movedTarget.exists():
                         # FIXME: Test to another move
-                        pywikibot.output(u'Target page %s does not exist'
-                                         % (movedTarget))
+                        pywikibot.output('Target page {0} does not exist'
+                                         .format(movedTarget))
                     elif redir_page == movedTarget:
                         pywikibot.output(
                             'Redirect to target page forms a redirect loop')
                     else:
-                        pywikibot.output(u'%s has been moved to %s'
-                                         % (redir_page, movedTarget))
+                        pywikibot.output('{0} has been moved to {1}'
+                                         .format(redir_page, movedTarget))
                         reason = i18n.twtranslate(self.site,
                                                   'redirect-fix-broken-moved',
                                                   {'to': movedTarget.title(
@@ -532,80 +527,67 @@ class RedirectRobot(SingleSiteBot, ExistingPageBot, RedirectPageBot):
                         content = redir_page.get(get_redirect=True)
                         redir_page.set_redirect_target(
                             movedTarget, keep_section=True, save=False)
-                        pywikibot.showDiff(content, redir_page.text)
-                        pywikibot.output(u'Summary - %s' % reason)
-                        if self.user_confirm(
-                                u'Redirect target %s has been moved to %s.\n'
-                                u'Do you want to fix %s?'
-                                % (targetPage, movedTarget, redir_page)):
-                            try:
-                                redir_page.save(reason)
-                            except pywikibot.NoUsername:
-                                pywikibot.output(u"Page [[%s]] not saved; "
-                                                 u"sysop privileges required."
-                                                 % redir_page.title())
-                            except pywikibot.LockedPage:
-                                pywikibot.output(u'%s is locked.'
-                                                 % redir_page.title())
-                            except pywikibot.PageSaveRelatedError:
-                                pywikibot.exception()
-                            else:
-                                done = True
+                        pywikibot.output('Summary - ' + reason)
+                        done = self.userPut(redir_page, content,
+                                            redir_page.text, summary=reason,
+                                            ignore_save_related_errors=True,
+                                            ignore_server_errors=True)
                 if not done and self.user_confirm(
-                        u'Redirect target %s does not exist.\n'
-                        u'Do you want to delete %s?'
-                        % (targetPage.title(as_link=True),
-                           redir_page.title(as_link=True))):
+                        'Redirect target {0} does not exist.\n'
+                        'Do you want to delete {1}?'
+                        .format(targetPage.title(as_link=True),
+                                redir_page.title(as_link=True))):
                     self.delete_redirect(redir_page, 'redirect-remove-broken')
                 elif not (self.getOption('delete') or movedTarget):
                     pywikibot.output(
                         'Cannot fix or delete the broken redirect')
             except pywikibot.IsRedirectPage:
                 pywikibot.output(
-                    "Redirect target {0} is also a redirect! {1}".format(
+                    'Redirect target {0} is also a redirect! {1}'.format(
                         targetPage.title(as_link=True),
                         "Won't delete anything."
-                        if self.getOption('delete') else "Skipping."))
+                        if self.getOption('delete') else 'Skipping.'))
             else:
                 # we successfully get the target page, meaning that
                 # it exists and is not a redirect: no reason to touch it.
                 pywikibot.output(
-                    "Redirect target {0} does exist! {1}".format(
+                    'Redirect target {0} does exist! {1}'.format(
                         targetPage.title(as_link=True),
                         "Won't delete anything."
-                        if self.getOption('delete') else "Skipping."))
+                        if self.getOption('delete') else 'Skipping.'))
 
-    def fix_1_double_redirect(self, redir):
+    def fix_1_double_redirect(self):
         """Treat one double redirect."""
-        newRedir = redir
+        newRedir = redir = self.current_page
         redirList = []  # bookkeeping to detect loops
         while True:
-            redirList.append(u'%s:%s' % (newRedir.site.lang,
-                                         newRedir.title(with_section=False)))
+            redirList.append('{0}:{1}'
+                             .format(newRedir.site.lang,
+                                     newRedir.title(with_section=False)))
             try:
                 targetPage = newRedir.getRedirectTarget()
             except pywikibot.IsNotRedirectPage:
                 if len(redirList) == 2:
                     pywikibot.output(
-                        u'Skipping: Redirect target %s is not a redirect.'
-                        % newRedir.title(as_link=True))
+                        'Skipping: Redirect target {0} is not a redirect.'
+                        .format(newRedir.title(as_link=True)))
                     break  # do nothing
-                # else target found
             except pywikibot.SectionError:
                 pywikibot.warning(
-                    u"Redirect target section %s doesn't exist."
-                    % newRedir.title(as_link=True))
+                    "Redirect target section {0} doesn't exist."
+                    .format(newRedir.title(as_link=True)))
             except (pywikibot.CircularRedirect,
                     pywikibot.InterwikiRedirectPage,
-                    pywikibot.UnsupportedPage) as e:
-                pywikibot.exception(e)
-                pywikibot.output(u"Skipping %s." % newRedir)
+                    pywikibot.UnsupportedPage,
+                    RuntimeError):
+                pywikibot.exception()
+                pywikibot.output('Skipping {0}.'.format(newRedir))
                 break
             except pywikibot.BadTitle as e:
                 # str(e) is in the format 'BadTitle: [[Foo]]'
                 pywikibot.warning(
-                    u'Redirect target %s is not a valid page title.'
-                    % str(e)[10:])
+                    'Redirect target {0} is not a valid page title.'
+                    .format(str(e)[10:]))
                 break
             except pywikibot.NoPage:
                 if self.getOption('always'):
@@ -618,13 +600,13 @@ class RedirectRobot(SingleSiteBot, ExistingPageBot, RedirectPageBot):
                         "Redirect target {} doesn't exist."
                         .format(newRedir.title(as_link=True)))
             except pywikibot.ServerError:
-                pywikibot.output(u'Skipping due to server error: '
-                                 u'No textarea found')
+                pywikibot.output('Skipping due to server error: '
+                                 'No textarea found')
                 break
             else:
                 pywikibot.output(
-                    u'   Links to: %s.'
-                    % targetPage.title(as_link=True))
+                    '   Links to: {0}.'
+                    .format(targetPage.title(as_link=True)))
                 try:
                     mw_msg = targetPage.site.mediawiki_message(
                         'wikieditor-toolbar-tool-redirect-example')
@@ -633,16 +615,16 @@ class RedirectRobot(SingleSiteBot, ExistingPageBot, RedirectPageBot):
                 else:
                     if targetPage.title() == mw_msg:
                         pywikibot.output(
-                            u"Skipping toolbar example: Redirect source is "
-                            u"potentially vandalized.")
+                            'Skipping toolbar example: Redirect source is '
+                            'potentially vandalized.')
                         break
                 # watch out for redirect loops
-                if redirList.count(u'%s:%s'
-                                   % (targetPage.site.lang,
-                                      targetPage.title(with_section=False))):
+                if redirList.count('{0}:{1}'.format(
+                    targetPage.site.lang,
+                        targetPage.title(with_section=False))):
                     pywikibot.warning(
-                        u'Redirect target %s forms a redirect loop.'
-                        % targetPage.title(as_link=True))
+                        'Redirect target {0} forms a redirect loop.'
+                        .format(targetPage.title(as_link=True)))
                     break  # FIXME: doesn't work. edits twice!
                     if self.getOption('delete'):
                         # Delete the two redirects
@@ -655,14 +637,14 @@ class RedirectRobot(SingleSiteBot, ExistingPageBot, RedirectPageBot):
                 else:  # redirect target found
                     if targetPage.isStaticRedirect():
                         pywikibot.output(
-                            u"   Redirect target is STATICREDIRECT.")
+                            '   Redirect target is STATICREDIRECT.')
                     else:
                         newRedir = targetPage
                         continue
             try:
                 oldText = redir.get(get_redirect=True)
             except pywikibot.BadTitle:
-                pywikibot.output(u"Bad Title Error")
+                pywikibot.output('Bad Title Error')
                 break
             if self.is_repo and redir.namespace() == self.repo.item_namespace:
                 redir = pywikibot.ItemPage(self.repo, redir.title())
@@ -675,45 +657,25 @@ class RedirectRobot(SingleSiteBot, ExistingPageBot, RedirectPageBot):
             summary = i18n.twtranslate(self.site, 'redirect-fix-double',
                                        {'to': targetPage.title(as_link=True)}
                                        )
-            pywikibot.showDiff(oldText, redir.text)
-            if self.user_confirm(u'Do you want to accept the changes?'):
-                try:
-                    redir.save(summary)
-                except pywikibot.LockedPage:
-                    pywikibot.output(u'%s is locked.' % redir.title())
-                except pywikibot.SpamfilterError as error:
-                    pywikibot.output(
-                        u"Saving page [[%s]] prevented by spam filter: %s"
-                        % (redir.title(), error.url))
-                except pywikibot.PageNotSaved as error:
-                    pywikibot.output(u"Saving page [[%s]] failed: %s"
-                                     % (redir.title(), error))
-                except pywikibot.NoUsername:
-                    pywikibot.output(
-                        u"Page [[%s]] not saved; sysop privileges required."
-                        % redir.title())
-                except pywikibot.Error as error:
-                    pywikibot.output(
-                        u"Unexpected error occurred trying to save [[%s]]: %s"
-                        % (redir.title(), error))
+            self.userPut(redir, oldText, redir.text, summary=summary,
+                         ignore_save_related_errors=True,
+                         ignore_server_errors=True)
             break
 
-    def fix_double_or_delete_broken_redirect(self, page):
+    def fix_double_or_delete_broken_redirect(self):
         """Treat one broken or double redirect."""
-        if page._redirect_type == 1:
-            return
-        if page._redirect_type == 0:
-            self.delete_1_broken_redirect(page)
-        else:
-            self.fix_1_double_redirect(page)
+        if self.current_page._redirect_type == 0:
+            self.delete_1_broken_redirect()
+        elif self.current_page._redirect_type != 1:
+            self.fix_1_double_redirect()
 
-    def treat_page(self):
-        """Treat current page."""
-        if self._treat_counter >= self.getOption('total'):
-            pywikibot.output('\nNumber of pages reached the total limit. '
+    def treat(self, page):
+        """Treat a page."""
+        if self._treat_counter >= self.getOption('limit'):
+            pywikibot.output('\nNumber of pages reached the limit. '
                              'Script terminated.')
-            self.quit()
-        self.action_treat(self.current_page)
+            self.stop()
+        super(RedirectRobot, self).treat(page)
 
 
 def main(*args):
@@ -723,7 +685,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     options = {}
     gen_options = {}
@@ -745,8 +707,6 @@ def main(*args):
             action = arg
         elif option in ('always', 'delete'):
             options[option] = True
-        elif option == 'total':
-            options[option] = gen_options[option] = int(value)
         elif option == 'sdtemplate':
             options['sdtemplate'] = value or pywikibot.input(
                 'Which speedy deletion template to use?')
@@ -777,13 +737,15 @@ def main(*args):
             gen_options[option] = int(value)
         elif option in ('page', 'start', 'until'):
             gen_options[option] = value
-        # deprecated or unknown options
-        elif option == 'step':
-            issue_deprecation_warning('The usage of "{0}"'.format(arg),
-                                      2, ArgumentDeprecationWarning,
-                                      since='20160210')
+        elif option in ('limit', 'total'):
+            options['limit'] = gen_options['limit'] = int(value)
+            if option == 'total':
+                issue_deprecation_warning('The usage of "{0}"'.format(arg),
+                                          '-limit', 2,
+                                          ArgumentDeprecationWarning,
+                                          since='20190120')
         else:
-            pywikibot.output(u'Unknown argument: %s' % arg)
+            pywikibot.output('Unknown argument: ' + arg)
 
     if namespaces:
         gen_options['namespaces'] = namespaces

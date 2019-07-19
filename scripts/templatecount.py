@@ -6,7 +6,9 @@ Display the list of pages transcluding a given list of templates.
 It can also be used to simply count the number of pages (rather than
 listing each individually).
 
-Syntax: python pwb.py templatecount options templates
+Syntax:
+
+    python pwb.py templatecount options templates
 
 Command line options:
 
@@ -32,12 +34,12 @@ Lists all the category pages that transclude {{cfd}} and {{cfdu}}:
 
 """
 #
-# (C) Pywikibot team, 2006-2017
-# (C) xqt, 2009-2016
+# (C) Pywikibot team, 2006-2018
+# (C) xqt, 2009-2018
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import datetime
 
@@ -92,14 +94,14 @@ class TemplateCountRobot(object):
         template_dict = cls.template_dict(templates, namespaces)
         pywikibot.stdout('\nList of pages transcluding templates:')
         for key in templates:
-            pywikibot.output(u'* %s' % key)
+            pywikibot.output('* ' + key)
         pywikibot.stdout('-' * 36)
         total = 0
         for key in template_dict:
             for page in template_dict[key]:
                 pywikibot.stdout(page.title())
                 total += 1
-        pywikibot.output(u'Total page count: %d' % total)
+        pywikibot.output('Total page count: {0}'.format(total))
         pywikibot.stdout('Report generated on {0}'
                          ''.format(datetime.datetime.utcnow().isoformat()))
 
@@ -154,7 +156,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     operation = None
     args_list = []
@@ -181,9 +183,9 @@ def main(*args):
 
     if 'reflist' in args_list:
         pywikibot.output(
-            u'NOTE: it will take a long time to count "reflist".')
+            'NOTE: it will take a long time to count "reflist".')
         choice = pywikibot.input_choice(
-            u'Proceed anyway?',
+            'Proceed anyway?',
             [('yes', 'y'), ('no', 'n'), ('skip', 's')], 'y',
             automatic_quit=False)
         if choice == 's':
@@ -191,11 +193,11 @@ def main(*args):
         elif choice == 'n':
             return
 
-    if operation == "count":
+    if operation == 'count':
         robot.countTemplates(args_list, namespaces)
-    elif operation == "list":
+    elif operation == 'list':
         robot.listTemplates(args_list, namespaces)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

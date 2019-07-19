@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Tests for xmlreader module."""
 #
-# (C) Pywikibot team, 2009-2015
+# (C) Pywikibot team, 2009-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from pywikibot import xmlreader
 
@@ -34,21 +34,21 @@ class ExportDotThreeTestCase(XmlReaderTestCase):
     def test_XmlDumpAllRevs(self):
         """Test loading all revisions."""
         pages = self._get_entries('article-pear.xml', allrevisions=True)
-        self.assertEqual(4, len(pages))
-        self.assertEqual(u"Automated conversion", pages[0].comment)
-        self.assertEqual(u"Pear", pages[0].title)
-        self.assertEqual(u"24278", pages[0].id)
+        self.assertLength(pages, 4)
+        self.assertEqual('Automated conversion', pages[0].comment)
+        self.assertEqual('Pear', pages[0].title)
+        self.assertEqual('24278', pages[0].id)
         self.assertTrue(pages[0].text.startswith('Pears are [[tree]]s of'))
-        self.assertEqual(u"Quercusrobur", pages[1].username)
-        self.assertEqual(u"Pear", pages[0].title)
+        self.assertEqual('Quercusrobur', pages[1].username)
+        self.assertEqual('Pear', pages[0].title)
 
     def test_XmlDumpFirstRev(self):
         """Test loading the first revision."""
-        pages = self._get_entries("article-pear.xml", allrevisions=False)
-        self.assertEqual(1, len(pages))
-        self.assertEqual(u"Automated conversion", pages[0].comment)
-        self.assertEqual(u"Pear", pages[0].title)
-        self.assertEqual(u"24278", pages[0].id)
+        pages = self._get_entries('article-pear.xml', allrevisions=False)
+        self.assertLength(pages, 1)
+        self.assertEqual('Automated conversion', pages[0].comment)
+        self.assertEqual('Pear', pages[0].title)
+        self.assertEqual('24278', pages[0].id)
         self.assertTrue(pages[0].text.startswith('Pears are [[tree]]s of'))
         self.assertTrue(not pages[0].isredirect)
 
@@ -56,7 +56,8 @@ class ExportDotThreeTestCase(XmlReaderTestCase):
         """Test XmlDump correctly parsing whether a page is a redirect."""
         pages = self._get_entries('article-pyrus.xml', allrevisions=True)
         pages = [r for r in
-                 xmlreader.XmlDump(join_xml_data_path('article-pyrus.xml')).parse()]
+                 xmlreader.XmlDump(
+                     join_xml_data_path('article-pyrus.xml')).parse()]
         self.assertTrue(pages[0].isredirect)
 
     def _compare(self, previous, variant, all_revisions):
@@ -92,7 +93,7 @@ class ExportDotTenTestCase(XmlReaderTestCase):
     def test_pair(self):
         """Test reading the main page/user talk page pair file."""
         entries = self._get_entries('pair-0.10.xml', allrevisions=True)
-        self.assertEqual(4, len(entries))
+        self.assertLength(entries, 4)
         self.assertTrue(all(entry.username == 'Carlossuarez46'
                             for entry in entries))
         self.assertTrue(all(entry.isredirect is False for entry in entries))
@@ -100,17 +101,17 @@ class ExportDotTenTestCase(XmlReaderTestCase):
         articles = entries[0:2]
         talks = entries[2:4]
 
-        self.assertEqual(2, len(articles))
-        self.assertTrue(all(entry.id == "19252820" for entry in articles))
-        self.assertTrue(all(entry.title == u"Çullu, Agdam"
+        self.assertLength(articles, 2)
+        self.assertTrue(all(entry.id == '19252820' for entry in articles))
+        self.assertTrue(all(entry.title == 'Çullu, Agdam'
                             for entry in articles))
-        self.assertTrue(all(u'Çullu, Quzanlı' in entry.text
+        self.assertTrue(all('Çullu, Quzanlı' in entry.text
                             for entry in articles))
-        self.assertEqual(articles[0].text, u'#REDIRECT [[Çullu, Quzanlı]]')
+        self.assertEqual(articles[0].text, '#REDIRECT [[Çullu, Quzanlı]]')
 
-        self.assertEqual(2, len(talks))
-        self.assertTrue(all(entry.id == "19252824" for entry in talks))
-        self.assertTrue(all(entry.title == u"Talk:Çullu, Agdam"
+        self.assertLength(talks, 2)
+        self.assertTrue(all(entry.id == '19252824' for entry in talks))
+        self.assertTrue(all(entry.title == 'Talk:Çullu, Agdam'
                             for entry in talks))
         self.assertEqual(talks[1].text, '{{DisambigProject}}')
         self.assertEqual(talks[1].comment, 'proj')
@@ -118,11 +119,12 @@ class ExportDotTenTestCase(XmlReaderTestCase):
     def test_edit_summary_decoding(self):
         """Test edit summaries are decoded."""
         entries = self._get_entries('pair-0.10.xml', allrevisions=True)
-        articles = [entry for entry in entries if entry.ns == "0"]
+        articles = [entry for entry in entries if entry.ns == '0']
 
         # It does not decode the edit summary
-        self.assertEqual(articles[0].comment,
-                         u'moved [[Çullu, Agdam]] to [[Çullu, Quzanlı]]:&#32;dab')
+        self.assertEqual(
+            articles[0].comment,
+            'moved [[Çullu, Agdam]] to [[Çullu, Quzanlı]]:&#32;dab')
 
 
 if __name__ == '__main__':  # pragma: no cover

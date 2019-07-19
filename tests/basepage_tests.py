@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Tests for BasePage subclasses."""
 #
-# (C) Pywikibot team, 2015-2018
+# (C) Pywikibot team, 2015-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from pywikibot.page import BasePage
 
@@ -57,7 +57,7 @@ class BasePageLoadRevisionsCachingTestBase(BasePageTestBase):
 
         self.assertTrue(hasattr(page, '_revid'))
         self.assertTrue(hasattr(page, '_revisions'))
-        self.assertEqual(len(page._revisions), 1)
+        self.assertLength(page._revisions, 1)
         self.assertIn(page._revid, page._revisions)
 
         self.assertFalse(hasattr(page, '_text'))
@@ -69,7 +69,7 @@ class BasePageLoadRevisionsCachingTestBase(BasePageTestBase):
         self.assertFalse(hasattr(page, '_text'))
         self.assertIsNotNone(page._latest_cached_revision())
 
-        # Verify that calling .text doesnt call loadrevisions again
+        # Verify that calling .text doesn't call loadrevisions again
         loadrevisions = self.site.loadrevisions
         try:
             self.site.loadrevisions = None

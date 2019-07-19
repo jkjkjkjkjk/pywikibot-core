@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Tests for scripts/protect.py."""
 #
-# (C) Pywikibot team, 2014-2015
+# (C) Pywikibot team, 2014-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 import pywikibot.page
@@ -31,11 +31,11 @@ class TestProtectionBot(ScriptMainTestCase):
         protect.main('-page:User:Sn1per/ProtectTest1', '-always',
                      '-unprotect', '-summary=Pywikibot protect.py unit tests')
         page = pywikibot.Page(site, 'User:Sn1per/ProtectTest1')
-        self.assertEqual(len(list(page.protection())), 0)
+        self.assertIsEmpty(list(page.protection()))
         protect.main('-page:User:Sn1per/ProtectTest1', '-always',
                      '-default', '-summary=Pywikibot protect.py unit tests')
         page = pywikibot.Page(site, 'User:Sn1per/ProtectTest1')
-        self.assertEqual(len(list(page.protection())), 2)
+        self.assertLength(list(page.protection()), 2)
 
     def test_summary(self):
         """Test automatic (un)protection summary on the test wiki."""

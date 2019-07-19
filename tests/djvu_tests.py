@@ -3,26 +3,23 @@
 """Unit tests for djvu.py."""
 
 #
-# (C) Pywikibot team, 2015-2017
+# (C) Pywikibot team, 2015-2019
 #
 # Distributed under the terms of the MIT license.
 #
 
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import os
 import subprocess
 
 from pywikibot.tools.djvu import DjVuFile
-from pywikibot.tools import PY2
+from pywikibot.tools import PY2, UnicodeType
 
 from tests import join_data_path, create_path_func
 from tests.aspects import unittest, TestCase
 
 join_djvu_data_path = create_path_func(join_data_path, 'djvu')
-
-if not PY2:
-    unicode = str
 
 
 class TestDjVuFile(TestCase):
@@ -51,7 +48,7 @@ class TestDjVuFile(TestCase):
     def test_repr_method(self):
         """Test __repr__() method."""
         djvu = DjVuFile(self.file_djvu)
-        expected = "pywikibot.tools.djvu.DjVuFile('%s')" % self.file_djvu
+        expected = "pywikibot.tools.djvu.DjVuFile('{}')".format(self.file_djvu)
         if PY2:
             expected = expected.encode('utf-8')
         self.assertEqual(repr(djvu), expected)
@@ -59,7 +56,7 @@ class TestDjVuFile(TestCase):
     def test_str_method(self):
         """Test __str__() method."""
         djvu = DjVuFile(self.file_djvu)
-        expected = "DjVuFile('%s')" % self.file_djvu
+        expected = "DjVuFile('{}')".format(self.file_djvu)
         if PY2:
             expected = expected.encode('utf-8')
         self.assertEqual(str(djvu), expected)
@@ -67,13 +64,13 @@ class TestDjVuFile(TestCase):
     def test_unicode_method(self):
         """Test __unicode__() method."""
         djvu = DjVuFile(self.file_djvu)
-        expected = "DjVuFile('%s')" % self.file_djvu
+        expected = "DjVuFile('{}')".format(self.file_djvu)
         if PY2:
-            self.assertEqual(unicode(djvu), expected)
+            self.assertEqual(UnicodeType(djvu), expected)
         else:
             self.assertEqual(djvu.__unicode__(), expected)
 
-    def test_file_existance(self):
+    def test_file_existence(self):
         """Test file existence checks."""
         djvu = DjVuFile(self.file_djvu)
         self.assertEqual(os.path.abspath(self.file_djvu), djvu.file)

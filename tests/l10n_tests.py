@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """Test valid templates."""
 #
-# (C) Pywikibot team, 2015-2018
+# (C) Pywikibot team, 2015-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
+
+import os
 
 import pywikibot
 from pywikibot import i18n
@@ -38,14 +40,14 @@ class TestValidTemplateMeta(MetaTestCaseClass):
                     # check whether the message contains a template
                     templates = extract_templates_and_params_regex_simple(msg)
                     self.assertIsInstance(templates, list)
-                    self.assertGreater(len(templates), 0)
+                    self.assertIsNotEmpty(templates)
 
                     # known problem
                     if site.code == 'simple':
                         raise unittest.SkipTest(
                             "'simple' wiki has 'en' language code but "
-                            "missing template. Must be solved by the "
-                            "corresponding script.")
+                            'missing template. Must be solved by the '
+                            'corresponding script.')
                     # check whether template exists
                     title = templates[0][0]
                     page = pywikibot.Page(site, title, ns=10)
@@ -59,10 +61,6 @@ class TestValidTemplateMeta(MetaTestCaseClass):
             return test_template
 
         # create test methods for package messages processed by unittest
-        if not i18n.messages_available():
-            raise unittest.SkipTest("i18n messages package '%s' not available."
-                                    % i18n._messages_package_name)
-
         site = pywikibot.Site(dct['code'], dct['family'])
         codes = site.family.languages_by_size
         del site
@@ -70,7 +68,8 @@ class TestValidTemplateMeta(MetaTestCaseClass):
             keys = i18n.twget_keys(package)
             for code in codes:
                 current_site = pywikibot.Site(code, dct['family'])
-                test_name = ("test_%s_%s" % (package, code)).replace('-', '_')
+                test_name = ('test_{}_{}'
+                             .format(package, code)).replace('-', '_')
                 cls.add_method(
                     dct, test_name, test_method(current_site),
                     doc_suffix='{0} and language {1}'.format(
@@ -89,6 +88,14 @@ class TestValidTemplate(TestCase):
     family = 'wikipedia'
     code = 'en'
 
+    @classmethod
+    def setUpClass(cls):
+        """Skip test gracefully if i18n package is missing."""
+        super(TestValidTemplate, cls).setUpClass()
+        if not i18n.messages_available():
+            raise unittest.SkipTest("i18n messages package '{}' not available."
+                                    .format(i18n._messages_package_name))
+
 
 class TestSites(TestCase):
 
@@ -100,13 +107,22 @@ class TestSites(TestCase):
     def test_valid_sites(self):
         """Test whether language key has a corresponding site."""
         codes = self.site.family.languages_by_size
-        languages = [pywikibot.Site(code, self.family).lang for code in codes]
+        languages = {pywikibot.Site(code, self.family).lang for code in codes}
+        # langs used by foreign wikis
+        languages.update(('pt-br', 'zh-tw'))
         for package in PACKAGES:
             keys = i18n.twget_keys(package)
             for key in keys:
-                self.assertIn(key, languages,
-                              "'%s' - json key '%s' is not a site language"
-                              % (package, key))
+                with self.subTest(package=package, key=key):
+                    self.assertIn(key, languages,
+                                  "json key '{}' is not a site language"
+                                  .format(key))
+
+
+def setUpModule():  # noqa: N802
+    """Skip Travis tests if PYWIKIBOT_NO_L10N_TESTS variable is set."""
+    if os.environ.get('PYWIKIBOT_NO_L10N_TESTS', '0') == '1':
+        raise unittest.SkipTest('L10N tests disabled.')
 
 
 if __name__ == '__main__':  # pragma: no cover

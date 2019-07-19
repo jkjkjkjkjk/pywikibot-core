@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 """Utility to show pywikibot colors."""
 #
-# (C) Pywikibot team, 2016
+# (C) Pywikibot team, 2016-2018
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 
@@ -37,7 +37,7 @@ def main():
                 line += ' '
                 line += color_format('{color}{0}{default}',
                                      fg_col.ljust(max_len_fg_colors),
-                                     color='%s;%s' % (fg_col, bg_col))
+                                     color='{};{}'.format(fg_col, bg_col))
 
             line = '{0} {1}'.format(bg_col.ljust(max_len_bc_color), line)
             pywikibot.output(line)

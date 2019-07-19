@@ -27,24 +27,23 @@ The following command line parameters are supported:
 """
 #
 # (C) Multichill, 2008-2011
-# (C) Pywikibot team, 2008-2018
+# (C) Pywikibot team, 2008-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import re
 import socket
-import sys
 import xml.etree.ElementTree
 
 import pywikibot
 
 from pywikibot import pagegenerators, textlib
 from pywikibot.comms.http import fetch
-from pywikibot.tools import deprecated
+from pywikibot.tools import deprecated, PY2
 
-if sys.version_info[0] > 2:
+if not PY2:
     from urllib.parse import urlencode
 else:
     from urllib import urlencode
@@ -81,29 +80,32 @@ def categorizeImages(generator, onlyFilter, onlyUncat):
 
     """
     for page in generator:
-        if page.exists() and (page.namespace() == 6) and \
-           (not page.isRedirectPage()):
-            imagepage = pywikibot.FilePage(page.site, page.title())
-            pywikibot.output('Working on ' + imagepage.title())
+        if not page.exists() or page.namespace() != 6 or page.isRedirectPage():
+            continue
 
-            if onlyUncat and not('Uncategorized' in imagepage.templates()):
-                pywikibot.output('No Uncategorized template found')
-            else:
-                currentCats = getCurrentCats(imagepage)
-                if onlyFilter:
-                    commonshelperCats = []
-                    usage = []
-                    galleries = []
-                else:
-                    (commonshelperCats, usage,
-                     galleries) = getCommonshelperCats(imagepage)
-                newcats = applyAllFilters(commonshelperCats + currentCats)
+        imagepage = pywikibot.FilePage(page.site, page.title())
+        pywikibot.output('Working on ' + imagepage.title())
 
-                if len(newcats) > 0 and not(set(currentCats) == set(newcats)):
-                    for cat in newcats:
-                        pywikibot.output(' Found new cat: ' + cat)
-                    saveImagePage(imagepage, newcats, usage, galleries,
-                                  onlyFilter)
+        if (onlyUncat and not pywikibot.Page(
+                imagepage.site, 'Template:Uncategorized')
+                in imagepage.templates()):
+            pywikibot.output('No Uncategorized template found')
+            continue
+
+        currentCats = getCurrentCats(imagepage)
+        if onlyFilter:
+            commonshelperCats = []
+            usage = []
+            galleries = []
+        else:
+            (commonshelperCats, usage,
+             galleries) = getCommonshelperCats(imagepage)
+        newcats = applyAllFilters(commonshelperCats + currentCats)
+
+        if newcats and set(currentCats) != set(newcats):
+            for cat in newcats:
+                pywikibot.output(' Found new cat: ' + cat)
+            saveImagePage(imagepage, newcats, usage, galleries, onlyFilter)
 
 
 def getCurrentCats(imagepage):
@@ -145,7 +147,7 @@ def getCommonshelperCats(imagepage):
              'cl': hint_wiki,
              'w': lang})
     else:
-        # Cant handle other sites atm
+        # Can't handle other sites atm
         return [], [], []
 
     commonsenseRe = re.compile(
@@ -253,8 +255,8 @@ def getOpenStreetMap(latitude, longitude):
             pywikibot.output('Dropping {}, {}'
                              .format(addresspart.tag, addresspart.text))
         else:
-            pywikibot.warning('%s, %s is not in addressparts lists'
-                              % (addresspart.tag, addresspart.text))
+            pywikibot.warning('{}, {} is not in addressparts lists'
+                              .format(addresspart.tag, addresspart.text))
     return result
 
 
@@ -324,7 +326,7 @@ def filterDisambiguation(categories):
     """Filter out disambiguation categories."""
     result = []
     for cat in categories:
-        if (not pywikibot.Page(pywikibot.Site(u'commons', u'commons'),
+        if (not pywikibot.Page(pywikibot.Site('commons', 'commons'),
                                cat, ns=14).isDisambig()):
             result.append(cat)
     return result
@@ -334,7 +336,7 @@ def followRedirects(categories):
     """If a category is a redirect, replace the category with the target."""
     result = []
     for cat in categories:
-        categoryPage = pywikibot.Page(pywikibot.Site(u'commons', u'commons'),
+        categoryPage = pywikibot.Page(pywikibot.Site('commons', 'commons'),
                                       cat, ns=14)
         if categoryPage.isCategoryRedirect():
             result.append(
@@ -358,7 +360,7 @@ def filterCountries(categories):
     listByCountry = []
     listCountries = []
     for cat in categories:
-        if cat.endswith(u'by country'):
+        if cat.endswith('by country'):
             listByCountry.append(cat)
 
         # If cat contains 'by country' add it to the list
@@ -370,7 +372,7 @@ def filterCountries(categories):
     if len(listByCountry) > 0:
         for bc in listByCountry:
             category = pywikibot.Category(
-                pywikibot.Site(u'commons', u'commons'), u'Category:' + bc)
+                pywikibot.Site('commons', 'commons'), 'Category:' + bc)
             for subcategory in category.subcategories():
                 for country in listCountries:
                     if subcategory.title(with_ns=False).endswith(country):
@@ -450,7 +452,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     generator = None
     onlyFilter = False

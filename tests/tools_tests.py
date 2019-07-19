@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 """Test tools package alone which don't fit into other tests."""
 #
-# (C) Pywikibot team, 2015-2018
+# (C) Pywikibot team, 2015-2019
 #
 # Distributed under the terms of the MIT license.
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 try:
     from collections.abc import Mapping
@@ -13,6 +13,7 @@ except ImportError:  # Python 2.7
     from collections import Mapping
 from collections import OrderedDict
 import decimal
+from importlib import import_module
 import inspect
 import os.path
 import subprocess
@@ -73,8 +74,9 @@ class ContextManagerWrapperTestCase(TestCase):
                 'pywikibot.tools.ContextManagerWrapper is deprecated.'):
             wrapper = tools.ContextManagerWrapper(self.DummyClass())
         self.assertFalse(wrapper.closed)
-        with self.assertRaisesRegex(ZeroDivisionError,
-                                    '(integer division or modulo by zero|division by zero)'):
+        with self.assertRaisesRegex(
+                ZeroDivisionError,
+                '(integer division or modulo by zero|division by zero)'):
             with wrapper:
                 1 / 0
         self.assertTrue(wrapper.closed)
@@ -108,20 +110,23 @@ class OpenArchiveTestCase(TestCase):
 
     def test_open_archive_normal(self):
         """Test open_archive with no compression in the standard library."""
-        self.assertEqual(self._get_content(self.base_file), self.original_content)
+        self.assertEqual(
+            self._get_content(self.base_file), self.original_content)
 
     def test_open_archive_bz2(self):
         """Test open_archive with bz2 compressor in the standard library."""
-        self.assertEqual(self._get_content(self.base_file + '.bz2'), self.original_content)
-        self.assertEqual(self._get_content(self.base_file + '.bz2', use_extension=False),
-                         self.original_content)
+        self.assertEqual(
+            self._get_content(self.base_file + '.bz2'), self.original_content)
+        self.assertEqual(
+            self._get_content(self.base_file + '.bz2', use_extension=False),
+            self.original_content)
 
     @require_modules('bz2file')
     def test_open_archive_with_bz2file(self):
         """Test open_archive when bz2file library."""
         old_bz2 = tools.bz2
         try:
-            tools.bz2 = __import__('bz2file')
+            tools.bz2 = import_module('bz2file')
             self.assertEqual(self._get_content(self.base_file + '.bz2'),
                              self.original_content)
             self.assertEqual(self._get_content(self.base_file + '.bz2',
@@ -134,7 +139,7 @@ class OpenArchiveTestCase(TestCase):
         """Test open_archive when bz2 and bz2file are not available."""
         old_bz2 = tools.bz2
         bz2_import_error = ('This is a fake exception message that is '
-                            'used when bz2 and bz2file is not importable')
+                            'used when bz2 and bz2file are not importable')
         try:
             tools.bz2 = ImportError(bz2_import_error)
             self.assertRaisesRegex(ImportError,
@@ -146,20 +151,54 @@ class OpenArchiveTestCase(TestCase):
 
     def test_open_archive_gz(self):
         """Test open_archive with gz compressor in the standard library."""
-        self.assertEqual(self._get_content(self.base_file + '.gz'), self.original_content)
+        self.assertEqual(
+            self._get_content(self.base_file + '.gz'), self.original_content)
 
     def test_open_archive_7z(self):
         """Test open_archive with 7za if installed."""
         try:
             subprocess.Popen(['7za'], stdout=subprocess.PIPE).stdout.close()
         except OSError:
-            raise unittest.SkipTest('7za not installed')
-        self.assertEqual(self._get_content(self.base_file + '.7z'), self.original_content)
+            self.skipTest('7za not installed')
+        self.assertEqual(
+            self._get_content(self.base_file + '.7z'), self.original_content)
         self.assertRaisesRegex(OSError,
                                'Unexpected STDERR output from 7za ',
                                self._get_content,
                                self.base_file + '_invalid.7z',
                                use_extension=True)
+
+    def test_open_archive_lzma(self):
+        """Test open_archive with lzma compressor in the standard library."""
+        if isinstance(tools.lzma, ImportError):
+            self.skipTest('lzma not importable')
+        self.assertEqual(
+            self._get_content(self.base_file + '.lzma'), self.original_content)
+        # Legacy LZMA container formet has no magic, skipping
+        # use_extension=False test here
+        self.assertEqual(
+            self._get_content(self.base_file + '.xz'), self.original_content)
+        self.assertEqual(
+            self._get_content(self.base_file + '.xz', use_extension=False),
+            self.original_content)
+
+    def test_open_archive_without_lzma(self):
+        """Test open_archive when lzma is not available."""
+        old_lzma = tools.lzma
+        lzma_import_error = ('This is a fake exception message that is '
+                             'used when lzma is not importable')
+        try:
+            tools.lzma = ImportError(lzma_import_error)
+            self.assertRaisesRegex(ImportError,
+                                   lzma_import_error,
+                                   self._get_content,
+                                   self.base_file + '.lzma')
+            self.assertRaisesRegex(ImportError,
+                                   lzma_import_error,
+                                   self._get_content,
+                                   self.base_file + '.xz')
+        finally:
+            tools.lzma = old_lzma
 
 
 class OpenCompressedTestCase(OpenArchiveTestCase, DeprecationTestCase):
@@ -170,9 +209,10 @@ class OpenCompressedTestCase(OpenArchiveTestCase, DeprecationTestCase):
 
     def _get_content(self, *args, **kwargs):
         """Use open_compressed and return content using a with-statement."""
-        # open_archive default is True, so if it's False it's not the default
-        # so use the non-default of open_compressed (which is True)
-        if kwargs.get('use_extension') is False:
+        # open_archive default is True, but open_compressed default is False.
+        # The test cases assumes a default of True and we need to make
+        # open_compressed acknowledge that.
+        if 'use_extension' not in kwargs:
             kwargs['use_extension'] = True
 
         with tools.open_compressed(*args, **kwargs) as f:
@@ -225,7 +265,8 @@ class OpenArchiveWriteTestCase(TestCase):
         self.assertRaisesRegex(ValueError,
                                'Magic number detection only when reading',
                                tools.open_archive,
-                               '/dev/null', 'wb', False)  # writing without extension
+                               # writing without extension
+                               '/dev/null', 'wb', False)
 
     def test_binary_mode(self):
         """Test that it uses binary mode."""
@@ -251,6 +292,23 @@ class OpenArchiveWriteTestCase(TestCase):
                                tools.open_archive,
                                '/dev/null.7z',
                                mode='wb')
+
+    def test_write_archive_lzma(self):
+        """Test writing a lzma archive."""
+        if isinstance(tools.lzma, ImportError):
+            self.skipTest('lzma not importable')
+
+        content = self._write_content('.lzma')
+        with open(self.base_file + '.lzma', 'rb') as f:
+            self.assertEqual(content, f.read())
+
+    def test_write_archive_xz(self):
+        """Test writing a xz archive."""
+        if isinstance(tools.lzma, ImportError):
+            self.skipTest('lzma not importable')
+
+        content = self._write_content('.xz')
+        self.assertEqual(content[:6], b'\xFD7zXZ\x00')
 
 
 class MergeUniqueDicts(TestCase):
@@ -283,7 +341,8 @@ class MergeUniqueDicts(TestCase):
     def test_conflict(self):
         """Test that it detects conflicts."""
         self.assertRaisesRegex(
-            ValueError, '42', tools.merge_unique_dicts, self.dct1, **{'42': 'bad'})
+            ValueError, '42', tools.merge_unique_dicts, self.dct1,
+            **{'42': 'bad'})
         self.assertRaisesRegex(
             ValueError, '42', tools.merge_unique_dicts, self.dct1, self.dct1)
         self.assertRaisesRegex(
@@ -303,7 +362,7 @@ class TestIsSliceWithEllipsis(TestCase):
         """Test marker is shown without kwargs."""
         stop = 2
         it = list(tools.islice_with_ellipsis(self.it, stop))
-        self.assertEqual(len(it), stop + 1)  # +1 to consider marker.
+        self.assertLength(it, stop + 1)  # +1 to consider marker.
         self.assertEqual(it[:-1], self.it[:stop])
         self.assertEqual(it[-1], '…')
 
@@ -311,7 +370,7 @@ class TestIsSliceWithEllipsis(TestCase):
         """Test correct marker is shown with kwargs.."""
         stop = 2
         it = list(tools.islice_with_ellipsis(self.it, stop, marker='new'))
-        self.assertEqual(len(it), stop + 1)  # +1 to consider marker.
+        self.assertLength(it, stop + 1)  # +1 to consider marker.
         self.assertEqual(it[:-1], self.it[:stop])
         self.assertNotEqual(it[-1], '…')
         self.assertEqual(it[-1], 'new')
@@ -321,7 +380,7 @@ class TestIsSliceWithEllipsis(TestCase):
         start = 1
         stop = 3
         it = list(tools.islice_with_ellipsis(self.it, start, stop))
-        self.assertEqual(len(it), stop - start + 1)  # +1 to consider marker.
+        self.assertLength(it, stop - start + 1)  # +1 to consider marker.
         self.assertEqual(it[:-1], self.it[start:stop])
         self.assertEqual(it[-1], '…')
 
@@ -329,8 +388,9 @@ class TestIsSliceWithEllipsis(TestCase):
         """Test marker is shown with start and stop with kwargs."""
         start = 1
         stop = 3
-        it = list(tools.islice_with_ellipsis(self.it, start, stop, marker='new'))
-        self.assertEqual(len(it), stop - start + 1)  # +1 to consider marker.
+        it = list(tools.islice_with_ellipsis(
+            self.it, start, stop, marker='new'))
+        self.assertLength(it, stop - start + 1)  # +1 to consider marker.
         self.assertEqual(it[:-1], self.it[start:stop])
         self.assertNotEqual(it[-1], '…')
         self.assertEqual(it[-1], 'new')
@@ -339,14 +399,14 @@ class TestIsSliceWithEllipsis(TestCase):
         """Test marker is shown with stop for non empty iterable."""
         stop = 0
         it = list(tools.islice_with_ellipsis(self.it, stop))
-        self.assertEqual(len(it), stop + 1)  # +1 to consider marker.
+        self.assertLength(it, stop + 1)  # +1 to consider marker.
         self.assertEqual(it[-1], '…')
 
     def test_do_not_show_marker_with_stop_zero(self):
         """Test marker is shown with stop for empty iterable."""
         stop = 0
         it = list(tools.islice_with_ellipsis(self.it_null, stop))
-        self.assertEqual(len(it), stop)
+        self.assertLength(it, stop)
 
     def test_do_not_show_marker(self):
         """Test marker is not shown when no marker is specified."""
@@ -360,7 +420,7 @@ class TestIsSliceWithEllipsis(TestCase):
         """Test marker is not shown when all elements are retrieved."""
         stop = None
         it = list(tools.islice_with_ellipsis(self.it, stop))
-        self.assertEqual(len(it), len(self.it))
+        self.assertLength(it, len(self.it))
         self.assertEqual(it, self.it)
         self.assertNotEqual(it[-1], '…')
 
@@ -447,7 +507,7 @@ class TestFilterUnique(TestCase):
         if not key:
             key = passthrough
 
-        self.assertEqual(len(deduped), 0)
+        self.assertIsEmpty(deduped)
 
         self.assertEqual(next(deduper), 1)
         self.assertEqual(next(deduper), 3)
@@ -478,7 +538,7 @@ class TestFilterUnique(TestCase):
         if not key:
             key = passthrough
 
-        self.assertEqual(len(deduped), 0)
+        self.assertIsEmpty(deduped)
 
         self.assertEqual(next(deduper), '1')
         self.assertEqual(next(deduper), '3')
@@ -547,11 +607,11 @@ class TestFilterUnique(TestCase):
         # Two objects which may be equal do not necessary have the same id.
         deduped = set()
         deduper = tools.filter_unique(self.decs, container=deduped, key=id)
-        self.assertEqual(len(deduped), 0)
+        self.assertIsEmpty(deduped)
         for _ in self.decs:
             self.assertEqual(id(next(deduper)), deduped.pop())
         self.assertRaises(StopIteration, next, deduper)
-        # No. of Decimal with distinct ids != no. of Decimal with distinct value.
+        # len(Decimal with distinct ids) != len(Decimal with distinct value).
         deduper_ids = list(tools.filter_unique(self.decs, key=id))
         self.assertNotEqual(len(deduper_ids), len(set(deduper_ids)))
 

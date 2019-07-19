@@ -53,11 +53,11 @@ or by adding a list to the given one:
 """
 #
 # (C) xqt, 2009-2018
-# (C) Pywikibot team, 2006-2018
+# (C) Pywikibot team, 2006-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import re
 
@@ -71,10 +71,10 @@ except ImportError:
 import pywikibot
 
 from pywikibot import config, textlib
+from pywikibot.page import url2unicode
 from pywikibot.textlib import (_MultiTemplateMatchBuilder, FILE_LINK_REGEX,
                                _get_regexes)
 from pywikibot.tools import deprecated_args, first_lower, first_upper
-from pywikibot.tools import MediaWikiVersion
 
 
 # Subpage templates. Must be in lower case,
@@ -85,14 +85,14 @@ moved_links = {
     'ar': (['documentation', 'template documentation', 'شرح', 'توثيق'],
            '/doc'),
     'bn': ('documentation', '/doc'),
-    'ca': (u'ús de la plantilla', u'/ús'),
+    'ca': ('ús de la plantilla', '/ús'),
     'cs': ('dokumentace', '/doc'),
     'da': ('dokumentation', '/doc'),
-    'de': (u'dokumentation', u'/Meta'),
+    'de': ('dokumentation', '/Meta'),
     'dsb': (['dokumentacija', 'doc'], '/Dokumentacija'),
     'en': (['documentation', 'template documentation', 'template doc',
             'doc', 'documentation, template'], '/doc'),
-    'es': ([u'documentación', u'documentación de plantilla'], u'/doc'),
+    'es': (['documentación', 'documentación de plantilla'], '/doc'),
     'eu': ('txantiloi dokumentazioa', '/dok'),
     'fa': (['documentation', 'template documentation', 'template doc',
             'doc', 'توضیحات', 'زیرصفحه توضیحات'], '/doc'),
@@ -106,58 +106,58 @@ moved_links = {
             ],
            '/Documentation'),
     'hsb': (['dokumentacija', 'doc'], '/Dokumentacija'),
-    'hu': (u'sablondokumentáció', u'/doc'),
+    'hu': ('sablondokumentáció', '/doc'),
     'id': ('template doc', '/doc'),
     'ilo': ('documentation', '/doc'),
-    'ja': (u'documentation', u'/doc'),
+    'ja': ('documentation', '/doc'),
     'ka': ('თარგის ინფო', '/ინფო'),
-    'ko': (u'documentation', u'/설명문서'),
-    'ms': (u'documentation', u'/doc'),
+    'ko': ('documentation', '/설명문서'),
+    'ms': ('documentation', '/doc'),
     'no': ('dokumentasjon', '/dok'),
     'nn': ('dokumentasjon', '/dok'),
     'pl': ('dokumentacja', '/opis'),
-    'pt': ([u'documentação', u'/doc'], u'/doc'),
+    'pt': (['documentação', '/doc'], '/doc'),
     'ro': ('documentaţie', '/doc'),
-    'ru': (u'doc', u'/doc'),
+    'ru': ('doc', '/doc'),
     'simple': (['documentation',
                 'template documentation',
                 'template doc',
                 'doc',
                 'documentation, template'], '/doc'),
     'sk': ('dokumentácia', '/Dokumentácia'),
-    'sv': (u'dokumentation', u'/dok'),
+    'sv': ('dokumentation', '/dok'),
     'uk': (['документація', 'doc', 'documentation'], '/Документація'),
     'ur': (['دستاویز', 'توثيق', 'شرح', 'توضیحات',
             'documentation', 'template doc', 'doc',
             'documentation, template'], '/doc'),
-    'vi': (u'documentation', u'/doc'),
-    'zh': ([u'documentation', u'doc'], u'/doc'),
+    'vi': ('documentation', '/doc'),
+    'zh': (['documentation', 'doc'], '/doc'),
 }
 
 # Template which should be replaced or removed.
 # Use a list with two entries. The first entry will be replaced by the second.
 # Examples:
 # For removing {{Foo}}, the list must be:
-#           (u'Foo', None),
+#           ('Foo', None),
 #
 # The following also works:
-#           (u'Foo', ''),
+#           ('Foo', ''),
 #
 # For replacing {{Foo}} with {{Bar}} the list must be:
-#           (u'Foo', u'Bar'),
+#           ('Foo', 'Bar'),
 #
 # This also removes all template parameters of {{Foo}}
 # For replacing {{Foo}} with {{Bar}} but keep the template
 # parameters in its original order, please use:
-#           (u'Foo', u'Bar\g<parameters>'),
+#           ('Foo', 'Bar\\g<parameters>'),
 
 deprecatedTemplates = {
     'wikipedia': {
         'de': [
-            (u'Belege', u'Belege fehlen\\g<parameters>'),
-            (u'Quelle', u'Belege fehlen\\g<parameters>'),
-            (u'Quellen', u'Belege fehlen\\g<parameters>'),
-            (u'Quellen fehlen', u'Belege fehlen\\g<parameters>'),
+            ('Belege', 'Belege fehlen\\g<parameters>'),
+            ('Quelle', 'Belege fehlen\\g<parameters>'),
+            ('Quellen', 'Belege fehlen\\g<parameters>'),
+            ('Quellen fehlen', 'Belege fehlen\\g<parameters>'),
         ],
     }
 }
@@ -282,7 +282,7 @@ class CosmeticChangesToolkit(object):
             result = method(text)
         except Exception as e:
             if self.ignore == CANCEL_METHOD:
-                pywikibot.warning(u'Unable to perform "{0}" on "{1}"!'.format(
+                pywikibot.warning('Unable to perform "{0}" on "{1}"!'.format(
                     method.__name__, self.title))
                 pywikibot.exception(e)
             else:
@@ -401,15 +401,15 @@ class CosmeticChangesToolkit(object):
             # a clone is needed. Won't change the namespace dict
             namespaces = list(namespace)
             if namespace == 6 and self.site.family.name == 'wikipedia':
-                if self.site.code in ('en', 'fr') and MediaWikiVersion(
-                        self.site.version()) >= MediaWikiVersion('1.14'):
+                if self.site.code in ('en', 'fr') \
+                        and self.site.mw_version >= '1.14':
                     # do not change "Image" on en-wiki and fr-wiki
-                    assert u'Image' in namespaces
-                    namespaces.remove(u'Image')
+                    assert 'Image' in namespaces
+                    namespaces.remove('Image')
                 if self.site.code == 'hu':
                     # do not change "Kép" on hu-wiki
-                    assert u'Kép' in namespaces
-                    namespaces.remove(u'Kép')
+                    assert 'Kép' in namespaces
+                    namespaces.remove('Kép')
                 elif self.site.code == 'pt':
                     # use "Imagem" by default on pt-wiki (per T57242)
                     assert 'Imagem' in namespaces
@@ -423,7 +423,7 @@ class CosmeticChangesToolkit(object):
             # lowerspaced and underscored namespaces
             for i, item in enumerate(namespaces):
                 item = item.replace(' ', '[ _]')
-                item = u'[%s%s]' % (item[0], item[0].lower()) + item[1:]
+                item = '[%s%s]' % (item[0], item[0].lower()) + item[1:]
                 namespaces[i] = item
             namespaces.append(first_lower(final_ns))
             if final_ns and namespaces:
@@ -512,111 +512,109 @@ class CosmeticChangesToolkit(object):
             except ValueError:  # T111513
                 is_interwiki = True
 
-            if not is_interwiki:
-                # The link looks like this:
-                # [[page_title|link_text]]trailing_chars
-                # We only work on namespace 0 because pipes and linktrails work
-                # differently for images and categories.
-                page = pywikibot.Page(pywikibot.Link(titleWithSection,
-                                                     self.site))
-                try:
-                    namespace = page.namespace()
-                except pywikibot.InvalidTitle:
-                    return match.group()
-                if namespace == 0:
-                    # Replace underlines by spaces, also multiple underlines
-                    titleWithSection = re.sub('_+', ' ', titleWithSection)
-                    # Remove double spaces
-                    titleWithSection = re.sub('  +', ' ', titleWithSection)
-                    # Remove unnecessary leading spaces from title,
-                    # but remember if we did this because we eventually want
-                    # to re-add it outside of the link later.
-                    titleLength = len(titleWithSection)
-                    titleWithSection = titleWithSection.lstrip()
-                    hadLeadingSpaces = (len(titleWithSection) != titleLength)
-                    hadTrailingSpaces = False
-                    # Remove unnecessary trailing spaces from title,
-                    # but remember if we did this because it may affect
-                    # the linktrail and because we eventually want to
-                    # re-add it outside of the link later.
-                    if not trailingChars:
-                        titleLength = len(titleWithSection)
-                        titleWithSection = titleWithSection.rstrip()
-                        hadTrailingSpaces = (len(titleWithSection) !=
-                                             titleLength)
+            if is_interwiki:
+                return match.group()
 
-                    # Convert URL-encoded characters to unicode
-                    from pywikibot.page import url2unicode
-                    titleWithSection = url2unicode(titleWithSection,
-                                                   encodings=self.site)
+            # The link looks like this:
+            # [[page_title|link_text]]trailing_chars
+            # We only work on namespace 0 because pipes and linktrails work
+            # differently for images and categories.
+            page = pywikibot.Page(pywikibot.Link(titleWithSection, self.site))
+            try:
+                in_main_namespace = page.namespace() == 0
+            except pywikibot.InvalidTitle:
+                in_main_namespace = False
+            if not in_main_namespace:
+                return match.group()
 
-                    if titleWithSection == '':
-                        # just skip empty links.
-                        return match.group()
+            # Replace underlines by spaces, also multiple underlines
+            titleWithSection = re.sub('_+', ' ', titleWithSection)
+            # Remove double spaces
+            titleWithSection = re.sub('  +', ' ', titleWithSection)
+            # Remove unnecessary leading spaces from title,
+            # but remember if we did this because we eventually want
+            # to re-add it outside of the link later.
+            titleLength = len(titleWithSection)
+            titleWithSection = titleWithSection.lstrip()
+            hadLeadingSpaces = len(titleWithSection) != titleLength
+            hadTrailingSpaces = False
+            # Remove unnecessary trailing spaces from title,
+            # but remember if we did this because it may affect
+            # the linktrail and because we eventually want to
+            # re-add it outside of the link later.
+            if not trailingChars:
+                titleLength = len(titleWithSection)
+                titleWithSection = titleWithSection.rstrip()
+                hadTrailingSpaces = len(titleWithSection) != titleLength
 
-                    # Remove unnecessary initial and final spaces from label.
-                    # Please note that some editors prefer spaces around pipes.
-                    # (See [[en:Wikipedia:Semi-bots]]). We remove them anyway.
-                    if label is not None:
-                        # Remove unnecessary leading spaces from label,
-                        # but remember if we did this because we want
-                        # to re-add it outside of the link later.
-                        labelLength = len(label)
-                        label = label.lstrip()
-                        hadLeadingSpaces = (len(label) != labelLength)
-                        # Remove unnecessary trailing spaces from label,
-                        # but remember if we did this because it affects
-                        # the linktrail.
-                        if not trailingChars:
-                            labelLength = len(label)
-                            label = label.rstrip()
-                            hadTrailingSpaces = (len(label) != labelLength)
-                    else:
-                        label = titleWithSection
-                    if trailingChars:
-                        label += trailingChars
+            # Convert URL-encoded characters to unicode
+            titleWithSection = url2unicode(titleWithSection,
+                                           encodings=self.site)
 
-                    if self.site.siteinfo['case'] == 'first-letter':
-                        firstcase_title = first_lower(titleWithSection)
-                        firstcase_label = first_lower(label)
-                    else:
-                        firstcase_title = titleWithSection
-                        firstcase_label = label
+            if not titleWithSection:
+                # just skip empty links.
+                return match.group()
 
-                    if firstcase_label == firstcase_title:
-                        newLink = '[[%s]]' % label
-                    # Check if we can create a link with trailing characters
-                    # instead of a pipelink
-                    elif (firstcase_label.startswith(firstcase_title) and
-                          trailR.sub('', label[len(titleWithSection):]) == ''):
-                        newLink = '[[%s]]%s' % (
-                            label[:len(titleWithSection)],
-                            label[len(titleWithSection):])
+            # Remove unnecessary initial and final spaces from label.
+            # Please note that some editors prefer spaces around pipes.
+            # (See [[en:Wikipedia:Semi-bots]]). We remove them anyway.
+            if label is not None:
+                # Remove unnecessary leading spaces from label,
+                # but remember if we did this because we want
+                # to re-add it outside of the link later.
+                labelLength = len(label)
+                label = label.lstrip()
+                hadLeadingSpaces = len(label) != labelLength
+                # Remove unnecessary trailing spaces from label,
+                # but remember if we did this because it affects
+                # the linktrail.
+                if not trailingChars:
+                    labelLength = len(label)
+                    label = label.rstrip()
+                    hadTrailingSpaces = len(label) != labelLength
+            else:
+                label = titleWithSection
+            if trailingChars:
+                label += trailingChars
 
-                    else:
-                        # Try to capitalize the first letter of the title.
-                        # Not useful for languages that don't capitalize nouns.
-                        # TODO: Add a configuration variable for each site,
-                        # which determines if the link target is written in
-                        # uppercase
-                        if self.site.sitename == 'wikipedia:de':
-                            titleWithSection = first_upper(titleWithSection)
-                        newLink = "[[%s|%s]]" % (titleWithSection, label)
-                    # re-add spaces that were pulled out of the link.
-                    # Examples:
-                    #   text[[ title ]]text        -> text [[title]] text
-                    #   text[[ title | name ]]text -> text [[title|name]] text
-                    #   text[[ title |name]]text   -> text[[title|name]]text
-                    #   text[[title| name]]text    -> text [[title|name]]text
-                    if hadLeadingSpaces and not newline:
-                        newLink = ' ' + newLink
-                    if hadTrailingSpaces:
-                        newLink = newLink + ' '
-                    if newline:
-                        newLink = newline + newLink
-                    return newLink
-            # don't change anything
-            return match.group()
+            if self.site.siteinfo['case'] == 'first-letter':
+                firstcase_title = first_lower(titleWithSection)
+                firstcase_label = first_lower(label)
+            else:
+                firstcase_title = titleWithSection
+                firstcase_label = label
+
+            if firstcase_label == firstcase_title:
+                newLink = '[[%s]]' % label
+            # Check if we can create a link with trailing characters
+            # instead of a pipelink
+            elif (firstcase_label.startswith(firstcase_title)
+                  and trailR.sub('', label[len(titleWithSection):]) == ''):
+                newLink = '[[%s]]%s' % (label[:len(titleWithSection)],
+                                        label[len(titleWithSection):])
+
+            else:
+                # Try to capitalize the first letter of the title.
+                # Not useful for languages that don't capitalize nouns.
+                # TODO: Add a configuration variable for each site,
+                # which determines if the link target is written in
+                # uppercase
+                if self.site.sitename == 'wikipedia:de':
+                    titleWithSection = first_upper(titleWithSection)
+                newLink = '[[%s|%s]]' % (titleWithSection, label)
+            # re-add spaces that were pulled out of the link.
+            # Examples:
+            #   text[[ title ]]text        -> text [[title]] text
+            #   text[[ title | name ]]text -> text [[title|name]] text
+            #   text[[ title |name]]text   -> text[[title|name]]text
+            #   text[[title| name]]text    -> text [[title|name]]text
+            if hadLeadingSpaces and not newline:
+                newLink = ' ' + newLink
+            if hadTrailingSpaces:
+                newLink = newLink + ' '
+            if newline:
+                newLink = newline + newLink
+            return newLink
 
         trailR = re.compile(self.site.linktrail())
     # The regular expression which finds links. Results consist of four groups:
@@ -628,8 +626,8 @@ class CosmeticChangesToolkit(object):
     # note that the definition of 'letter' varies from language to language.
         linkR = re.compile(
             r'(?P<newline>[\n]*)\[\[(?P<titleWithSection>[^\]\|]+)'
-            r'(\|(?P<label>[^\]\|]*))?\]\](?P<linktrail>' +
-            self.site.linktrail() + ')')
+            r'(\|(?P<label>[^\]\|]*))?\]\](?P<linktrail>'
+            + self.site.linktrail() + ')')
 
         text = textlib.replaceExcept(text, linkR, handleOneLink,
                                      ['comment', 'math', 'nowiki', 'pre',
@@ -663,6 +661,10 @@ class CosmeticChangesToolkit(object):
 
     def removeEmptySections(self, text):
         """Cleanup empty sections."""
+        # userspace contains article stubs without nobots/in use templates
+        if self.namespace == 2:
+            return text
+
         skippings = ['comment', 'category']
         skip_regexes = _get_regexes(skippings, self.site)
         # site defined templates
@@ -719,8 +721,8 @@ class CosmeticChangesToolkit(object):
         front of a percent sign, so it is no longer required to place it
         manually.
         """
-        text = textlib.replaceExcept(text, r'(\d)&nbsp;%', r'\1 %',
-                                     ['timeline'])
+        text = textlib.replaceExcept(
+            text, r'(\d)&(?:nbsp|#160|#x[Aa]0);%', r'\1 %', ['timeline'])
         return text
 
     def cleanUpSectionHeaders(self, text):
@@ -789,8 +791,8 @@ class CosmeticChangesToolkit(object):
         def replace_link(match):
             """Create a string to replace a single link."""
             replacement = '[['
-            if re.match(r'(?:' + '|'.join(list(self.site.namespaces[6]) +
-                        list(self.site.namespaces[14])) + '):',
+            if re.match(r'(?:' + '|'.join(list(self.site.namespaces[6])
+                        + list(self.site.namespaces[14])) + '):',
                         match.group('link')):
                 replacement += ':'
             replacement += match.group('link')
@@ -923,12 +925,12 @@ class CosmeticChangesToolkit(object):
                                      site=self.site)
         # Solve wrong Nº sign with °C or °F
         # additional exception requested on fr-wiki for this stuff
-        pattern = re.compile(u'«.*?»', re.UNICODE)
+        pattern = re.compile('«.*?»', re.UNICODE)
         exceptions.append(pattern)
         text = textlib.replaceExcept(text, r'(\d)\s*(?:&nbsp;)?[º°]([CF])',
                                      r'\1&nbsp;°\2', exceptions,
                                      site=self.site)
-        text = textlib.replaceExcept(text, u'º([CF])', u'°' + r'\1',
+        text = textlib.replaceExcept(text, 'º([CF])', '°' + r'\1',
                                      exceptions,
                                      site=self.site)
         return text
@@ -956,15 +958,15 @@ class CosmeticChangesToolkit(object):
         # FIXME: use textlib.NON_LATIN_DIGITS
         # valid digits
         digits = {
-            'ckb': u'٠١٢٣٤٥٦٧٨٩',
-            'fa': u'۰۱۲۳۴۵۶۷۸۹',
+            'ckb': '٠١٢٣٤٥٦٧٨٩',
+            'fa': '۰۱۲۳۴۵۶۷۸۹',
         }
-        faChrs = u'ءاآأإئؤبپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیةيك' + digits['fa']
+        faChrs = 'ءاآأإئؤبپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیةيك' + digits['fa']
         new = digits.pop(self.site.code)
         # This only works if there are only two items in digits dict
         old = digits[list(digits.keys())[0]]
         # not to let bot edits in latin content
-        exceptions.append(re.compile(u"[^%(fa)s] *?\"*? *?, *?[^%(fa)s]"
+        exceptions.append(re.compile('[^%(fa)s] *?\"*? *?, *?[^%(fa)s]'
                                      % {'fa': faChrs}))
         text = textlib.replaceExcept(text, ',', '،', exceptions,
                                      site=self.site)
@@ -986,14 +988,14 @@ class CosmeticChangesToolkit(object):
 
         # FIXME: split this function into two.
         # replace persian/arabic digits
-        # deactivated due to bug 55185
+        # deactivated due to bug T57185
         for i in range(0, 10):
             text = textlib.replaceExcept(text, old[i], new[i], exceptions)
         # do not change digits in class, style and table params
         pattern = re.compile(r'\w+=(".+?"|\d+)', re.UNICODE)
         exceptions.append(pattern)
         # do not change digits inside html-tags
-        pattern = re.compile(u'<[/]*?[^</]+?[/]*?>', re.UNICODE)
+        pattern = re.compile('<[/]*?[^</]+?[/]*?>', re.UNICODE)
         exceptions.append(pattern)
         exceptions.append('table')  # exclude tables for now
         # replace digits
@@ -1017,18 +1019,18 @@ class CosmeticChangesToolkit(object):
         exceptions = ['comment', 'includeonly', 'math', 'noinclude', 'nowiki',
                       'pre', 'source', 'ref', 'timeline']
         text = textlib.replaceExcept(text,
-                                     r"([\r\n]|^)\=\= *Summary *\=\=",
-                                     r"\1== {{int:filedesc}} ==",
+                                     r'([\r\n]|^)\=\= *Summary *\=\=',
+                                     r'\1== {{int:filedesc}} ==',
                                      exceptions, True)
         text = textlib.replaceExcept(
             text,
-            r"([\r\n])\=\= *\[\[Commons:Copyright tags\|Licensing\]\]: *\=\=",
-            r"\1== {{int:license-header}} ==", exceptions, True)
+            r'([\r\n])\=\= *\[\[Commons:Copyright tags\|Licensing\]\]: *\=\=',
+            r'\1== {{int:license-header}} ==', exceptions, True)
         text = textlib.replaceExcept(
             text,
             r'([\r\n])'
             r'\=\= *(Licensing|License information|{{int:license}}) *\=\=',
-            r"\1== {{int:license-header}} ==", exceptions, True)
+            r'\1== {{int:license-header}} ==', exceptions, True)
 
         # frequent field values to {{int:}} versions
         text = textlib.replaceExcept(

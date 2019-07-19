@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """Package tests."""
 #
-# (C) Pywikibot team, 2007-2018
+# (C) Pywikibot team, 2007-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, print_function, unicode_literals
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
 
 __all__ = (
     'requests', 'unittest', 'TestRequest', 'patch_request', 'unpatch_request',
@@ -18,9 +19,10 @@ import warnings
 # Verify that the unit tests have a base working environment:
 # - requests is mandatory
 #   however if unavailable this will fail on use; see pywikibot/tools.py
-# - unittest2; see below
 # - mwparserfromhell is optional, so is only imported in textlib_tests
 import requests
+import unittest
+from unittest.util import safe_repr
 
 from pywikibot import config
 import pywikibot.data.api
@@ -29,11 +31,7 @@ from pywikibot.data.api import Request as _original_Request
 from pywikibot import i18n
 from pywikibot.tools import PYTHON_VERSION
 
-if PYTHON_VERSION == (2, 7, 2):
-    # Use unittest2 for python 2.7.2 (T106512)
-    import unittest2 as unittest
-else:
-    import unittest
+
 try:
     import unittest.mock as mock
     from unittest.mock import MagicMock, Mock, patch
@@ -41,6 +39,7 @@ except ImportError:
     import mock
     from mock import MagicMock, Mock, patch
 
+assert safe_repr  # pyflakes workaround
 _root_dir = os.path.split(os.path.split(__file__)[0])[0]
 
 
@@ -60,7 +59,8 @@ def create_path_func(base_func, subpath):
 join_root_path.path = 'root'
 join_tests_path = create_path_func(join_root_path, 'tests')
 join_cache_path = create_path_func(join_tests_path,
-                                   'apicache-py%d' % PYTHON_VERSION[0])
+                                   'apicache-py{}'
+                                   .format(PYTHON_VERSION[0]))
 join_data_path = create_path_func(join_tests_path, 'data')
 join_pages_path = create_path_func(join_tests_path, 'pages')
 
@@ -202,18 +202,18 @@ def collector(loader=unittest.loader.defaultTestLoader):
     # discover() ordering of unit tests.
     if disabled_test_modules:
         unittest_print(
-            'Disabled test modules (to run: python -m unittest ...):\n  %s'
-            % ', '.join(disabled_test_modules))
+            'Disabled test modules (to run: python -m unittest ...):\n  {}'
+            .format(', '.join(disabled_test_modules)))
 
     if extra_test_modules:
         unittest_print(
-            'Extra test modules (run after library, before scripts):\n  %s'
-            % ', '.join(extra_test_modules))
+            'Extra test modules (run after library, before scripts):\n  {}'
+            .format(', '.join(extra_test_modules)))
 
     if disabled_tests:
         unittest_print(
-            'Skipping tests (to run: python -m unittest ...):\n  %r'
-            % disabled_tests)
+            'Skipping tests (to run: python -m unittest ...):\n  {!r}'
+            .format(disabled_tests))
 
     modules = [module
                for module in test_modules
@@ -230,9 +230,9 @@ def collector(loader=unittest.loader.defaultTestLoader):
                 for test_func in cls:
                     if test_func._testMethodName not in disabled_tests[module]:
                         enabled_tests.append(
-                            module_class_name + '.' +
-                            test_func.__class__.__name__ + '.' +
-                            test_func._testMethodName)
+                            module_class_name + '.'
+                            + test_func.__class__.__name__ + '.'
+                            + test_func._testMethodName)
 
             test_list.extend(enabled_tests)
         else:
@@ -255,7 +255,7 @@ CachedRequest._get_cache_dir = classmethod(
 
 
 # Travis-CI builds are set to retry twice, which aims to reduce the number
-# of 'red' builds caused by intermittant server problems, while also avoiding
+# of 'red' builds caused by intermittent server problems, while also avoiding
 # the builds taking a long time due to retries.
 # The following allows builds to retry twice, but higher default values are
 # overridden here to restrict retries to only 1, so developer builds fail more
@@ -263,7 +263,8 @@ CachedRequest._get_cache_dir = classmethod(
 if config.max_retries > 2:
     if 'PYWIKIBOT_TEST_QUIET' not in os.environ:
         unittest_print(
-            'tests: max_retries reduced from %d to 1' % config.max_retries)
+            'tests: max_retries reduced from {} to 1'
+            .format(config.max_retries))
     config.max_retries = 1
 
 # Raise CaptchaError if a test requires solving a captcha
@@ -272,7 +273,7 @@ config.solve_captcha = False
 cache_misses = 0
 cache_hits = 0
 
-warnings.filterwarnings("always")
+warnings.filterwarnings('always')
 
 
 class TestRequest(CachedRequest):
@@ -301,7 +302,7 @@ class TestRequest(CachedRequest):
             return False
 
         # tokens need careful management in the cache
-        # and cant be aggressively cached.
+        # and can't be aggressively cached.
         # FIXME: remove once 'badtoken' is reliably handled in api.py
         if 'intoken' in self._uniquedescriptionstr():
             self._data = None
@@ -342,3 +343,10 @@ def unpatch_request():
     """Un-patch Request classes with TestRequest."""
     pywikibot.data.api.Request = _original_Request
     pywikibot.data.api.CachedRequest._expired = original_expired
+
+
+if __name__ == '__main__':  # pragma: no cover
+    try:
+        unittest.main()
+    except SystemExit:
+        pass

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Test cases for the WikiStats dataset."""
 #
-# (C) Pywikibot team, 2014-2017
+# (C) Pywikibot team, 2014-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import sys
 
@@ -63,7 +63,7 @@ class WikiStatsTestCase(TestCase):
     def test_csv(self):
         """Test CSV."""
         if not csv:
-            raise unittest.SkipTest('unicodecsv not installed.')
+            self.skipTest('unicodecsv not installed.')
         ws = WikiStats()
         data = ws.get_dict('wikipedia', 'csv')
         self.assertIsInstance(data, dict)

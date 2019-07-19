@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Family module for Wikipedia."""
 #
-# (C) Pywikibot team, 2004-2018
+# (C) Pywikibot team, 2004-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from pywikibot import family
 
@@ -18,45 +18,47 @@ class Family(family.SubdomainFamily, family.WikimediaFamily):
     name = 'wikipedia'
 
     closed_wikis = [
-        # See https://noc.wikimedia.org/conf/highlight.php?file=closed.dblist
-        'aa', 'advisory', 'cho', 'ho', 'hz', 'ii', 'kj', 'kr', 'mh', 'mo',
-        'mus', 'ng', 'quality', 'strategy', 'ten', 'usability'
+        # See:
+        # https://noc.wikimedia.org/conf/highlight.php?file=dblists/closed.dblist
+        'aa', 'cho', 'ho', 'hz', 'ii', 'kj', 'kr', 'mh', 'mus', 'ng', 'ten',
     ]
 
     removed_wikis = [
-        # See https://noc.wikimedia.org/conf/highlight.php?file=deleted.dblist
+        # See:
+        # https://noc.wikimedia.org/conf/highlight.php?file=dblists/deleted.dblist
         'dk', 'ru-sib', 'tlh', 'tokipona', 'zh_cn', 'zh_tw',
     ]
 
     languages_by_size = [
-        'en', 'ceb', 'sv', 'de', 'fr', 'nl', 'ru', 'es', 'it', 'pl', 'war',
-        'vi', 'ja', 'zh', 'pt', 'uk', 'fa', 'sr', 'ar', 'ca', 'no', 'sh', 'fi',
-        'id', 'hu', 'ko', 'cs', 'ro', 'ms', 'tr', 'eu', 'eo', 'bg', 'hy', 'da',
-        'he', 'zh-min-nan', 'sk', 'min', 'kk', 'ce', 'hr', 'lt', 'et', 'sl',
-        'be', 'el', 'gl', 'ur', 'nn', 'az', 'simple', 'uz', 'la', 'hi', 'th',
-        'ka', 'vo', 'ta', 'azb', 'cy', 'mk', 'tg', 'lv', 'ast', 'mg', 'oc',
-        'tl', 'tt', 'ky', 'bs', 'sq', 'new', 'te', 'zh-yue', 'br', 'pms',
-        'be-tarask', 'bn', 'ml', 'jv', 'lb', 'af', 'ht', 'sco', 'mr', 'ga',
-        'pnb', 'is', 'sw', 'ba', 'cv', 'fy', 'su', 'my', 'lmo', 'an', 'yo',
-        'nds', 'ne', 'pa', 'gu', 'io', 'bar', 'scn', 'bpy', 'als', 'kn', 'ku',
-        'ckb', 'qu', 'ia', 'arz', 'mn', 'bat-smg', 'si', 'gd', 'wa', 'nap',
-        'yi', 'am', 'or', 'bug', 'cdo', 'map-bms', 'hsb', 'fo', 'mzn', 'mai',
-        'xmf', 'li', 'wuu', 'sah', 'ilo', 'sa', 'vec', 'os', 'eml', 'sd',
-        'mrj', 'mhr', 'hif', 'roa-tara', 'ps', 'diq', 'hak', 'pam',
-        'zh-classical', 'nso', 'bcl', 'bh', 'ace', 'szl', 'se', 'frr', 'mi',
-        'nah', 'nds-nl', 'km', 'rue', 'vls', 'gan', 'crh', 'sc', 'nv', 'bo',
-        'vep', 'glk', 'co', 'tk', 'fiu-vro', 'so', 'lrc', 'myv', 'kv', 'csb',
-        'as', 'gv', 'udm', 'zea', 'ay', 'ug', 'ie', 'nrm', 'stq', 'lez', 'sn',
-        'kw', 'lad', 'pcd', 'mwl', 'gn', 'rm', 'gom', 'koi', 'ab', 'lij', 'mt',
-        'fur', 'dsb', 'frp', 'ln', 'ang', 'dv', 'cbk-zam', 'ext', 'dty', 'kab',
-        'lo', 'ksh', 'lfn', 'gag', 'haw', 'olo', 'pag', 'pi', 'av', 'pfl',
-        'bxr', 'xal', 'krc', 'pap', 'kaa', 'ha', 'bjn', 'pdc', 'rw', 'gor',
-        'tyv', 'to', 'nov', 'kl', 'jam', 'arc', 'kbd', 'tpi', 'kbp', 'tet',
-        'ki', 'ig', 'na', 'jbo', 'lbe', 'roa-rup', 'ty', 'mdf', 'za', 'kg',
-        'bi', 'wo', 'lg', 'srn', 'zu', 'tcy', 'chr', 'ltg', 'sm', 'om', 'inh',
-        'xh', 'pih', 'cu', 'rmy', 'bm', 'tw', 'tn', 'rn', 'chy', 'atj', 'tum',
-        'got', 'ts', 'ak', 'st', 'ch', 'pnt', 'ss', 'fj', 'ady', 'iu', 'ny',
-        'ee', 'ks', 've', 'ik', 'sg', 'ff', 'dz', 'ti', 'cr', 'din', 'sat',
+        'en', 'ceb', 'sv', 'de', 'fr', 'nl', 'ru', 'it', 'es', 'pl', 'war',
+        'vi', 'ja', 'zh', 'pt', 'uk', 'ar', 'fa', 'sr', 'ca', 'no', 'id', 'fi',
+        'ko', 'hu', 'sh', 'cs', 'ro', 'eu', 'tr', 'ms', 'eo', 'bg', 'hy', 'da',
+        'he', 'sk', 'zh-min-nan', 'kk', 'min', 'ce', 'hr', 'et', 'lt', 'be',
+        'sl', 'el', 'gl', 'azb', 'nn', 'az', 'ur', 'simple', 'th', 'hi', 'uz',
+        'la', 'ka', 'vo', 'ta', 'cy', 'mk', 'ast', 'tg', 'lv', 'mg', 'tt',
+        'oc', 'af', 'bs', 'ky', 'sq', 'tl', 'zh-yue', 'new', 'te', 'bn',
+        'be-tarask', 'br', 'pms', 'ml', 'lb', 'jv', 'ht', 'sco', 'mr', 'sw',
+        'ga', 'nds', 'su', 'ba', 'pnb', 'is', 'my', 'fy', 'cv', 'lmo', 'an',
+        'ne', 'yo', 'pa', 'gu', 'io', 'bar', 'scn', 'ku', 'als', 'bpy', 'kn',
+        'ckb', 'ia', 'qu', 'arz', 'wuu', 'mn', 'bat-smg', 'si', 'or', 'wa',
+        'gd', 'am', 'yi', 'cdo', 'nap', 'bug', 'hsb', 'mai', 'map-bms', 'fo',
+        'mzn', 'xmf', 'ilo', 'li', 'vec', 'eml', 'sah', 'os', 'sd', 'sa',
+        'diq', 'mrj', 'ps', 'mhr', 'hif', 'zh-classical', 'roa-tara', 'bcl',
+        'ace', 'frr', 'hak', 'pam', 'szl', 'nso', 'nv', 'km', 'se', 'hyw',
+        'mi', 'rue', 'nah', 'bh', 'vls', 'nds-nl', 'crh', 'gan', 'sc', 'vep',
+        'bo', 'myv', 'glk', 'co', 'as', 'tk', 'so', 'fiu-vro', 'kv', 'csb',
+        'lrc', 'shn', 'gv', 'udm', 'zea', 'ay', 'sn', 'ie', 'pcd', 'nrm', 'ug',
+        'stq', 'lez', 'kw', 'lad', 'ab', 'mwl', 'gom', 'gn', 'haw', 'ha',
+        'kab', 'rm', 'lij', 'lfn', 'koi', 'lo', 'mt', 'fur', 'frp', 'dsb',
+        'ln', 'ang', 'ext', 'olo', 'dty', 'cbk-zam', 'dv', 'ksh', 'gag', 'pi',
+        'pag', 'pfl', 'bjn', 'av', 'bxr', 'xal', 'gor', 'krc', 'za', 'pap',
+        'kaa', 'pdc', 'rw', 'tyv', 'to', 'kl', 'nov', 'jam', 'arc', 'kbp',
+        'kbd', 'tpi', 'tet', 'ig', 'ki', 'na', 'jbo', 'wo', 'roa-rup', 'lbe',
+        'bi', 'ty', 'kg', 'mdf', 'lg', 'zu', 'srn', 'tcy', 'inh', 'atj', 'sat',
+        'chr', 'ltg', 'sm', 'xh', 'om', 'pih', 'cu', 'tw', 'rmy', 'bm', 'tn',
+        'chy', 'rn', 'got', 'ts', 'ak', 'tum', 'st', 'ny', 'ch', 'ss', 'pnt',
+        'fj', 'iu', 'ady', 'ee', 'ks', 've', 'ik', 'sg', 'ff', 'dz', 'ti',
+        'cr', 'din',
     ]
 
     # Sites we want to edit but not count as real languages
@@ -113,9 +115,10 @@ class Family(family.SubdomainFamily, family.WikimediaFamily):
     interwiki_forwarded_from = [
         'commons',
         'incubator',
+        'mediawiki',
         'meta',
+        'outreach',
         'species',
-        'strategy',
         'test',
         'wikimania'
     ]
@@ -205,6 +208,7 @@ class Family(family.SubdomainFamily, family.WikimediaFamily):
         'fa': ('ویرایش',),
         'fr': ('En cours', 'Plusieurs en cours', 'Correction en cours',
                'Inuse', 'Remix',),
+        'he': ('בעבודה',),
         'hr': ('Radovi',),
         'sr': ('Радови у току', 'Рут',),
         'ur': ('زیر ترمیم',),

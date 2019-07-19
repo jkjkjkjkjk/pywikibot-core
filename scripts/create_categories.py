@@ -10,11 +10,12 @@ The following command line parameters are supported:
 
 -always         Don't ask, just do the edit.
 
--overwrite      (not implemented yet).
-
 -parent         The name of the parent category.
 
 -basename       The base to be used for the new category names.
+
+-overwrite:     Existing category is skipped by default. Use this option to
+                overwrite a category.
 
 Example:
 
@@ -32,12 +33,12 @@ to create [[Category:Cultural heritage monuments in Hensies]].
 """
 #
 # (C) Multichill, 2011
-# (C) xqt, 2011-2018
-# (c) Pywikibot team, 2013-2018
+# (C) xqt, 2011-2019
+# (c) Pywikibot team, 2013-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 from pywikibot import pagegenerators, Bot
@@ -47,32 +48,36 @@ class CreateCategoriesBot(Bot):
 
     """Category creator bot."""
 
-    def __init__(self, generator, parent, basename, **kwargs):
+    def __init__(self, generator, parent, basename, overwrite, **kwargs):
         """Initializer."""
         super(CreateCategoriesBot, self).__init__(**kwargs)
         self.generator = generator
         self.parent = parent
         self.basename = basename
-        self.comment = u'Creating new category'
+        self.overwrite = overwrite
+        self.comment = 'Creating new category'
 
     def treat(self, page):
         """Create category in commons for that page."""
         title = page.title(with_ns=False)
 
         newpage = pywikibot.Category(pywikibot.Site('commons', 'commons'),
-                                     '%s %s' % (self.basename, title))
-        newtext = (u'[[Category:%(parent)s|%(title)s]]\n'
-                   u'[[Category:%(title)s]]\n'
+                                     '{} {}'.format(self.basename, title))
+        newtext = ('[[Category:%(parent)s|%(title)s]]\n'
+                   '[[Category:%(title)s]]\n'
                    % {'parent': self.parent, 'title': title})
 
-        if not newpage.exists():
-            pywikibot.output(newpage.title())
-            self.userPut(newpage, '', newtext, summary=self.comment,
-                         ignore_save_related_errors=True,
-                         ignore_server_errors=True)
-        else:
-            # FIXME: Add overwrite option
-            pywikibot.output(u'%s already exists, skipping' % newpage.title())
+        pywikibot.output(newpage.title())
+        self.userPut(newpage, '', newtext, summary=self.comment,
+                     ignore_save_related_errors=True,
+                     ignore_server_errors=True)
+
+    def skip_page(self, page):
+        """Skip page if it is not overwritten."""
+        if page.exists() and not self.overwrite:
+            pywikibot.output('{} already exists, skipping'.format(page))
+            return True
+        return super(CreateCategoriesBot, self).skip_page(page)
 
 
 def main(*args):
@@ -82,10 +87,11 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     parent = None
     basename = None
+    overwrite = False
     options = {}
 
     # Process global args and prepare generator args parser
@@ -95,6 +101,8 @@ def main(*args):
     for arg in local_args:
         if arg == '-always':
             options['always'] = True
+        elif arg == '-overwrite':
+            overwrite = True
         elif arg.startswith('-parent:'):
             parent = arg[len('-parent:'):].strip()
         elif arg.startswith('-basename'):
@@ -109,8 +117,9 @@ def main(*args):
         missing.add('-basename')
 
     generator = gen_factory.getCombinedGenerator()
-    if generator and missing:
-        bot = CreateCategoriesBot(generator, parent, basename, **options)
+    if generator and not missing:
+        bot = CreateCategoriesBot(generator, parent,
+                                  basename, overwrite, **options)
         bot.run()
         pywikibot.output('All done')
         return True
@@ -120,5 +129,5 @@ def main(*args):
         return False
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

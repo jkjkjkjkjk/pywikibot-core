@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Tests for reflinks script."""
 #
-# (C) Pywikibot team, 2014-2015
+# (C) Pywikibot team, 2014-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from scripts.reflinks import XmlDumpPageGenerator, ReferencesRobot, main
 
@@ -30,7 +30,7 @@ class TestXMLPageGenerator(TestCase):
             namespaces=[0, 1],
             site=self.get_site())
         pages = list(gen)
-        self.assertEqual(len(pages), 0)
+        self.assertIsEmpty(pages)
 
     def test_simple_bare_refs(self):
         """Test simple bare references in multiple namespaces."""
@@ -40,19 +40,19 @@ class TestXMLPageGenerator(TestCase):
             namespaces=[0, 1],
             site=self.get_site())
         pages = list(gen)
-        self.assertPagelistTitles(pages, (u'Fake page', u'Talk:Fake page'),
-                                  site=self.get_site())
+        self.assertPageTitlesEqual(pages, ('Fake page', 'Talk:Fake page'),
+                                   site=self.get_site())
 
     def test_namespace_empty_list(self):
         """Test namespaces=[] processes all namespaces."""
         gen = XmlDumpPageGenerator(
             filename=join_xml_data_path('dummy-reflinks.xml'),
-            start=u'Fake page',
+            start='Fake page',
             namespaces=[],
             site=self.get_site())
         pages = list(gen)
-        self.assertPagelistTitles(pages, (u'Fake page', u'Talk:Fake page'),
-                                  site=self.get_site())
+        self.assertPageTitlesEqual(pages, ('Fake page', 'Talk:Fake page'),
+                                   site=self.get_site())
 
     def test_namespace_None(self):
         """Test namespaces=None processes all namespaces."""
@@ -62,30 +62,30 @@ class TestXMLPageGenerator(TestCase):
             namespaces=None,
             site=self.get_site())
         pages = list(gen)
-        self.assertPagelistTitles(pages, (u'Fake page', u'Talk:Fake page'),
-                                  site=self.get_site())
+        self.assertPageTitlesEqual(pages, ('Fake page', 'Talk:Fake page'),
+                                   site=self.get_site())
 
     def test_namespace_string_ids(self):
         """Test namespaces with ids as string."""
         gen = XmlDumpPageGenerator(
             filename=join_xml_data_path('dummy-reflinks.xml'),
             start='Fake page',
-            namespaces=["0", "1"],
+            namespaces=['0', '1'],
             site=self.get_site())
         pages = list(gen)
-        self.assertPagelistTitles(pages, (u'Fake page', u'Talk:Fake page'),
-                                  site=self.get_site())
+        self.assertPageTitlesEqual(pages, ('Fake page', 'Talk:Fake page'),
+                                   site=self.get_site())
 
     def test_namespace_names(self):
         """Test namespaces with namespace names."""
         gen = XmlDumpPageGenerator(
             filename=join_xml_data_path('dummy-reflinks.xml'),
             start='Fake page',
-            namespaces=["Talk"],
+            namespaces=['Talk'],
             site=self.get_site())
         pages = list(gen)
-        self.assertPagelistTitles(pages, (u'Talk:Fake page', ),
-                                  site=self.get_site())
+        self.assertPageTitlesEqual(pages, ('Talk:Fake page', ),
+                                   site=self.get_site())
 
     def test_start_with_underscore(self):
         """Test with underscore in start page title."""
@@ -95,8 +95,8 @@ class TestXMLPageGenerator(TestCase):
             namespaces=[0, 1],
             site=self.get_site())
         pages = list(gen)
-        self.assertPagelistTitles(pages, (u'Fake page', u'Talk:Fake page'),
-                                  site=self.get_site())
+        self.assertPageTitlesEqual(pages, ('Fake page', 'Talk:Fake page'),
+                                   site=self.get_site())
 
     def test_without_start(self):
         """Test without a start page title."""
@@ -106,8 +106,8 @@ class TestXMLPageGenerator(TestCase):
             namespaces=[0, 1],
             site=self.get_site())
         pages = list(gen)
-        self.assertPagelistTitles(pages, (u'Fake page', u'Talk:Fake page'),
-                                  site=self.get_site())
+        self.assertPageTitlesEqual(pages, ('Fake page', 'Talk:Fake page'),
+                                   site=self.get_site())
 
     def test_start_prefix(self):
         """Test with a prefix as a start page title."""
@@ -117,8 +117,8 @@ class TestXMLPageGenerator(TestCase):
             namespaces=[0, 1],
             site=self.get_site())
         pages = list(gen)
-        self.assertPagelistTitles(pages, (u'Fake page', u'Talk:Fake page'),
-                                  site=self.get_site())
+        self.assertPageTitlesEqual(pages, ('Fake page', 'Talk:Fake page'),
+                                   site=self.get_site())
 
 
 class TestReferencesBotConstructor(ScriptMainTestCase):
@@ -126,7 +126,7 @@ class TestReferencesBotConstructor(ScriptMainTestCase):
     """
     Test reflinks with run() removed.
 
-    These tests cant verify the order of the pages in the XML
+    These tests can't verify the order of the pages in the XML
     as the constructor is given a preloading generator.
     See APISite.preloadpages for details.
     """
@@ -152,7 +152,7 @@ class TestReferencesBotConstructor(ScriptMainTestCase):
         """Test the generator without any narrowing."""
         main('-xml:' + join_xml_data_path('dummy-reflinks.xml'))
         gen = self.constructor_args[0]
-        self.assertPageTitlesCountEqual(gen, [u'Fake page', u'Talk:Fake page'],
+        self.assertPageTitlesCountEqual(gen, ['Fake page', 'Talk:Fake page'],
                                         site=self.get_site())
 
     def test_xml_one_namespace(self):
@@ -161,15 +161,15 @@ class TestReferencesBotConstructor(ScriptMainTestCase):
              '-namespace:1')
         gen = self.constructor_args[0]
         pages = list(gen)
-        self.assertPagelistTitles(pages, [u'Talk:Fake page'],
-                                  site=self.get_site())
+        self.assertPageTitlesEqual(pages, ['Talk:Fake page'],
+                                   site=self.get_site())
 
     def test_xml_multiple_namespace_ids(self):
         """Test the generator using multiple separate namespaces parameters."""
         main('-xml:' + join_xml_data_path('dummy-reflinks.xml'),
              '-namespace:0', '-namespace:1', '-xmlstart:Fake page')
         gen = self.constructor_args[0]
-        self.assertPageTitlesCountEqual(gen, [u'Fake page', u'Talk:Fake page'],
+        self.assertPageTitlesCountEqual(gen, ['Fake page', 'Talk:Fake page'],
                                         site=self.get_site())
 
     def test_xml_multiple_namespace_ids_2(self):
@@ -177,7 +177,7 @@ class TestReferencesBotConstructor(ScriptMainTestCase):
         main('-xml:' + join_xml_data_path('dummy-reflinks.xml'),
              '-namespace:0,1', '-xmlstart:Fake page')
         gen = self.constructor_args[0]
-        self.assertPageTitlesCountEqual(gen, [u'Fake page', u'Talk:Fake page'],
+        self.assertPageTitlesCountEqual(gen, ['Fake page', 'Talk:Fake page'],
                                         site=self.get_site())
 
     def test_xml_start_prefix(self):
@@ -186,8 +186,8 @@ class TestReferencesBotConstructor(ScriptMainTestCase):
              '-namespace:1', '-xmlstart:Fake')
         gen = self.constructor_args[0]
         pages = list(gen)
-        self.assertPagelistTitles(pages, [u'Talk:Fake page'],
-                                  site=self.get_site())
+        self.assertPageTitlesEqual(pages, ['Talk:Fake page'],
+                                   site=self.get_site())
 
     def test_xml_start_underscore(self):
         """Test the generator using a start page with an underscore."""
@@ -195,8 +195,8 @@ class TestReferencesBotConstructor(ScriptMainTestCase):
              '-namespace:1', '-xmlstart:Fake_page')
         gen = self.constructor_args[0]
         pages = list(gen)
-        self.assertPagelistTitles(pages, [u'Talk:Fake page'],
-                                  site=self.get_site())
+        self.assertPageTitlesEqual(pages, ['Talk:Fake page'],
+                                   site=self.get_site())
 
     def test_xml_namespace_name(self):
         """Test the generator using a namespace name."""
@@ -204,8 +204,8 @@ class TestReferencesBotConstructor(ScriptMainTestCase):
              '-namespace:Talk', '-xmlstart:Fake page')
         gen = self.constructor_args[0]
         pages = list(gen)
-        self.assertPagelistTitles(pages, [u'Talk:Fake page'],
-                                  site=self.get_site())
+        self.assertPageTitlesEqual(pages, ['Talk:Fake page'],
+                                   site=self.get_site())
 
 
 def dummy_constructor(self, *args, **kwargs):

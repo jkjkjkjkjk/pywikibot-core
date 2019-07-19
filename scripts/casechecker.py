@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 """Bot to find all pages on the wiki with mixed latin and cyrilic alphabets."""
 #
-# (C) Pywikibot team, 2006-2018
+# (C) Pywikibot team, 2006-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import codecs
 import itertools
@@ -20,11 +20,11 @@ import pywikibot
 from pywikibot import i18n
 
 from pywikibot.data import api
-from pywikibot.tools import first_lower, first_upper, formatter
+from pywikibot.tools import first_lower, first_upper, formatter, PY2
 
 from scripts.category import CategoryMoveRobot as CategoryMoveBot
 
-if sys.version_info[0] > 2:
+if not PY2:
     xrange = range
 
 
@@ -325,7 +325,7 @@ class CaseChecker(object):
                         if len(err[1]) == 1:
                             newTitle = err[1][0]
                             editSummary = i18n.twtranslate(
-                                self.site, "casechecker-rename")
+                                self.site, 'casechecker-rename')
                             dst = self.Page(newTitle)
 
                             if 'redirect' in page:
@@ -373,8 +373,9 @@ class CaseChecker(object):
                                         src.title(with_ns=False),
                                         dst.title(with_ns=False),
                                         self.autonomous,
-                                        editSummary + ' ' +
-                                        self.MakeMoveSummary(title, newTitle),
+                                        editSummary + ' '
+                                        + self.MakeMoveSummary(title,
+                                                               newTitle),
                                         True)
                                     bot.run()
                                 else:
@@ -441,8 +442,8 @@ class CaseChecker(object):
                                                  .format(err[0]))
                     if pageObj is not None:
                         if self.PutNewPage(pageObj, pageTxt, msg):
-                                # done, no need to log anything
-                                foundSuggestions = False
+                            # done, no need to log anything
+                            foundSuggestions = False
 
                     if foundSuggestions:
                         self.AppendLineToLog(self.failedTitles, title)
@@ -523,8 +524,8 @@ class CaseChecker(object):
                         c2 = self.lclToLatDict[co]
                     else:
                         c2 = None
-                    kw = [w for w in kw if p < len(w) and
-                          (w[p] == c or (c2 is not None and w[p] == c2))]
+                    kw = [w for w in kw if p < len(w)
+                          and (w[p] == c or (c2 is not None and w[p] == c2))]
                 if len(kw) > 1:
                     pywikibot.output("Word '{}' could be treated as more than "
                                      'one known words'.format(badWord))
@@ -744,7 +745,7 @@ class CaseChecker(object):
         prf = '' if self.Page(title).namespace() == 0 else ':'
         cc = '|««« {} »»»'.format(
             self.ColorCodeWord(title) if colorcode else '')
-        return u"[[%s%s%s]]" % (prf, title, cc)
+        return '[[%s%s%s]]' % (prf, title, cc)
 
     def OpenLogFile(self, filename):
         """Open logfile."""
@@ -780,6 +781,6 @@ class CaseChecker(object):
         return text
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     bot = CaseChecker()
     bot.Run()

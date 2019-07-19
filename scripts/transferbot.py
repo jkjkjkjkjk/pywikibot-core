@@ -5,6 +5,8 @@ This script transfers pages from a source wiki to a target wiki.
 
 It also copies edit history to a subpage.
 
+The following parameters are supported:
+
 -tolang:          The target site code.
 
 -tofamily:        The target site family.
@@ -29,7 +31,8 @@ the Arabic Wiktionary, adding "Wiktionary:Import enwp/" as prefix:
     python pwb.py transferbot -family:wikipedia -lang:en -cat:"Query service" \
         -tofamily:wiktionary -tolang:ar -prefix:"Wiktionary:Import enwp/"
 
-Copy the template "Query service" from the Toolserver wiki to wikitech:
+Copy the template "Query service" from the English Wikipedia to the
+Arabic Wiktionary:
 
     python pwb.py transferbot -family:wikipedia -lang:en \
         -tofamily:wiktionary -tolang:ar -page:"Template:Query service"
@@ -37,47 +40,17 @@ Copy the template "Query service" from the Toolserver wiki to wikitech:
 """
 #
 # (C) Merlijn van Deen, 2014
-# (C) Pywikibot team, 2014-2018
+# (C) Pywikibot team, 2014-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
+from pywikibot.bot import suggest_help
 from pywikibot import pagegenerators
 
-docuReplacements = {
-    '&params;': pagegenerators.parameterHelp,
-}
-
-
-class WikiTransferException(Exception):
-
-    """Base class for exceptions from this script.
-
-    Makes it easier for clients to catch all expected exceptions that the
-    script might throw
-    """
-
-    pass
-
-
-class TargetSiteMissing(WikiTransferException):
-
-    """Thrown when the target site is the same as the source site.
-
-    Based on the way each are initialized, this is likely to happen when the
-    target site simply hasn't been specified.
-    """
-
-    pass
-
-
-class TargetPagesMissing(WikiTransferException):
-
-    """Thrown if no page range has been specified to operate on."""
-
-    pass
+docuReplacements = {'&params;': pagegenerators.parameterHelp}  # noqa: N816
 
 
 def main(*args):
@@ -87,7 +60,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     local_args = pywikibot.handle_args(args)
 
@@ -110,78 +83,92 @@ def main(*args):
             tolang = arg[len('-tolang:'):]
         elif arg.startswith('-prefix'):
             prefix = arg[len('-prefix:'):]
-        elif arg == "-overwrite":
+        elif arg == '-overwrite':
             overwrite = True
 
-    tosite = pywikibot.Site(tolang, tofamily)
-    if fromsite == tosite:
-        raise TargetSiteMissing('Target site not different from source site')
-
     gen = gen_factory.getCombinedGenerator()
-    if not gen:
-        raise TargetPagesMissing('Target pages not specified')
+
+    tosite = pywikibot.Site(tolang, tofamily)
+    additional_text = ('Target site not different from source site.'
+                       if fromsite == tosite else '')
+
+    if additional_text or not gen:
+        suggest_help(missing_generator=not gen,
+                     additional_text=additional_text)
+        return
 
     gen_args = ' '.join(gen_args)
-    pywikibot.output(u"""
+    pywikibot.output("""
     Page transfer configuration
     ---------------------------
     Source: %(fromsite)r
     Target: %(tosite)r
 
-    Pages to transfer: %(gen_args)s
+    Generator of pages to transfer: %(gen_args)s
 
     Prefix for transferred pages: %(prefix)s
     """ % {'fromsite': fromsite, 'tosite': tosite,
-           'gen_args': gen_args, 'prefix': prefix})
+           'gen_args': gen_args, 'prefix': prefix if prefix else '(none)'})
 
     for page in gen:
         target_title = (prefix + page.namespace().canonical_prefix()
                         + page.title(with_ns=False))
         targetpage = pywikibot.Page(tosite, target_title)
         edithistpage = pywikibot.Page(tosite, target_title + '/edithistory')
-        summary = 'Moved page from {old} ([[{new}/edithistory|history]])'\
-                  .format(old=page.title(as_link=True, insite=tosite),
-                          new=targetpage.title() if not
-                          targetpage.namespace().subpages else '')
 
-        if targetpage.exists() and not overwrite:
-            pywikibot.output(
-                u"Skipped %s (target page %s exists)" % (
-                    page.title(as_link=True),
-                    targetpage.title(as_link=True)
+        if targetpage.exists():
+            if not overwrite:
+                pywikibot.warning(
+                    'Skipped {0} (target page {1} exists)'.format(
+                        page.title(as_link=True, force_interwiki=True),
+                        targetpage.title(as_link=True)
+                    )
+                )
+                continue
+            if not targetpage.botMayEdit():
+                pywikibot.warning(
+                    'Target page {0} is not editable by bots'.format(
+                        targetpage.title(as_link=True)
+                    )
+                )
+                continue
+
+        if not page.exists():
+            pywikibot.warning(
+                "Page {0} doesn't exist".format(
+                    page.title(as_link=True)
                 )
             )
             continue
 
-        pywikibot.output(u"Moving %s to %s..."
-                         % (page.title(as_link=True),
-                            targetpage.title(as_link=True)))
+        pywikibot.output('Moving {0} to {1}...'
+                         .format(page.title(as_link=True,
+                                            force_interwiki=True),
+                                 targetpage.title(as_link=True)))
 
-        pywikibot.log("Getting page text.")
+        pywikibot.log('Getting page text.')
         text = page.get(get_redirect=True)
-        text += ("<noinclude>\n\n<small>This page was moved from %s. It's "
-                 "edit history can be viewed at %s</small></noinclude>"
-                 % (page.title(as_link=True, insite=targetpage.site),
-                    edithistpage.title(as_link=True, insite=targetpage.site)))
+        source_link = page.title(as_link=True, insite=targetpage.site)
+        text += ('<noinclude>\n\n<small>This page was moved from {0}. Its '
+                 'edit history can be viewed at {1}</small></noinclude>'
+                 .format(source_link,
+                         edithistpage.title(as_link=True,
+                                            insite=targetpage.site)))
 
-        pywikibot.log("Getting edit history.")
+        pywikibot.log('Getting edit history.')
         historytable = page.getVersionHistoryTable()
 
-        pywikibot.log("Putting page text.")
-        targetpage.put(text, summary=summary)
-
-        pywikibot.log("Putting edit history.")
+        pywikibot.log('Putting edit history.')
+        summary = 'Moved page from {source}'.format(source=source_link)
         edithistpage.put(historytable, summary=summary)
 
+        pywikibot.log('Putting page text.')
+        edithist_link = ' ([[{target}/edithistory|history]])'.format(
+            target=targetpage.title()
+            if not targetpage.namespace().subpages else '')
+        summary += edithist_link
+        targetpage.put(text, summary=summary)
 
-if __name__ == "__main__":
-    try:
-        main()
-    except TargetSiteMissing:
-        pywikibot.error(u'Need to specify a target site and/or language')
-        pywikibot.error(u'Try running this script with -help for help/usage')
-        pywikibot.exception()
-    except TargetPagesMissing:
-        pywikibot.error(u'Need to specify a page range')
-        pywikibot.error(u'Try running this script with -help for help/usage')
-        pywikibot.exception()
+
+if __name__ == '__main__':
+    main()

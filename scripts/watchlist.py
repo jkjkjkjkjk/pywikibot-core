@@ -11,18 +11,18 @@ Syntax:
 
 Command line options:
 
-    -all  -  Reloads watchlists for all wikis where a watchlist is already
+-all         Reloads watchlists for all wikis where a watchlist is already
              present
-    -new  -  Load watchlists for all wikis where accounts is setting in
+-new         Load watchlists for all wikis where accounts is setting in
              user-config.py
 """
 #
 # (C) Daniel Herding, 2005
-# (C) Pywikibot team, 2005-2018
+# (C) Pywikibot team, 2005-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import os
 
@@ -91,7 +91,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     all = False
     new = False
@@ -110,7 +110,7 @@ def main(*args):
     else:
         site = pywikibot.Site()
         watchlist = refresh(site, sysop=sysop)
-        pywikibot.output(u'%i pages in the watchlist.' % len(watchlist))
+        pywikibot.output('{} pages in the watchlist.'.format(len(watchlist)))
         for page in watchlist:
             try:
                 pywikibot.stdout(page.title())
@@ -118,5 +118,5 @@ def main(*args):
                 pywikibot.exception()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

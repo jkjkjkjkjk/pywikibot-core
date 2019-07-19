@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Family module for Wikibooks."""
 #
-# (C) Pywikibot team, 2005-2018
+# (C) Pywikibot team, 2005-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from pywikibot import family
 
@@ -18,7 +18,7 @@ class Family(family.SubdomainFamily, family.WikimediaFamily):
     name = 'wikibooks'
 
     closed_wikis = [
-        # See https://noc.wikimedia.org/conf/highlight.php?file=closed.dblist
+        # See https://noc.wikimedia.org/conf/highlight.php?file=dblists/closed.dblist  # noqa
         'aa', 'ak', 'als', 'ang', 'as', 'ast', 'ay',
         'bi', 'bm', 'bo', 'ch', 'co', 'ga', 'gn', 'got',
         'gu', 'ie', 'kn', 'ks', 'lb', 'ln', 'lv', 'mi',
@@ -28,18 +28,18 @@ class Family(family.SubdomainFamily, family.WikimediaFamily):
     ]
 
     removed_wikis = [
-        # See https://noc.wikimedia.org/conf/highlight.php?file=closed.dblist
+        # See https://noc.wikimedia.org/conf/highlight.php?file=dblists/deleted.dblist  # noqa
         'dk', 'tokipona',
     ]
 
     languages_by_size = [
-        'en', 'hu', 'de', 'fr', 'pt', 'ja', 'it', 'nl', 'es', 'pl', 'th', 'he',
-        'id', 'fi', 'sq', 'fa', 'zh', 'ca', 'ru', 'az', 'vi', 'da', 'ko', 'sv',
-        'gl', 'sr', 'cs', 'hr', 'ba', 'no', 'tr', 'ar', 'ta', 'sa', 'sk', 'uk',
-        'hi', 'is', 'ro', 'eo', 'si', 'mk', 'bn', 'bg', 'ka', 'ms', 'lt', 'tt',
-        'li', 'el', 'ur', 'sl', 'km', 'tl', 'kk', 'et', 'ml', 'be', 'oc', 'ia',
-        'ne', 'hy', 'eu', 'pa', 'la', 'cv', 'tg', 'fy', 'ku', 'bs', 'cy', 'te',
-        'af', 'mr', 'mg', 'ky',
+        'en', 'hu', 'de', 'fr', 'pt', 'ja', 'it', 'nl', 'es', 'pl', 'he', 'th',
+        'id', 'fi', 'sq', 'az', 'fa', 'zh', 'ca', 'ru', 'vi', 'da', 'ko', 'sv',
+        'gl', 'sr', 'cs', 'hr', 'ba', 'no', 'ar', 'tr', 'sa', 'ta', 'uk', 'eo',
+        'sk', 'is', 'ro', 'hi', 'si', 'bn', 'mk', 'bg', 'ka', 'lt', 'ms', 'tt',
+        'el', 'li', 'ur', 'sl', 'km', 'tl', 'et', 'kk', 'be', 'ia', 'ml', 'oc',
+        'ne', 'hy', 'eu', 'pa', 'tg', 'la', 'cv', 'fy', 'ku', 'bs', 'cy', 'af',
+        'te', 'mr', 'mg', 'ky',
     ]
 
     category_redirect_templates = {

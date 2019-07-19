@@ -22,11 +22,11 @@ Command line options:
                wikipedia, user, etc. namespaces.
 """
 # (C) Daniel Herding, 2007
-# (C) Pywikibot team, 2007-2018
+# (C) Pywikibot team, 2007-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from itertools import chain
 
@@ -34,15 +34,12 @@ import pywikibot
 
 from pywikibot import i18n, pagegenerators
 
-from pywikibot.tools import PY2
+from pywikibot.tools import UnicodeType
 
 from scripts.solve_disambiguation import DisambiguationRobot
 
-if not PY2:
-    basestring = (str, )
-
 HELP_MSG = """\n
-mispelling.py does not support site {site}.
+misspelling.py does not support site {site}.
 
 Help Pywikibot team to provide support for your wiki by submitting
 a bug to:
@@ -66,9 +63,9 @@ class MisspellingRobot(DisambiguationRobot):
         'da': 'Omdirigeringer af fejlstavninger',
         'de': ('Kategorie:Wikipedia:Falschschreibung',
                'Kategorie:Wikipedia:Obsolete Schreibung'),
-        'en': u'Redirects from misspellings',
-        'hu': u'Átirányítások hibás névről',
-        'nl': u'Categorie:Wikipedia:Redirect voor spelfout',
+        'en': 'Redirects from misspellings',
+        'hu': 'Átirányítások hibás névről',
+        'nl': 'Categorie:Wikipedia:Redirect voor spelfout',
     }
 
     def __init__(self, always, firstPageTitle, main_only):
@@ -86,7 +83,7 @@ class MisspellingRobot(DisambiguationRobot):
         mycode = self.site.code
         if mycode in self.misspellingCategory:
             categories = self.misspellingCategory[mycode]
-            if isinstance(categories, basestring):
+            if isinstance(categories, UnicodeType):
                 categories = (categories, )
             generators = (
                 pagegenerators.CategorizedPageGenerator(
@@ -95,7 +92,7 @@ class MisspellingRobot(DisambiguationRobot):
                 for misspellingCategoryTitle in categories)
         elif mycode in self.misspellingTemplate:
             templates = self.misspellingTemplate[mycode]
-            if isinstance(templates, basestring):
+            if isinstance(templates, UnicodeType):
                 templates = (templates, )
             generators = (
                 pagegenerators.ReferringPageGenerator(
@@ -104,8 +101,8 @@ class MisspellingRobot(DisambiguationRobot):
                 for misspellingTemplateName in templates)
             if firstPageTitle:
                 pywikibot.output(
-                    u'-start parameter unsupported on this wiki because there '
-                    u'is no category for misspellings.')
+                    '-start parameter unsupported on this wiki because there '
+                    'is no category for misspellings.')
         else:
             pywikibot.output(HELP_MSG.format(site=self.site))
 
@@ -129,7 +126,7 @@ class MisspellingRobot(DisambiguationRobot):
             return True
         if self.misspellingTemplate.get(disambPage.site.code) is not None:
             templates = self.misspellingTemplate[disambPage.site.code]
-            if isinstance(templates, basestring):
+            if isinstance(templates, UnicodeType):
                 templates = (templates, )
             for template, params in disambPage.templatesWithParams():
                 if template.title(with_ns=False) in templates:
@@ -166,7 +163,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     # the option that's always selected when the bot wonders what to do with
     # a link. If it's None, the user is prompted (default behaviour).
@@ -188,5 +185,5 @@ def main(*args):
     bot.run()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

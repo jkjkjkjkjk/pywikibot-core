@@ -5,9 +5,9 @@ Script to copy images to Wikimedia Commons, or to another wiki.
 
 Syntax:
 
-    python pwb.py imagetransfer pagename [-interwiki] [-tolang:x] [-tofamily:y]
+    python pwb.py imagetransfer {<pagename>|<generator>} [<options>]
 
-Arguments:
+The following parameters are supported:
 
   -interwiki   Look for images in pages found through interwiki links.
 
@@ -24,6 +24,8 @@ If pagename is an image description page, offers to copy the image to the
 target site. If it is a normal page, it will offer to copy any of the images
 used on that page, or if the -interwiki argument is used, any of the images
 used on a page reachable via interwiki links.
+
+&params;
 """
 #
 # (C) Andre Engels, 2004
@@ -31,7 +33,7 @@ used on a page reachable via interwiki links.
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import re
 import sys
@@ -40,6 +42,11 @@ import pywikibot
 
 from pywikibot import config, i18n, pagegenerators, textlib
 from pywikibot.specialbots import UploadRobot
+
+
+docuReplacements = {
+    '&params;': pagegenerators.parameterHelp
+}
 
 
 nowCommonsTemplate = {
@@ -134,7 +141,7 @@ class ImageTransferBot(object):
         """
         sourceSite = sourceImagePage.site
         url = sourceImagePage.fileUrl().encode('utf-8')
-        pywikibot.output(u"URL should be: %s" % url)
+        pywikibot.output('URL should be: ' + url)
         # localize the text that should be printed on image description page
         try:
             description = sourceImagePage.get()
@@ -193,8 +200,8 @@ class ImageTransferBot(object):
                     # add the nowCommons template.
                     pywikibot.output('Adding nowCommons template to '
                                      + sourceImagePage.title())
-                    sourceImagePage.put(sourceImagePage.get() + '\n\n' +
-                                        nowCommonsTemplate[sourceSite.lang]
+                    sourceImagePage.put(sourceImagePage.get() + '\n\n'
+                                        + nowCommonsTemplate[sourceSite.lang]
                                         % targetFilename,
                                         summary=reason)
 
@@ -202,8 +209,8 @@ class ImageTransferBot(object):
         """Print image list."""
         for i, image in enumerate(imagelist):
             pywikibot.output('-' * 60)
-            pywikibot.output('%s. Found image: %s'
-                             % (i, image.title(as_link=True)))
+            pywikibot.output('{}. Found image: {}'
+                             .format(i, image.title(as_link=True)))
             try:
                 # Show the image description page's contents
                 pywikibot.output(image.get())
@@ -216,8 +223,8 @@ class ImageTransferBot(object):
                     targetTitle = 'File:' + image.title().split(':', 1)[1]
                     targetImage = pywikibot.Page(self.targetSite, targetTitle)
                     targetImage.get()
-                    pywikibot.output('Image with this name is already on %s.'
-                                     % self.targetSite)
+                    pywikibot.output('Image with this name is already on {}.'
+                                     .format(self.targetSite))
                     pywikibot.output('-' * 60)
                     pywikibot.output(targetImage.get())
                     sys.exit()
@@ -261,9 +268,9 @@ class ImageTransferBot(object):
                         break
                     todo = int(todo)
                 if todo in range(len(imagelist)):
-                    if (imagelist[todo].fileIsShared() and
-                            imagelist[todo].site.image_repository() ==
-                            self.targetSite.image_repository()):
+                    if (imagelist[todo].fileIsShared()
+                            and imagelist[todo].site.image_repository()
+                            == self.targetSite.image_repository()):
                         pywikibot.output(
                             'The image is already shared on {0}.'
                             .format(self.targetSite.image_repository()))
@@ -282,7 +289,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     gen = None
 
@@ -309,21 +316,21 @@ def main(*args):
 
     gen = generator_factory.getCombinedGenerator()
     if not gen:
-        pywikibot.bot.suggest_help(missing_parameters=['page'])
+        pywikibot.bot.suggest_help(
+            missing_parameters=['page'],
+            additional_text='and no other generator was defined.')
         return False
 
+    site = pywikibot.Site()
     if not targetLang and not targetFamily:
-        targetSite = pywikibot.Site('commons', 'commons')
+        targetSite = site.image_repository()
     else:
-        if not targetLang:
-            targetLang = pywikibot.Site().language
-        if not targetFamily:
-            targetFamily = pywikibot.Site().family
-        targetSite = pywikibot.Site(targetLang, targetFamily)
+        targetSite = pywikibot.Site(targetLang or site.lang,
+                                    targetFamily or site.family)
     bot = ImageTransferBot(gen, interwiki=interwiki, targetSite=targetSite,
                            keep_name=keep_name)
     bot.run()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

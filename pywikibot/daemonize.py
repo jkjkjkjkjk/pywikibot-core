@@ -1,20 +1,23 @@
 # -*- coding: utf-8 -*-
 """Module to daemonize the current process on Unix."""
 #
-# (C) Pywikibot team, 2007-2015
+# (C) Pywikibot team, 2007-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import codecs
 import os
 import sys
 
+from pywikibot.tools import deprecated_args
+
 is_daemon = False
 
 
-def daemonize(close_fd=True, chdir=True, write_pid=False, redirect_std=None):
+@deprecated_args(write_pid=None)
+def daemonize(close_fd=True, chdir=True, redirect_std=None):
     """
     Daemonize the current process.
 
@@ -25,8 +28,6 @@ def daemonize(close_fd=True, chdir=True, write_pid=False, redirect_std=None):
     @type close_fd: bool
     @param chdir: Change the current working directory to /
     @type chdir: bool
-    @param write_pid: Write the pid to sys.argv[0] + '.pid'
-    @type write_pid: bool
     @param redirect_std: Filename to redirect stdout and stdin to
     @type redirect_std: str
     """
@@ -60,8 +61,6 @@ def daemonize(close_fd=True, chdir=True, write_pid=False, redirect_std=None):
             path = os.path.basename(sys.argv[0]) + '.pid'
             with codecs.open(path, 'w', 'utf-8') as f:
                 f.write(str(pid))
-            os._exit(0)
-    else:
-        # Exit to return control to the terminal
-        # os._exit to prevent the cleanup to run
-        os._exit(0)
+    # Exit to return control to the terminal
+    # os._exit to prevent the cleanup to run
+    os._exit(0)

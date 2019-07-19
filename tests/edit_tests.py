@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Tests for editing pages."""
 #
-# (C) Pywikibot team, 2015-2017
+# (C) Pywikibot team, 2015-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import time
 
@@ -13,7 +13,6 @@ import pywikibot
 
 from pywikibot import config
 from pywikibot import page_put_queue
-from pywikibot.tools import MediaWikiVersion
 
 from tests.aspects import unittest, TestCase
 from tests.oauth_tests import OAuthSiteTestCase
@@ -69,7 +68,7 @@ class TestGeneralWrite(TestCase):
         self.assertFalse(hasattr(p, '_text'))
         p = pywikibot.Page(self.site, 'User:John Vandenberg/appendtext test')
         self.assertTrue(p.text.endswith(ts))
-        self.assertTrue(p.text != ts)
+        self.assertNotEqual(p.text, ts)
 
 
 class TestSiteMergeHistory(TestCase):
@@ -88,9 +87,9 @@ class TestSiteMergeHistory(TestCase):
         dest = pywikibot.Page(site, 'User:Sn1per/MergeTest2')
 
         # Make sure the wiki supports action=mergehistory
-        if MediaWikiVersion(site.version()) < MediaWikiVersion('1.27.0-wmf.13'):
-            raise unittest.SkipTest('Wiki version must be 1.27.0-wmf.13 or '
-                                    'newer to support the history merge API.')
+        if site.mw_version < '1.27.0-wmf.13':
+            self.skipTest('Wiki version must be 1.27.0-wmf.13 or newer to '
+                          'support the history merge API.')
 
         if source.exists():
             source.delete('Pywikibot merge history unit test')
@@ -207,11 +206,11 @@ class OAuthEditTest(OAuthSiteTestCase):
         self.assertTrue(self.site.logged_in())
         ts = str(time.time())
         p = pywikibot.Page(self.site,
-                           'User:%s/edit test' % self.site.username())
+                           'User:{}/edit test'.format(self.site.username()))
         p.site.editpage(p, appendtext=ts)
         revision_id = p.latest_revision_id
         p = pywikibot.Page(self.site,
-                           'User:%s/edit test' % self.site.username())
+                           'User:{}/edit test'.format(self.site.username()))
         self.assertEqual(revision_id, p.latest_revision_id)
         self.assertTrue(p.text.endswith(ts))
 

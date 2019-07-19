@@ -19,7 +19,7 @@ The script takes a single parameter:
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import gzip
 import os
@@ -83,15 +83,16 @@ class FreebaseMapperRobot(object):
         else:
             # Just pick up the first label
             label = list(data.labels.values())[0]
-        pywikibot.output('Parsed: %s <--> %s' % (qid, mid))
-        pywikibot.output('%s is %s' % (data.getID(), label))
+        pywikibot.output('Parsed: {} <--> {}'.format(qid, mid))
+        pywikibot.output('{} is {}'.format(data.getID(), label))
         if data.claims and 'P646' in data.claims:
             # We assume that there is only one claim.
             # If there are multiple ones, our logs might be wrong
             # but the constraint value reports will catch them
             if mid != data.claims['P646'][0].getTarget():
-                pywikibot.output('Mismatch: expected %s, has %s instead'
-                                 % (mid, data.claims['P646'][0].getTarget()))
+                pywikibot.output('Mismatch: expected {}, has {} instead'
+                                 .format(mid,
+                                         data.claims['P646'][0].getTarget()))
             else:
                 pywikibot.output('Already has mid set, is consistent.')
         else:
@@ -110,7 +111,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     filename = 'fb2w.nt.gz'  # Default filename
     for arg in pywikibot.handle_args(args):

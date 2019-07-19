@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """Test for site detection."""
 #
-# (C) Pywikibot team, 2014-2017
+# (C) Pywikibot team, 2014-2019
 #
 # Distributed under the terms of the MIT license.
 #
 
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from requests.exceptions import ConnectionError, Timeout
 
@@ -71,8 +71,8 @@ class StandardVersionSiteTestCase(SiteDetectionTestCase):
     def test_wikichristian(self):
         """Test detection of MediaWiki sites for www.wikichristian.org.
 
-        Server that hosts www.wikichristian.org is unreliable - it occasionally
-        responding with 500 error (see: T151368).
+        Server that hosts www.wikichristian.org is unreliable - it
+        occasionally responding with 500 error (see: T151368).
         """
         self.assertSite('http://www.wikichristian.org/index.php?title=$1')
 
@@ -266,7 +266,7 @@ class OtherSiteTestCase(SiteDetectionTestCase):
     def test_musicbrainz(self):
         """Test http://musicbrainz.org/doc/ which has a page 'api.php'.
 
-        Possible false positive caused by the existance of a page called
+        Possible false positive caused by the existence of a page called
         http://musicbrainz.org/doc/api.php.
         """
         self.assertNoSite('http://musicbrainz.org/doc/$1')

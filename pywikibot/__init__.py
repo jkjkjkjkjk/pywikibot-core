@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """The initialization file for the Pywikibot framework."""
 #
-# (C) Pywikibot team, 2008-2018
+# (C) Pywikibot team, 2008-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 __version__ = __release__ = '3.1.dev0'
 __url__ = 'https://www.mediawiki.org/wiki/Manual:Pywikibot'
@@ -15,7 +15,6 @@ import datetime
 from decimal import Decimal
 import math
 import re
-import sys
 import threading
 import time
 
@@ -63,65 +62,67 @@ from pywikibot.tools import (
     deprecated as __deprecated,
     deprecate_arg as _deprecate_arg,
     normalize_username,
-    MediaWikiVersion,
+    MediaWikiVersion as _MediaWikiVersion,
     redirect_func,
     ModuleDeprecationWrapper as _ModuleDeprecationWrapper,
-    PY2,
+    PY2, PYTHON_VERSION,
     UnicodeMixin,
+    UnicodeType
 )
 from pywikibot.tools.formatter import color_format
 
 
-if sys.version_info[0] > 2:
+if not PY2:
     from queue import Queue
     long = int
-    basestring = str
 else:
     from Queue import Queue
 
 
 textlib_methods = (
-    'unescape', 'replaceExcept', 'removeDisabledParts', 'removeHTMLParts',
-    'isDisabled', 'interwikiFormat', 'interwikiSort',
-    'getLanguageLinks', 'replaceLanguageLinks',
-    'removeLanguageLinks', 'removeLanguageLinksAndSeparator',
-    'getCategoryLinks', 'categoryFormat', 'replaceCategoryLinks',
-    'removeCategoryLinks', 'removeCategoryLinksAndSeparator',
-    'replaceCategoryInPlace', 'compileLinkR', 'extract_templates_and_params',
-    'TimeStripper',
+    'categoryFormat', 'compileLinkR', 'extract_templates_and_params',
+    'getCategoryLinks', 'getLanguageLinks', 'interwikiFormat', 'interwikiSort',
+    'isDisabled', 'removeCategoryLinks', 'removeCategoryLinksAndSeparator',
+    'removeDisabledParts', 'removeHTMLParts', 'removeLanguageLinks',
+    'removeLanguageLinksAndSeparator', 'replaceCategoryInPlace',
+    'replaceCategoryLinks', 'replaceExcept', 'replaceLanguageLinks',
+    'TimeStripper', 'unescape',
 )
 
 __all__ = (
-    'config', 'ui', 'Site', 'UnicodeMixin', 'translate',
-    'Page', 'FilePage', 'Category', 'Link', 'User',
-    'ItemPage', 'PropertyPage', 'Claim',
-    'html2unicode', 'url2unicode', 'unicode2html',
-    'stdout', 'output', 'warning', 'error', 'critical', 'debug',
-    'exception', 'input_choice', 'input', 'input_yn', 'inputChoice',
-    'handle_args', 'handleArgs', 'showHelp', 'ui', 'log',
-    'calledModuleName', 'Bot', 'CurrentPageBot', 'WikidataBot',
-    'Error', 'InvalidTitle', 'BadTitle', 'NoPage', 'NoMoveTarget',
-    'SectionError',
-    'SiteDefinitionError', 'NoSuchSite', 'UnknownSite', 'UnknownFamily',
-    'UnknownExtension',
-    'NoUsername', 'UserBlocked', 'UserActionRefuse',
-    'PageRelatedError', 'UnsupportedPage', 'IsRedirectPage',
-    'IsNotRedirectPage',
-    'PageSaveRelatedError', 'PageNotSaved', 'OtherPageSaveError',
-    'LockedPage', 'CascadeLockedPage', 'LockedNoPage', 'NoCreateError',
-    'EditConflict', 'PageDeletedConflict', 'PageCreatedConflict',
-    'UploadWarning',
-    'ServerError', 'FatalServerError', 'Server504Error',
-    'CaptchaError', 'SpamfilterError', 'TitleblacklistError',
-    'CircularRedirect', 'InterwikiRedirectPage',
-    'WikiBaseError', 'CoordinateGlobeUnknownException',
-    'QuitKeyboardInterrupt',
+    'BadTitle', 'Bot', 'calledModuleName', 'CaptchaError', 'CascadeLockedPage',
+    'Category', 'CircularRedirect', 'Claim', 'config',
+    'CoordinateGlobeUnknownException', 'critical', 'CurrentPageBot', 'debug',
+    'EditConflict', 'error', 'Error', 'exception', 'FatalServerError',
+    'FilePage', 'handle_args', 'handleArgs', 'html2unicode', 'input',
+    'input_choice', 'input_yn', 'inputChoice', 'InterwikiRedirectPage',
+    'InvalidTitle', 'IsNotRedirectPage', 'IsRedirectPage', 'ItemPage', 'Link',
+    'LockedNoPage', 'LockedPage', 'log', 'NoCreateError', 'NoMoveTarget',
+    'NoPage', 'NoSuchSite', 'NoUsername', 'OtherPageSaveError', 'output',
+    'Page', 'PageCreatedConflict', 'PageDeletedConflict', 'PageNotSaved',
+    'PageRelatedError', 'PageSaveRelatedError', 'PropertyPage',
+    'QuitKeyboardInterrupt', 'SectionError', 'Server504Error', 'ServerError',
+    'showHelp', 'Site', 'SiteDefinitionError', 'SiteLink', 'SpamfilterError',
+    'stdout', 'TitleblacklistError', 'translate', 'ui', 'unicode2html',
+    'UnicodeMixin', 'UnknownExtension', 'UnknownFamily', 'UnknownSite',
+    'UnsupportedPage', 'UploadWarning', 'url2unicode', 'User',
+    'UserActionRefuse', 'UserBlocked', 'warning', 'WikiBaseError',
+    'WikidataBot',
 )
 __all__ += textlib_methods
 
 if PY2:
     # T111615: Python 2 requires __all__ is bytes
     globals()['__all__'] = tuple(bytes(item) for item in __all__)
+
+    import sys
+    warn("""
+Python {version} will be dropped {when}.
+It is recommended to use Python 3.5 or above.
+See T213287 for further information.
+""".format(version=sys.version.split(None, 1)[0],
+           when='soon' if PYTHON_VERSION < (2, 7, 9) else 'in 2020'),
+         FutureWarning)
 
 for _name in textlib_methods:
     target = getattr(textlib, _name)
@@ -131,14 +132,6 @@ for _name in textlib_methods:
 
 deprecated = redirect_func(__deprecated)
 deprecate_arg = redirect_func(_deprecate_arg)
-
-
-if sys.version_info[:2] == (2, 7) and sys.version_info[2] in (2, 3):
-    warn(
-        'Pywikibot will soon drop support for Python 2.7.2 and 2.7.3, '
-        'please update your Python.',
-        DeprecationWarning,
-    )
 
 
 class Timestamp(datetime.datetime):
@@ -162,7 +155,7 @@ class Timestamp(datetime.datetime):
 
     """
 
-    mediawikiTSFormat = "%Y%m%d%H%M%S"
+    mediawikiTSFormat = '%Y%m%d%H%M%S'
     _ISO8601Format_new = '{0:+05d}-{1:02d}-{2:02d}T{3:02d}:{4:02d}:{5:02d}Z'
 
     def clone(self):
@@ -191,13 +184,13 @@ class Timestamp(datetime.datetime):
         """Convert an ISO 8601 timestamp to a Timestamp object.
 
         @param ts: ISO 8601 timestamp or a Timestamp object already
-        @type ts: str ot Timestamp
+        @type ts: str or Timestamp
         @param sep: one-character separator, placed between the date and time
         @type sep: str
         @return: Timestamp object
         @rtype: Timestamp
         """
-        # If inadvertantly passed a Timestamp object, use replace()
+        # If inadvertently passed a Timestamp object, use replace()
         # to create a clone.
         if isinstance(ts, cls):
             return ts.clone()
@@ -206,10 +199,12 @@ class Timestamp(datetime.datetime):
     @classmethod
     def fromtimestampformat(cls, ts):
         """Convert a MediaWiki internal timestamp to a Timestamp object."""
-        # If inadvertantly passed a Timestamp object, use replace()
+        # If inadvertently passed a Timestamp object, use replace()
         # to create a clone.
         if isinstance(ts, cls):
             return ts.clone()
+        if len(ts) == 8:  # year, month and day are given only
+            ts += '000'
         return cls.strptime(ts, cls.mediawikiTSFormat)
 
     def isoformat(self, sep='T'):
@@ -244,7 +239,7 @@ class Timestamp(datetime.datetime):
             return newdt
 
     def __sub__(self, other):
-        """Perform substraction, returning a Timestamp instead of datetime."""
+        """Perform subtraction, returning a Timestamp instead of datetime."""
         newdt = super(Timestamp, self).__sub__(other)
         if isinstance(newdt, datetime.datetime):
             return Timestamp(newdt.year, newdt.month, newdt.day, newdt.hour,
@@ -306,7 +301,7 @@ class Coordinate(_WbRepresentation):
         if globe:
             globe = globe.lower()
         elif not globe_item:
-            globe = site.default_globe()
+            globe = self.site.default_globe()
         self.globe = globe
 
     @property
@@ -315,7 +310,7 @@ class Coordinate(_WbRepresentation):
         if not self._entity:
             if self.globe not in self.site.globes():
                 raise CoordinateGlobeUnknownException(
-                    u"%s is not supported in Wikibase yet."
+                    '%s is not supported in Wikibase yet.'
                     % self.globe)
             return self.site.globes()[self.globe]
 
@@ -366,7 +361,7 @@ class Coordinate(_WbRepresentation):
 
     @property
     def precision(self):
-        u"""
+        """
         Return the precision of the geo coordinate.
 
         The precision is calculated if the Coordinate does not have a
@@ -575,8 +570,8 @@ class WbTime(_WbRepresentation):
 
         # if precision is given it overwrites the autodetection above
         if precision is not None:
-            if (isinstance(precision, int) and
-                    precision in self.PRECISION.values()):
+            if (isinstance(precision, int)
+                    and precision in self.PRECISION.values()):
                 self.precision = precision
             elif precision in self.PRECISION:
                 self.precision = self.PRECISION[precision]
@@ -617,7 +612,7 @@ class WbTime(_WbRepresentation):
         match = re.match(r'([-+]?\d+)-(\d+)-(\d+)T(\d+):(\d+):(\d+)Z',
                          datetimestr)
         if not match:
-            raise ValueError(u"Invalid format: '%s'" % datetimestr)
+            raise ValueError("Invalid format: '%s'" % datetimestr)
         t = match.groups()
         return cls(long(t[0]), int(t[1]), int(t[2]),
                    int(t[3]), int(t[4]), int(t[5]),
@@ -738,10 +733,9 @@ class WbQuantity(_WbRepresentation):
         if not site:
             warning(
                 "WbQuantity now expects a 'site' parameter. This is needed to "
-                "ensure correct handling of error bounds.")
+                'ensure correct handling of error bounds.')
             return False
-        return MediaWikiVersion(
-            site.version()) < MediaWikiVersion('1.29.0-wmf.2')
+        return site.mw_version < '1.29.0-wmf.2'
 
     @staticmethod
     def _todecimal(value):
@@ -773,14 +767,14 @@ class WbQuantity(_WbRepresentation):
         """
         if value is None:
             return None
-        return format(value, "+g")
+        return format(value, '+g')
 
     def __init__(self, amount, unit=None, error=None, site=None):
-        u"""
+        """
         Create a new WbQuantity object.
 
         @param amount: number representing this quantity
-        @type amount: string or Decimal. Other types are accepted, and
+        @type amount: str or Decimal. Other types are accepted, and
             converted via str to Decimal.
         @param unit: the Wikibase item for the unit or the entity URI of this
             Wikibase item.
@@ -799,7 +793,7 @@ class WbQuantity(_WbRepresentation):
         self.site = site or Site().data_repository()
 
         # also allow entity URIs to be provided via unit parameter
-        if isinstance(unit, basestring) and \
+        if isinstance(unit, UnicodeType) and \
                 unit.partition('://')[0] not in ('http', 'https'):
             raise ValueError("'unit' must be an ItemPage or entity uri.")
 
@@ -807,7 +801,7 @@ class WbQuantity(_WbRepresentation):
             self.upperBound = self.lowerBound = None
         else:
             if error is None:
-                self.upperBound = self.lowerBound = Decimal(0)
+                upperError = lowerError = Decimal(0)
             elif isinstance(error, tuple):
                 upperError = self._todecimal(error[0])
                 lowerError = self._todecimal(error[1])
@@ -841,7 +835,7 @@ class WbQuantity(_WbRepresentation):
         @type lazy_load: bool
         @return: pywikibot.ItemPage
         """
-        if not isinstance(self._unit, basestring):
+        if not isinstance(self._unit, UnicodeType):
             return self._unit
 
         repo = repo or self.site
@@ -1047,7 +1041,7 @@ class _WbDataPage(_WbRepresentation):
                 not page.title().endswith(ending):
             raise ValueError(
                 "Page must be in 'Data:' namespace and end in '{0}' "
-                "for {1}.".format(ending, label))
+                'for {1}.'.format(ending, label))
 
     def __init__(self, page, site=None):
         """
@@ -1094,9 +1088,7 @@ class _WbDataPage(_WbRepresentation):
 
 
 class WbGeoShape(_WbDataPage):
-    """
-    A Wikibase geo-shape representation.
-    """
+    """A Wikibase geo-shape representation."""
 
     @classmethod
     def _get_data_site(cls, site):
@@ -1127,9 +1119,7 @@ class WbGeoShape(_WbDataPage):
 
 
 class WbTabularData(_WbDataPage):
-    """
-    A Wikibase tabular-data representation.
-    """
+    """A Wikibase tabular-data representation."""
 
     @classmethod
     def _get_data_site(cls, site):
@@ -1210,7 +1200,7 @@ def _code_fam_from_url(url):
 
     Site helper method.
     @param url: The site URL to get code and family
-    @type url: string
+    @type url: str
     @raises SiteDefinitionError: Unknown URL
     """
     if url not in _url_cache:
@@ -1218,6 +1208,8 @@ def _code_fam_from_url(url):
         # Iterate through all families and look, which does apply to
         # the given URL
         for fam in config.family_files:
+            if fam == 'test':  # test_family.py is deprecated
+                continue
             family = Family.load(fam)
             code = family.from_url(url)
             if code is not None:
@@ -1243,25 +1235,25 @@ def Site(code=None, fam=None, user=None, sysop=None, interface=None, url=None):
     using the method parameters.
 
     @param code: language code (override config.mylang)
-    @type code: string
+    @type code: str
     @param fam: family name or object (override config.family)
-    @type fam: string or Family
+    @type fam: str or Family
     @param user: bot user name to use on this site (override config.usernames)
-    @type user: unicode
+    @type user: str
     @param sysop: sysop user to use on this site (override config.sysopnames)
-    @type sysop: unicode
+    @type sysop: str
     @param interface: site class or name of class in pywikibot.site
         (override config.site_interface)
     @type interface: subclass of L{pywikibot.site.BaseSite} or string
     @param url: Instead of code and fam, does try to get a Site based on the
         URL. Still requires that the family supporting that URL exists.
-    @type url: string
+    @type url: str
     @rtype: pywikibot.site.APISite
     @raises ValueError: URL and pair of code and family given
     @raises ValueError: Invalid interface name
     @raises SiteDefinitionError: Unknown URL
     """
-    _logger = "wiki"
+    _logger = 'wiki'
 
     if url:
         # Either code and fam or only url
@@ -1292,7 +1284,9 @@ def Site(code=None, fam=None, user=None, sysop=None, interface=None, url=None):
     sysop = sysop or code_to_sysop.get(code) or code_to_sysop.get('*')
 
     if not isinstance(interface, type):
-        # If it isnt a class, assume it is a string
+        # If it isn't a class, assume it is a string
+        if PY2:  # Must not be unicode in Python 2
+            interface = str(interface)
         try:
             tmp = __import__('pywikibot.site', fromlist=[interface])
         except ImportError:
@@ -1307,7 +1301,7 @@ def Site(code=None, fam=None, user=None, sysop=None, interface=None, url=None):
     key = '%s:%s:%s:%s' % (interface.__name__, fam, code, user)
     if key not in _sites or not isinstance(_sites[key], interface):
         _sites[key] = interface(code=code, fam=fam, user=user, sysop=sysop)
-        debug(u"Instantiated %s object '%s'"
+        debug("Instantiated %s object '%s'"
               % (interface.__name__, _sites[key]), _logger)
 
         if _sites[key].code != code:
@@ -1327,6 +1321,7 @@ from pywikibot.page import (  # noqa: E402
     FilePage,
     Category,
     Link,
+    SiteLink,
     User,
     ItemPage,
     PropertyPage,
@@ -1388,7 +1383,7 @@ def _flush(stop=True):
     Wait for the page-putter to flush its queue. Also drop this process from
     the throttle log. Called automatically at Python exit.
     """
-    _logger = "wiki"
+    _logger = 'wiki'
 
     debug('_flush() called', _logger)
 
@@ -1412,7 +1407,7 @@ def _flush(stop=True):
             '{lightblue}Waiting for {num} pages to be put. '
             'Estimated time remaining: {sec}{default}', num=num, sec=sec))
 
-    while _putthread.isAlive() and page_put_queue.qsize() > 0:
+    while _putthread.is_alive() and page_put_queue.qsize() > 0:
         try:
             _putthread.join(1)
         except KeyboardInterrupt:
@@ -1425,7 +1420,7 @@ def _flush(stop=True):
     # only need one drop() call because all throttles use the same global pid
     try:
         list(_sites.values())[0].throttle.drop()
-        log(u"Dropped throttle(s).")
+        log('Dropped throttle(s).')
     except IndexError:
         pass
 
@@ -1446,7 +1441,7 @@ def async_manager():
 
 def async_request(request, *args, **kwargs):
     """Put a request on the queue, and start the daemon if necessary."""
-    if not _putthread.isAlive():
+    if not _putthread.is_alive():
         try:
             page_put_queue.mutex.acquire()
             try:
@@ -1491,3 +1486,8 @@ wrapper._add_deprecated_attr(
     warning_message='pywikibot.UploadWarning is deprecated; '
                     'use APISite.upload with a warning handler instead.',
     since='20150921')
+wrapper._add_deprecated_attr(
+    'MediaWikiVersion', _MediaWikiVersion,
+    warning_message='pywikibot.MediaWikiVersion is deprecated; '
+                    'use pywikibot.tools.MediaWikiVersion instead.',
+    since='20180827')

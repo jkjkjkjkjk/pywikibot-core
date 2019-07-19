@@ -9,12 +9,14 @@ Usage:
 
 It will use Special:Linksearch to find the pages on the wiki that link to
 that site, then for each page make a proposed change consisting of removing
-all the lines where that url occurs. You can choose to:
+all the lines where that url occurs. You can choose to
+
 * accept the changes as proposed
 * edit the page yourself to remove the offending link
 * not change the page in question
 
 Command line options:
+
 -always           Do not ask, but remove the lines automatically. Be very
                   careful in using this option!
 
@@ -27,11 +29,11 @@ In addition, these arguments can be used to restrict changes to some pages:
 &params;
 """
 #
-# (C) Pywikibot team, 2007-2018
+# (C) Pywikibot team, 2007-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 
@@ -41,9 +43,7 @@ from pywikibot.bot import (
 from pywikibot.editor import TextEditor
 from pywikibot.tools.formatter import color_format
 
-docuReplacements = {
-    '&params;': pagegenerators.parameterHelp
-}
+docuReplacements = {'&params;': pagegenerators.parameterHelp}  # noqa: N816
 
 
 class SpamRemoveBot(SingleSiteBot, ExistingPageBot, NoRedirectPageBot,
@@ -86,7 +86,7 @@ class SpamRemoveBot(SingleSiteBot, ExistingPageBot, NoRedirectPageBot,
             return
         lines = text.split('\n')
         newpage = []
-        lastok = ""
+        lastok = ''
         for line in lines:
             if self.spam_external_url in line:
                 if lastok:
@@ -100,20 +100,20 @@ class SpamRemoveBot(SingleSiteBot, ExistingPageBot, NoRedirectPageBot,
                         pywikibot.output(line)
                     lastok = line
         if self.getOption('always'):
-            answer = "y"
+            answer = 'y'
         else:
             answer = pywikibot.input_choice(
-                u'\nDelete the red lines?',
+                '\nDelete the red lines?',
                 [('yes', 'y'), ('no', 'n'), ('edit', 'e')],
                 'n', automatic_quit=False)
-        if answer == "n":
+        if answer == 'n':
             return
-        elif answer == "e":
+        elif answer == 'e':
             editor = TextEditor()
             newtext = editor.edit(text, highlight=self.spam_external_url,
                                   jumpIndex=text.find(self.spam_external_url))
         else:
-            newtext = "\n".join(newpage)
+            newtext = '\n'.join(newpage)
         if newtext != text:
             self.put_current(newtext, summary=self.getOption('summary'))
 
@@ -125,7 +125,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     spam_external_url = None
     protocol = 'http'

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Tests for scripts/delete.py."""
 #
-# (C) Pywikibot team, 2014-2016
+# (C) Pywikibot team, 2014-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 import pywikibot.page
@@ -30,12 +30,12 @@ class TestDeletionBotWrite(ScriptMainTestCase):
         site = self.get_site()
         cat = pywikibot.Category(site, 'Pywikibot Delete Test')
         delete.main('-cat:Pywikibot_Delete_Test', '-always')
-        self.assertEqual(len(list(cat.members())), 0)
+        self.assertEmpty(list(cat.members()))
         delete.main('-page:User:Unicodesnowman/DeleteTest1', '-always',
                     '-undelete', '-summary=pywikibot unit tests')
         delete.main('-page:User:Unicodesnowman/DeleteTest2', '-always',
                     '-undelete', '-summary=pywikibot unit tests')
-        self.assertEqual(len(list(cat.members())), 2)
+        self.assertLength(list(cat.members()), 2)
 
     def test_undelete_existing(self):
         """Test undeleting an existing page."""
@@ -62,7 +62,7 @@ class TestDeletionBotUser(ScriptMainTestCase):
         """Test marking User:Unicodesnowman/DeleteMark for deletion."""
         site = self.get_site()
         if site.username(sysop=True):
-            raise unittest.SkipTest('can\'t test mark with sysop account')
+            self.skipTest("can't test mark with sysop account")
 
         p1 = pywikibot.Page(site, 'User:Unicodesnowman/DeleteMark')
         if not p1.exists():

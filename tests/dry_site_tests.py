@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 """Tests against a fake Site object."""
 #
-# (C) Pywikibot team, 2012-2018
+# (C) Pywikibot team, 2012-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 from pywikibot.tools import deprecated
 from pywikibot.site import must_be, need_version
 from pywikibot.comms.http import user_agent
-from pywikibot.exceptions import UnknownSite
+from pywikibot.exceptions import UserRightsError
 
 from tests.aspects import (
     unittest,
@@ -66,36 +66,38 @@ class TestDrySite(DefaultDrySiteTestCase):
         self.assertEqual(x.username(),
                          user_agent(x, format_string='{username}'))
 
-        x._userinfo = {'name': u'!'}
-        x._username = (u'!', None)
+        x._userinfo = {'name': '!'}
+        x._username = ('!', None)
 
         self.assertEqual('!', user_agent(x, format_string='{username}'))
 
-        x._userinfo = {'name': u'foo bar'}
-        x._username = (u'foo bar', None)
+        x._userinfo = {'name': 'foo bar'}
+        x._username = ('foo bar', None)
 
         self.assertEqual('foo_bar', user_agent(x, format_string='{username}'))
 
         old_config = '{script}/{version} Pywikibot/2.0 (User:{username})'
 
         pywikibot.version.getversiondict()
-        script_value = pywikibot.calledModuleName() + '/' + pywikibot.version.cache['rev']
+        script_value = (pywikibot.calledModuleName() + '/'
+                        + pywikibot.version.cache['rev'])
 
         self.assertEqual(script_value + ' Pywikibot/2.0 (User:foo_bar)',
                          user_agent(x, format_string=old_config))
 
-        x._userinfo = {'name': u'⁂'}
-        x._username = (u'⁂', None)
+        x._userinfo = {'name': '⁂'}
+        x._username = ('⁂', None)
 
         self.assertEqual('%E2%81%82',
                          user_agent(x, format_string='{username}'))
 
-        x._userinfo = {'name': u'127.0.0.1'}
+        x._userinfo = {'name': '127.0.0.1'}
         x._username = (None, None)
 
         self.assertEqual('Foo', user_agent(x, format_string='Foo {username}'))
         self.assertEqual('Foo (' + x.family.name + ':' + x.code + ')',
-                         user_agent(x, format_string='Foo ({script_comments})'))
+                         user_agent(x,
+                                    format_string='Foo ({script_comments})'))
 
 
 class TestSetAction(DeprecationTestCase):
@@ -135,23 +137,28 @@ class TestMustBe(DebugOnlyTestCase):
         self.code = 'test'
         self.family = lambda: None
         self.family.name = 'test'
+        self.sitename = self.family.name + ':' + self.code
         self._logged_in_as = None
         self.obsolete = False
         super(TestMustBe, self).setUp()
-        self.version = lambda: '1.13'  # pre 1.14
+        self.version = lambda: '1.14'  # lowest supported release
 
     def login(self, sysop):
         """Fake the log in and just store who logged in."""
         self._logged_in_as = 'sysop' if sysop else 'user'
 
+    def has_group(self, group):
+        """Fake the groups user belongs to."""
+        return False
+
     def testMockInTest(self):
         """Test that setUp and login work."""
-        self.assertEqual(self._logged_in_as, None)
+        self.assertIsNone(self._logged_in_as)
         self.login(True)
         self.assertEqual(self._logged_in_as, 'sysop')
 
     # Test that setUp is actually called between each test
-    testMockInTestReset = testMockInTest
+    testMockInTestReset = testMockInTest  # noqa: N815
 
     @must_be('sysop')
     def call_this_sysop_req_function(self, *args, **kwargs):
@@ -185,7 +192,8 @@ class TestMustBe(DebugOnlyTestCase):
         """Test overriding the required group."""
         args = (1, 2, 'a', 'b')
         kwargs = {'i': 'j', 'k': 'l'}
-        retval = self.call_this_user_req_function(*args, as_group='sysop', **kwargs)
+        retval = self.call_this_user_req_function(
+            *args, as_group='sysop', **kwargs)
         self.assertEqual(retval[0], args)
         self.assertEqual(retval[1], kwargs)
         self.assertEqual(self._logged_in_as, 'sysop')
@@ -195,7 +203,8 @@ class TestMustBe(DebugOnlyTestCase):
         self.obsolete = True
         args = (1, 2, 'a', 'b')
         kwargs = {'i': 'j', 'k': 'l'}
-        self.assertRaises(UnknownSite, self.call_this_user_req_function, args, kwargs)
+        self.assertRaises(UserRightsError, self.call_this_user_req_function,
+                          args, kwargs)
 
 
 class TestNeedVersion(DeprecationTestCase):
@@ -209,49 +218,49 @@ class TestNeedVersion(DeprecationTestCase):
     def setUp(self):
         """Set up test method."""
         super(TestNeedVersion, self).setUp()
-        self.version = lambda: "1.13"
+        self.version = lambda: '1.23'
 
-    @need_version("1.14")
+    @need_version('1.24')
     def too_new(self):
         """Method which is to new."""
         return True
 
-    @need_version("1.13")
+    @need_version('1.23')
     def old_enough(self):
         """Method which is as new as the server."""
         return True
 
-    @need_version("1.12")
+    @need_version('1.22')
     def older(self):
         """Method which is old enough."""
         return True
 
-    @need_version("1.14")
+    @need_version('1.24')
     @deprecated
     def deprecated_unavailable_method(self):
         """Method which is to new and then deprecated."""
         return True
 
     @deprecated
-    @need_version("1.14")
+    @need_version('1.24')
     def deprecated_unavailable_method2(self):
         """Method which is deprecated first and then to new."""
         return True
 
-    @need_version("1.12")
+    @need_version('1.22')
     @deprecated
     def deprecated_available_method(self):
         """Method which is old enough and then deprecated."""
         return True
 
     @deprecated
-    @need_version("1.12")
+    @need_version('1.22')
     def deprecated_available_method2(self):
         """Method which is deprecated first and then old enough."""
         return True
 
     def test_need_version(self):
-        """Test need_version when the version is to new, exact or old enough."""
+        """Test need_version when the version is new, exact or old enough."""
         self.assertRaises(NotImplementedError, self.too_new)
         self.assertTrue(self.old_enough())
         self.assertTrue(self.older())
@@ -261,14 +270,16 @@ class TestNeedVersion(DeprecationTestCase):
         # FIXME: The deprecation message should be:
         #   __name__ + '.TestNeedVersion.deprecated_unavailable_method
 
-        # The outermost decorator is the version check, so no deprecation message.
+        # The outermost decorator is the version check, so no
+        # deprecation message.
         self.assertRaisesRegex(
             NotImplementedError,
             'deprecated_unavailable_method',
             self.deprecated_unavailable_method)
         self.assertNoDeprecation()
 
-        # The deprecator is first, but the version check still raises exception.
+        # The deprecator is first, but the version check still
+        # raises exception.
         self.assertRaisesRegex(
             NotImplementedError,
             'deprecated_unavailable_method2',

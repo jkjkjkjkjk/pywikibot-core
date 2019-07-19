@@ -12,11 +12,11 @@ If no starting name is provided, the bot starts at '!'.
 """
 #
 # (C) André Engels, 2006-2009
-# (C) Pywikibot team, 2006-2018
+# (C) Pywikibot team, 2006-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 
@@ -33,7 +33,7 @@ class DisambiguationRedirectBot(MultipleSitesBot, AutomaticTWSummaryBot):
 
     def _create_callback(self, old, new):
         replace_callback = InteractiveReplace(
-            old, new, default='n', automatic_quit=False)
+            old, new, default='n')
         replace_callback.allow_replace = True
         replace_callback.allow_replace_label = True
         replace_callback.allow_replace_section = True
@@ -66,7 +66,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     local_args = pywikibot.handle_args(args)
 

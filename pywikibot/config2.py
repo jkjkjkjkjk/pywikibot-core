@@ -33,11 +33,11 @@ build paths relative to base_dir:
 """
 #
 # (C) Rob W.W. Hooft, 2003
-# (C) Pywikibot team, 2003-2018
+# (C) Pywikibot team, 2003-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import collections
 import os
@@ -108,10 +108,10 @@ class _ConfigurationDeprecationWarning(UserWarning):
 # variables that are intended only for internal use and not to be exported
 # to other modules.
 
-_private_values = ['authenticate', 'proxy', 'db_password']
-_deprecated_variables = ['use_SSL_onlogin', 'use_SSL_always',
+_private_values = {'authenticate', 'db_password'}
+_deprecated_variables = {'use_SSL_onlogin', 'use_SSL_always',
                          'available_ssl_project', 'fake_user_agent',
-                         'special_page_limit']
+                         'special_page_limit'}
 
 # ############# ACCOUNT SETTINGS ##############
 
@@ -156,14 +156,18 @@ disambiguation_comment = collections.defaultdict(dict)
 user_agent_format = ('{script_product} ({script_comments}) {pwb} ({revision}) '
                      '{http_backend} {python}')
 
+# User agent description
+# This is a free-form string that can be user to describe specific bot/tool,
+# provide contact information, etc.
+user_agent_description = None
 # Fake user agent.
 # Some external websites reject bot-like user agents. It is possible to use
 # fake user agents in requests to these websites.
 # It is recommended to default this to False and use on an as-needed basis.
 #
 # Default behaviours in modules that can utilize fake UAs.
-# True for enabling fake UA, False for disabling / using pywikibot's own UA, str
-# to specify custom UA.
+# True for enabling fake UA, False for disabling / using pywikibot's own UA,
+# str to specify custom UA.
 fake_user_agent_default = {'reflinks': False, 'weblinkchecker': False}
 # Website domains excepted to the default behaviour.
 # True for enabling, False for disabling, str to hardcode a UA.
@@ -233,7 +237,7 @@ use_SSL_always = False   # if available, use SSL for all API queries
 available_ssl_project = []
 
 # By default you are asked for a password on the terminal.
-# A password file may be used, e.g. password_file = ".passwd".
+# A password file may be used, e.g. password_file = '.passwd'
 # The path to the password file is relative to that of the user_config file.
 # The password file should consist of lines containing Python tuples of any
 # of the following formats:
@@ -244,7 +248,7 @@ available_ssl_project = []
 # the permissions given to a bot. When using BotPasswords, each instance gets
 # keys. This combination can only access the API, not the normal web interface.
 # See https://www.mediawiki.org/wiki/Manual:Pywikibot/BotPasswords to know how
-# use them. In this case, the password file should contein a BotPassword object
+# use them. In this case, the password file should contain a BotPassword object
 # in the following format:
 # (username, BotPassword(botname, botpassword))
 password_file = None
@@ -252,7 +256,7 @@ password_file = None
 # edit summary to use if not supplied by bot script
 # WARNING: this should NEVER be used in practice, ALWAYS supply a more
 #          relevant summary for bot edits
-default_edit_summary = u'Pywikibot 3.0-dev'
+default_edit_summary = 'Pywikibot 3.0-dev'
 
 # What permissions to use to set private files to it
 # such as password file.
@@ -269,7 +273,7 @@ default_edit_summary = u'Pywikibot 3.0-dev'
 # stat.S_IROTH 0o004 read permission for others
 # stat.S_IWOTH 0o002 write permission for others
 # stat.S_IXOTH 0o001 execute permission for others
-private_files_permission = stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR
+private_files_permission = stat.S_IRUSR | stat.S_IWUSR
 
 # Allow user to stop warnings about file security
 # by setting this to true.
@@ -313,7 +317,7 @@ def get_base_dir(test_directory=None):
         directory. Used to test whether placing a user config file in this
         directory will cause it to be selected as the base directory.
     @type test_directory: str or None
-    @rtype: unicode
+    @rtype: str
     """
     def exists(directory):
         directory = os.path.abspath(directory)
@@ -325,33 +329,33 @@ def get_base_dir(test_directory=None):
     if test_directory is not None:
         test_directory = os.path.abspath(test_directory)
 
-    base_dir = ""
+    base_dir = ''
     for arg in sys.argv[1:]:
         if arg.startswith(str('-dir:')):
             base_dir = arg[5:]
             base_dir = os.path.expanduser(base_dir)
             break
     else:
-        if ('PYWIKIBOT_DIR' in environ and
-                exists(os.path.abspath(environ['PYWIKIBOT_DIR']))):
+        if ('PYWIKIBOT_DIR' in environ
+                and exists(os.path.abspath(environ['PYWIKIBOT_DIR']))):
             base_dir = os.path.abspath(environ['PYWIKIBOT_DIR'])
         elif exists('.'):
             base_dir = os.path.abspath('.')
-        elif ('PYWIKIBOT_DIR_PWB' in environ and
-                exists(os.path.abspath(environ['PYWIKIBOT_DIR_PWB']))):
+        elif ('PYWIKIBOT_DIR_PWB' in environ
+                and exists(os.path.abspath(environ['PYWIKIBOT_DIR_PWB']))):
             base_dir = os.path.abspath(environ['PYWIKIBOT_DIR_PWB'])
         else:
             base_dir_cand = []
-            home = os.path.expanduser("~")
+            home = os.path.expanduser('~')
             if OSWIN32:
-                win_version = int(platform.version().split(".")[0])
+                win_version = int(platform.version().split('.')[0])
                 if win_version == 5:
-                    sub_dir = ["Application Data"]
+                    sub_dir = ['Application Data']
                 elif win_version in (6, 10):
-                    sub_dir = ["AppData", "Roaming"]
+                    sub_dir = ['AppData', 'Roaming']
                 else:
-                    raise WindowsError(u'Windows version %s not supported yet.'
-                                       % win_version)
+                    raise WindowsError('Windows version {} not supported yet.'
+                                       .format(win_version))
                 base_dir_cand.extend([[home] + sub_dir + ['Pywikibot'],
                                      [home] + sub_dir + ['pywikibot']])
             else:
@@ -393,13 +397,17 @@ base_dir = get_base_dir()
 
 for arg in sys.argv[1:]:
     if arg.startswith(str('-verbose')) or arg == str('-v'):
-        output('The base directory is {0}'.format(base_dir))
+        output('The base directory is ' + base_dir)
         break
 family_files = {}
 
 
 def register_family_file(family_name, file_path):
-    """Register a single family class file."""
+    """Register a single family class file.
+
+    Parameter file_path may be a path or an url.
+    family.AutoFamily function is used when the url is given.
+    """
     usernames[family_name] = {}
     sysopnames[family_name] = {}
     disambiguation_comment[family_name] = {}
@@ -409,8 +417,8 @@ def register_family_file(family_name, file_path):
 def register_families_folder(folder_path):
     """Register all family class files contained in a directory."""
     for file_name in os.listdir(folder_path):
-        if file_name.endswith("_family.py"):
-            family_name = file_name[:-len("_family.py")]
+        if file_name.endswith('_family.py'):
+            family_name = file_name[:-len('_family.py')]
             register_family_file(family_name, os.path.join(folder_path,
                                                            file_name))
 
@@ -418,7 +426,6 @@ def register_families_folder(folder_path):
 # Get the names of all known families, and initialize with empty dictionaries.
 # ‘families/’ is a subdirectory of the directory in which config2.py is found.
 register_families_folder(os.path.join(os.path.dirname(__file__), 'families'))
-register_family_file('wikiapiary', 'https://wikiapiary.com')
 
 # Set to True to override the {{bots}} exclusion protocol (at your own risk!)
 ignore_bot_templates = False
@@ -455,9 +462,9 @@ except AttributeError:
 transliteration_target = None
 
 # The encoding in which textfiles are stored, which contain lists of page
-# titles. The most used is: 'utf-8'. 'utf-8-sig' recognizes BOM but it is
-# available on Python 2.5 or higher. For a complete list please see:
-# https://docs.python.org/2/library/codecs.html#standard-encodings
+# titles. The most used is 'utf-8'; 'utf-8-sig' recognizes BOM.
+# For a complete list please see:
+# https://docs.python.org/3/library/codecs.html#standard-encodings
 textfile_encoding = 'utf-8'
 
 # tkinter isn't yet ready
@@ -479,14 +486,25 @@ userinterface_lang = None
 # Currently only works if interface 'terminal' is set.
 transliterate = True
 
+# The pwb.py wrapper calls the script given as parameter in this way
+# python pwb.py <name_of_script> <options>
+# If there is a misspelling in <name_of_script> the most similar script
+# scripts are displayed or if only one is found, it will be started.
+# There are some configuration values to change the behavior
+#
+# pwb_close_matches: the maximum number of simular scripts to be found
+pwb_close_matches = 10  # must be greater than 0
+# pwb_cut_off: similarity of scripts to be found
+pwb_cut_off = 0.7  # must be a float in the range [0, 1]
+# pwb_autostart_waittime: wait time until the most similar script starts
+pwb_autostart_waittime = 5.0
+
 # Should the system bell ring if the bot expects user input?
 ring_bell = False
 
 # Colorization can be used to markup important text parts of the output.
 # On Linux/Unix terminals, ANSI escape codes are used for this. On Windows,
-# it is done by a DLL call via ctypes. ctypes is only available since
-# Python 2.5, so if you're using Python 2.4 or lower on Windows, you should
-# upgrade.
+# it is done by a DLL call via ctypes.
 # Set this to False if you're using Linux and your tty doesn't support
 # ANSI colors.
 try:
@@ -579,8 +597,7 @@ interwiki_shownew = True
 
 # Should interwiki.py output a graph PNG file on conflicts?
 # You need pydot for this:
-# https://pypi.org/project/pydot/1.0.2
-# https://code.google.com/p/pydot/
+# https://pypi.org/project/pydot/
 interwiki_graph = False
 
 # Specifies that the robot should process that amount of subjects at a time,
@@ -626,7 +643,7 @@ interwiki_contents_on_disk = False
 # Example:
 #
 # disambiguation_comment['wikipedia']['en'] = \
-#    "Robot-assisted disambiguation ([[WP:DPL|you can help!]]): %s"
+#    'Robot-assisted disambiguation ([[WP:DPL|you can help!]]): %s'
 
 # Sorting order for alternatives. Set to True to ignore case for sorting order.
 sort_ignore_case = False
@@ -643,9 +660,8 @@ upload_to_commons = False
 # but never more than 'maxthrottle' seconds. However - if you are running
 # more than one bot in parallel the times are lengthened.
 #
-# By default, the get_throttle is turned off, and 'maxlag' is used to
-# control the rate of server access. Set minthrottle to non-zero to use a
-# throttle on read access.
+# 'maxlag' is used to control the rate of server access (see below).
+# Set minthrottle to non-zero to use a throttle on read access.
 minthrottle = 0
 maxthrottle = 60
 
@@ -675,6 +691,8 @@ step = -1
 max_retries = 15
 # Minimum time to wait before resubmitting a failed API request.
 retry_wait = 5
+# Maximum time to wait before resubmitting a failed API request.
+retry_max = 120
 
 # ############# TABLE CONVERSION BOT SETTINGS ##############
 
@@ -730,10 +748,10 @@ msn_appid = ''
 
 # Using the Flickr api
 flickr = {
-    'api_key': u'',  # Provide your key!
-    'api_secret': u'',  # Api secret of your key (optional)
+    'api_key': '',  # Provide your key!
+    'api_secret': '',  # Api secret of your key (optional)
     'review': False,  # Do we use automatically make our uploads reviewed?
-    'reviewer': u'',  # If so, under what reviewer name?
+    'reviewer': '',  # If so, under what reviewer name?
 }
 
 # ############# COPYRIGHT SETTINGS ##############
@@ -798,7 +816,8 @@ copyright_economize_query = True
 persistent_http = False
 
 # Default socket timeout in seconds.
-# DO NOT set to None to disable timeouts. Otherwise this may freeze your script.
+# DO NOT set to None to disable timeouts. Otherwise this may freeze your
+# script.
 # You may assign either a tuple of two int or float values for connection and
 # read timeout, or a single value for both in a tuple (since requests 2.4.0).
 socket_timeout = 60
@@ -859,11 +878,6 @@ replicate_replace = {}
 
 # ############# FURTHER SETTINGS ##############
 
-# Proxy configuration
-
-# TODO: proxy support
-proxy = None
-
 # Simulate settings
 
 # Defines what additional actions the bots are NOT allowed to do (e.g. 'edit')
@@ -872,7 +886,8 @@ proxy = None
 # in user-config.py for wikis with extra write actions.
 actions_to_block = []
 
-# Set simulate to True or use -simulate option to block all actions given above.
+# Set simulate to True or use -simulate option to block all actions given
+# above.
 simulate = False
 
 # How many pages should be put to a queue in asynchronous mode.
@@ -885,7 +900,7 @@ max_queue_size = 64
 # pages fetched from screen (mostly) have "\r\n". Interwiki and category
 # separator settings in family files should use multiplied of this.
 # LS is a shortcut alias.
-line_separator = LS = u'\n'
+line_separator = LS = '\n'
 
 # Settings to enable mwparserfromhell
 # <https://mwparserfromhell.readthedocs.org/en/latest/>
@@ -901,6 +916,7 @@ use_mwparserfromhell = True
 # Version 4 is only available for Python 3.4
 pickle_protocol = 2
 
+# ============================
 # End of configuration section
 # ============================
 
@@ -910,7 +926,7 @@ pickle_protocol = 2
 
 panoramio = {
     'review': False,  # Do we use automatically make our uploads reviewed?
-    'reviewer': u'',  # If so, under what reviewer name?
+    'reviewer': '',  # If so, under what reviewer name?
 }
 
 special_page_limit = 500
@@ -974,15 +990,15 @@ def _win32_extension_command(extension):
     _winreg = winreg  # exists for git blame only; do not use
     try:
         key1 = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_name)
-        _progID = winreg.EnumValue(key1, 0)[0]
+        _prog_id = winreg.EnumValue(key1, 0)[0]
         _key2 = _winreg.OpenKey(_winreg.HKEY_CLASSES_ROOT,
-                                r'%s\shell\open\command' % _progID)
+                                r'%s\shell\open\command' % _prog_id)
         _cmd = _winreg.QueryValueEx(_key2, None)[0]
         # See T102465 for issues relating to using this value.
         cmd = _cmd
         if cmd.find('%1'):
             cmd = cmd[:cmd.find('%1')]
-            # Remove any trailing characher, which should be a quote or space
+            # Remove any trailing character, which should be a quote or space
             # and then remove all whitespace.
             return cmd[:-1].strip()
     except WindowsError as e:
@@ -1012,38 +1028,31 @@ def _detect_win32_editor():
 
 # System-level and User-level changes.
 # Store current variables and their types.
-_glv = {_key: _val for _key, _val in globals().items()
-        if _key[0] != '_' and _key not in _imports}
-_gl = list(_glv.keys())
-_tp = {}
-for _key in _gl:
-    _tp[_key] = type(globals()[_key])
+_public_globals = {
+    _key: _val for _key, _val in globals().items()
+    if _key[0] != '_' and _key not in _imports}
 
 # Create an environment for user-config.py which is
 # a shallow copy of the core config settings, so that
 # we can detect modified config items easily.
-_uc = {}
-for _key, _val in _glv.items():
+_exec_globals = {}
+for _key, _val in _public_globals.items():
     if isinstance(_val, dict):
         if isinstance(_val, collections.defaultdict):
-            _uc[_key] = collections.defaultdict(dict)
+            _exec_globals[_key] = collections.defaultdict(dict)
         else:
-            _uc[_key] = {}
+            _exec_globals[_key] = {}
         if len(_val) > 0:
-            _uc[_key].update(_val)
+            _exec_globals[_key].update(_val)
     else:
-        _uc[_key] = _val
+        _exec_globals[_key] = _val
 
 # Get the user files
-_thislevel = 0
 if __no_user_config:
     if __no_user_config != '2':
         warning('Skipping loading of user-config.py.')
-    _fns = []
 else:
-    _fns = [os.path.join(base_dir, 'user-config.py')]
-for _filename in _fns:
-    _thislevel += 1
+    _filename = os.path.join(base_dir, 'user-config.py')
     if os.path.exists(_filename):
         _filestatus = os.stat(_filename)
         _filemode = _filestatus[0]
@@ -1051,7 +1060,7 @@ for _filename in _fns:
         if OSWIN32 or _fileuid in [os.getuid(), 0]:
             if OSWIN32 or _filemode & 0o02 == 0:
                 with open(_filename, 'rb') as f:
-                    exec(compile(f.read(), _filename, 'exec'), _uc)
+                    exec(compile(f.read(), _filename, 'exec'), _exec_globals)
             else:
                 warning("Skipped '%(fn)s': writeable by others."
                         % {'fn': _filename})
@@ -1074,8 +1083,8 @@ class _DifferentTypeError(UserWarning, TypeError):
 
 def _assert_default_type(name, value, default_value):
     """Return the value if the old or new is None or both same type."""
-    if (value is None or default_value is None or
-            isinstance(value, type(default_value))):
+    if (value is None or default_value is None
+            or isinstance(value, type(default_value))):
         return value
     elif isinstance(value, int) and isinstance(default_value, float):
         return float(value)
@@ -1112,26 +1121,26 @@ def _check_user_config_types(user_config, default_values, skipped):
                  .format(name), UserWarning)
 
 
-_check_user_config_types(_uc, _glv, _imports)
+_check_user_config_types(_exec_globals, _public_globals, _imports)
 
 
 # Copy the user config settings into globals
-_modified = [_key for _key in _gl
-             if _uc[_key] != globals()[_key] or
-             _key in ('usernames', 'sysopnames', 'disambiguation_comment')]
+_modified = {_key for _key in _public_globals.keys()
+             if _exec_globals[_key] != globals()[_key]
+             or _key in {'usernames', 'sysopnames', 'disambiguation_comment'}}
 
-if ('user_agent_format' in _modified):
+if 'user_agent_format' in _modified:
     _right_user_agent_format = re.sub(r'{httplib2(:|})', r'{http_backend\1',
-                                      _uc['user_agent_format'])
-    if _right_user_agent_format != _uc['user_agent_format']:
+                                      _exec_globals['user_agent_format'])
+    if _right_user_agent_format != _exec_globals['user_agent_format']:
         warn('`{httplib2}` in user_agent_format is deprecated, '
              'will replace `{httplib2}` with `{http_backend}`',
              _ConfigurationDeprecationWarning)
-        _uc['user_agent_format'] = _right_user_agent_format
+        _exec_globals['user_agent_format'] = _right_user_agent_format
     del _right_user_agent_format
 
 for _key in _modified:
-    globals()[_key] = _uc[_key]
+    globals()[_key] = _exec_globals[_key]
 
     if _key in _deprecated_variables:
         warn('"{0}" present in our user-config.py is no longer a supported '
@@ -1151,14 +1160,14 @@ if OSWIN32 and editor is None:
 
 if OSWIN32 and editor:
     # single character string literals from
-    # https://docs.python.org/2/reference/lexical_analysis.html#string-literals
+    # https://docs.python.org/3/reference/lexical_analysis.html#string-and-bytes-literals
     # encode('unicode-escape') also changes Unicode characters
     if set(editor) & set('\a\b\f\n\r\t\v'):
         warning(
             'The editor path contains probably invalid escaped '
-            'characters. Make sure to use a raw-string (r"..." or r\'...\'), '
-            'forward slashs as a path delimiter or to escape the normal '
-            'path delimiter.')
+            'characters. Make sure to use a raw-string (r"..." or '
+            "r'...'), forward slashes as a path delimiter or to escape the "
+            'normal path delimiter.')
 
 if userinterface_lang is None:
     userinterface_lang = os.getenv('PYWIKIBOT_USERINTERFACE_LANG') \
@@ -1178,17 +1187,17 @@ if family == 'wikipedia' and mylang == 'language':
 # Fix up socket_timeout
 # Older requests library expect a single value whereas newer versions also
 # accept a tuple (connect timeout, read timeout).
-if (isinstance(socket_timeout, tuple) and
-        StrictVersion(requests_version) < StrictVersion('2.4.0')):
+if (isinstance(socket_timeout, tuple)
+        and StrictVersion(requests_version) < StrictVersion('2.4.0')):
     socket_timeout = max(socket_timeout)
 
 # SECURITY WARNINGS
-if (not ignore_file_security_warnings and
-        private_files_permission & (stat.S_IRWXG | stat.S_IRWXO) != 0):
+if (not ignore_file_security_warnings
+        and private_files_permission & (stat.S_IRWXG | stat.S_IRWXO) != 0):
     error("CRITICAL SECURITY WARNING: 'private_files_permission' is set"
-          " to allow access from the group/others which"
-          " could give them access to the sensitive files."
-          " To avoid giving others access to sensitive files, pywikibot"
+          ' to allow access from the group/others which'
+          ' could give them access to the sensitive files.'
+          ' To avoid giving others access to sensitive files, pywikibot'
           " won't run with this setting. Choose a more restrictive"
           " permission or set 'ignore_file_security_warnings' to true.")
     sys.exit(1)
@@ -1196,11 +1205,11 @@ if (not ignore_file_security_warnings and
 #
 # When called as main program, list all configuration variables
 #
-if __name__ == "__main__":
-    _all = 1
+if __name__ == '__main__':
+    _all = True
     for _arg in sys.argv[1:]:
-        if _arg == "modified":
-            _all = 0
+        if _arg == 'modified':
+            _all = False
         else:
             warning('Unknown arg {0} ignored'.format(_arg))
     _k = list(globals().keys())
@@ -1215,8 +1224,8 @@ if __name__ == "__main__":
                         if isinstance(_value, dict):
                             _value = '{ ...xxxxxxxx... }'
                         elif hasattr(_value, '__dict__'):
-                            _value = '%s( ...xxxxxxxx... )' % \
-                                     _value.__class__.__name__
+                            _value = (_value.__class__.__name__
+                                      + '( ...xxxxxxxx... )')
                         else:
                             _value = repr('xxxxxxxx')
                     else:
@@ -1225,7 +1234,7 @@ if __name__ == "__main__":
 
 # cleanup all locally-defined variables
 for __var in list(globals().keys()):
-    if __var.startswith("_") and not __var.startswith("__"):
+    if __var.startswith('_') and not __var.startswith('__'):
         del sys.modules[__name__].__dict__[__var]
 
 del __var

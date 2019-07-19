@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Tests for scripts/interwikidata.py."""
 #
-# (C) Pywikibot team, 2015-2017
+# (C) Pywikibot team, 2015-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import unicode_literals, absolute_import
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 
@@ -62,8 +62,8 @@ class TestInterwikidataBot(SiteAttributeTestCase):
         page = pywikibot.Page(self.en, 'User:Ladsgroup')
         text = page.get()
 
-        # The page looks as excpected.
-        self.assertEqual(len(page.langlinks()), 1)
+        # The page looks as expected.
+        self.assertLength(page.langlinks(), 1)
         iw_link = page.langlinks()[0]
         self.assertIsInstance(iw_link, Link)
         self.assertEqual(iw_link.canonical_title(), 'کاربر:Ladsgroup')

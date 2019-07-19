@@ -14,37 +14,53 @@ This module includes objects:
 OCR support of page scans via:
 - https://tools.wmflabs.org/phetools/hocr_cgi.py
 - https://tools.wmflabs.org/phetools/ocr.php
-inspired by https://en.wikisource.org/wiki/MediaWiki:Gadget-ocr.js
+- inspired by https://en.wikisource.org/wiki/MediaWiki:Gadget-ocr.js
+
+- https://tools.wmflabs.org/ws-google-ocr/
+- inspired by https://wikisource.org/wiki/MediaWiki:GoogleOCR.js
+- see also: https://wikisource.org/wiki/Wikisource:Google_OCR
 
 """
 #
-# (C) Pywikibot team, 2015-2018
+# (C) Pywikibot team, 2015-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from functools import partial
 import json
 import re
+import requests
+import time
 
 try:
     from bs4 import BeautifulSoup, FeatureNotFound
 except ImportError as e:
     BeautifulSoup = e
+
+    def _bs4_soup(*args, **kwargs):
+        """Raise BeautifulSoup when called, if bs4 is not available."""
+        raise BeautifulSoup
 else:
     try:
         BeautifulSoup('', 'lxml')
     except FeatureNotFound:
-        Soup = partial(BeautifulSoup, features='html.parser')
+        _bs4_soup = partial(BeautifulSoup, features='html.parser')
     else:
-        Soup = partial(BeautifulSoup, features='lxml')
+        _bs4_soup = partial(BeautifulSoup, features='lxml')
 
 import pywikibot
 from pywikibot.comms import http
 from pywikibot.data.api import Request
+from pywikibot.exceptions import OtherPageSaveError
+from pywikibot.tools import ModuleDeprecationWrapper
 
 _logger = 'proofreadpage'
+
+wrapper = ModuleDeprecationWrapper(__name__)
+wrapper._add_deprecated_attr('Soup', _bs4_soup, replacement_name='_bs4_soup',
+                             since='20181128')
 
 
 class FullHeader(object):
@@ -111,14 +127,25 @@ class ProofreadPage(pywikibot.Page):
     p_open = re.compile(r'<noinclude>')
     p_close = re.compile(r'(</div>|\n\n\n)?</noinclude>')
 
-    # phe-tools ocr utility
-    HOCR_CMD = ('https://tools.wmflabs.org/phetools/hocr_cgi.py?'
-                'cmd=hocr&book={book}&lang={lang}&user={user}')
+    # phetools ocr utility
+    _HOCR_CMD = ('https://tools.wmflabs.org/phetools/hocr_cgi.py?'
+                 'cmd=hocr&book={book}&lang={lang}&user={user}')
 
-    OCR_CMD = ('https://tools.wmflabs.org/phetools/ocr.php?'
-               'cmd=ocr&url={url_image}&lang={lang}&user={user}')
+    _OCR_CMD = ('https://tools.wmflabs.org/phetools/ocr.php?'
+                'cmd=ocr&url={url_image}&lang={lang}&user={user}')
 
-    MULTI_PAGE_EXT = ['djvu', 'pdf']
+    # googleOCR ocr utility
+    _GOCR_CMD = ('https://tools.wmflabs.org/ws-google-ocr/api.php?'
+                 'image={url_image}&lang={lang}')
+
+    _MULTI_PAGE_EXT = ['djvu', 'pdf']
+
+    _PHETOOLS = 'phetools'
+    _GOOGLE_OCR = 'googleOCR'
+    _OCR_CMDS = {_PHETOOLS: _OCR_CMD,
+                 _GOOGLE_OCR: _GOCR_CMD,
+                 }
+    _OCR_METHODS = list(_OCR_CMDS.keys())
 
     def __init__(self, source, title=''):
         """Instantiate a ProofreadPage object.
@@ -140,7 +167,7 @@ class ProofreadPage(pywikibot.Page):
                                 self.PROOFREAD_LEVELS))
 
         self._base, self._base_ext, self._num = self._parse_title()
-        self._multi_page = self._base_ext in self.MULTI_PAGE_EXT
+        self._multi_page = self._base_ext in self._MULTI_PAGE_EXT
 
     @property
     def _fmt(self):
@@ -162,12 +189,12 @@ class ProofreadPage(pywikibot.Page):
 
         E.g. for title 'Page:Popular Science Monthly Volume 1.djvu/12':
         - base = 'Popular Science Monthly Volume 1.djvu'
-        - extenstion = 'djvu'
+        - extension = 'djvu'
         - number = 12
 
         E.g. for title 'Page:Original Waltzing Matilda manuscript.jpg':
         - base = 'Original Waltzing Matilda manuscript.jpg'
-        - extenstion = 'jpg'
+        - extension = 'jpg'
         - number = None
 
         @return: (base, ext, num).
@@ -228,7 +255,8 @@ class ProofreadPage(pywikibot.Page):
             pywikibot.output('{0}{1!s}'.format(' ' * 9, [page] + others))
 
             if page:
-                pywikibot.output('{0}Selected Index: {1}'.format(' ' * 9, page))
+                pywikibot.output(
+                    '{0}Selected Index: {1}'.format(' ' * 9, page))
                 pywikibot.output('{0}remaining: {1!s}'.format(' ' * 9, others))
 
         if not page:
@@ -246,7 +274,7 @@ class ProofreadPage(pywikibot.Page):
 
     @index.deleter
     def index(self):
-        if hasattr(self, "_index"):
+        if hasattr(self, '_index'):
             del self._index
 
     @property
@@ -265,7 +293,8 @@ class ProofreadPage(pywikibot.Page):
         # TODO: align this value with ProofreadPage.ql
 
         """
-        if self.content_model == 'proofread-page' and hasattr(self, '_quality'):
+        if (self.content_model == 'proofread-page'
+                and hasattr(self, '_quality')):
             return int(self._quality)
         return self.ql
 
@@ -399,7 +428,7 @@ class ProofreadPage(pywikibot.Page):
             super(ProofreadPage, self).text
         else:
             self._text = self.preloadText()
-            self.user = self.site.username()  # Fill user field in empty header.
+            self.user = self.site.username()  # Fill user field in empty header
         return self._text
 
     @text.setter
@@ -447,7 +476,8 @@ class ProofreadPage(pywikibot.Page):
                                   % self.title(as_link=True))
 
         f_open, f_close = open_queue[0], close_queue[0]
-        self._full_header = FullHeader(self._text[f_open.end():f_close.start()])
+        self._full_header = FullHeader(
+            self._text[f_open.end():f_close.start()])
 
         l_open, l_close = open_queue[-1], close_queue[-1]
         self._footer = self._text[l_open.end():l_close.start()]
@@ -504,9 +534,10 @@ class ProofreadPage(pywikibot.Page):
         @rtype: str/unicode
 
         @raises Exception: in case of http errors
+        @raise ImportError: if bs4 is not installed, _bs4_soup() will raise
         @raises ValueError: in case of no prp_page_image src found for scan
         """
-        # wrong link fail with various possible Exceptions.
+        # wrong link fails with various possible Exceptions.
         if not hasattr(self, '_url_image'):
 
             if self.exists():
@@ -521,7 +552,7 @@ class ProofreadPage(pywikibot.Page):
                 pywikibot.error('Error fetching HTML for %s.' % self)
                 raise
 
-            soup = Soup(response.text)
+            soup = _bs4_soup(response.text)
 
             try:
                 self._url_image = soup.find(class_='prp-page-image')
@@ -536,47 +567,81 @@ class ProofreadPage(pywikibot.Page):
 
         return self._url_image
 
-    def _ocr_callback(self, cmd_uri, parser_func=None):
+    def _ocr_callback(self, cmd_uri, parser_func=None, ocr_tool=None):
         """OCR callback function.
 
         @return: tuple (error, text [error description in case of error]).
         """
-        def id(x):
+        def identity(x):
             return x
 
         if not cmd_uri:
             raise ValueError('Parameter cmd_uri is mandatory.')
 
         if parser_func is None:
-            parser_func = id
+            parser_func = identity
 
         if not callable(parser_func):
             raise TypeError('Keyword parser_func must be callable.')
 
+        if ocr_tool not in self._OCR_METHODS:
+            raise TypeError(
+                "ocr_tool must be in %s, not '%s'." %
+                (self._OCR_METHODS, ocr_tool))
+
         # wrong link fail with Exceptions
-        try:
-            response = http.fetch(cmd_uri, charset='utf-8')
-        except Exception as e:
-            pywikibot.error('Querying %s: %s' % (cmd_uri, e))
-            return (True, e)
+        retry = 0
+        while retry < 5:
+            pywikibot.debug('{0}: get URI {1!r}'.format(ocr_tool, cmd_uri),
+                            _logger)
+            try:
+                response = http.fetch(cmd_uri)
+            except requests.exceptions.ReadTimeout as e:
+                retry += 1
+                pywikibot.warning('ReadTimeout %s: %s' % (cmd_uri, e))
+                pywikibot.warning('retrying in %s seconds ...' % (retry * 5))
+                time.sleep(retry * 5)
+            except Exception as e:
+                pywikibot.error('"%s": %s' % (cmd_uri, e))
+                return (True, e)
+            else:
+                pywikibot.debug('{0}: {1}'.format(ocr_tool, response.text),
+                                _logger)
+                break
+
+        if 400 <= response.status < 600:
+            return (True, 'Http response status {0}'.format(response.status))
 
         data = json.loads(response.text)
 
-        assert 'error' in data, 'Error from phe-tools: %s' % data
-        assert data['error'] in [0, 1], 'Error from phe-tools: %s' % data
+        if ocr_tool == self._PHETOOLS:  # phetools
+            assert 'error' in data, 'Error from phetools: %s' % data
+            assert data['error'] in [0, 1, 2, 3], (
+                'Error from phetools: %s' % data)
+            error, _text = bool(data['error']), data['text']
+        else:  # googleOCR
+            if 'error' in data:
+                error, _text = True, data['error']
+            else:
+                error, _text = False, data['text']
 
-        error = bool(data['error'])
         if error:
-            pywikibot.error('Querying %s: %s' % (cmd_uri, data['text']))
-            return (error, data['text'])
+            pywikibot.error('OCR query %s: %s' % (cmd_uri, _text))
+            return (error, _text)
         else:
-            return (error, parser_func(data['text']))
+            return (error, parser_func(_text))
 
     def _do_hocr(self):
-        """Do hocr using //tools.wmflabs.org/phetools/hocr_cgi.py?cmd=hocr."""
+        """Do hocr using //tools.wmflabs.org/phetools/hocr_cgi.py?cmd=hocr.
+
+        This is the main method for 'phetools'.
+        Fallback method is ocr.
+
+        @raise ImportError: if bs4 is not installed, _bs4_soup() will raise
+        """
         def parse_hocr_text(txt):
             """Parse hocr text."""
-            soup = Soup(txt)
+            soup = _bs4_soup(txt)
 
             res = []
             for ocr_page in soup.find_all(class_='ocr_page'):
@@ -592,12 +657,14 @@ class ProofreadPage(pywikibot.Page):
                   'user': self.site.user(),
                   }
 
-        cmd_uri = self.HOCR_CMD.format(**params)
+        cmd_uri = self._HOCR_CMD.format(**params)
 
-        return self._ocr_callback(cmd_uri, parser_func=parse_hocr_text)
+        return self._ocr_callback(cmd_uri,
+                                  parser_func=parse_hocr_text,
+                                  ocr_tool=self._PHETOOLS)
 
-    def _do_ocr(self):
-        """Do ocr using //tools.wmflabs.org/phetools/ocr.pmp?cmd=ocr."""
+    def _do_ocr(self, ocr_tool=None):
+        """Do ocr using specified ocr_tool method."""
         try:
             url_image = self.url_image
         except ValueError:
@@ -610,28 +677,57 @@ class ProofreadPage(pywikibot.Page):
                   'user': self.site.user(),
                   }
 
-        cmd_uri = self.OCR_CMD.format(**params)
+        try:
+            cmd_fmt = self._OCR_CMDS[ocr_tool]
+        except KeyError:
+            raise TypeError(
+                "ocr_tool must be in %s, not '%s'." %
+                (self._OCR_METHODS, ocr_tool))
 
-        return self._ocr_callback(cmd_uri)
+        cmd_uri = cmd_fmt.format(**params)
 
-    def ocr(self):
-        """Do OCR of Proofreadpage scan.
+        return self._ocr_callback(cmd_uri, ocr_tool=ocr_tool)
 
-        The text returned by this function shalle be assign to self.body,
+    def ocr(self, ocr_tool=None):
+        """Do OCR of ProofreadPage scan.
+
+        The text returned by this function shall be assigned to self.body,
         otherwise the ProofreadPage format will not be maintained.
 
         It is the user's responsibility to reset quality level accordingly.
-        """
-        if self._multi_page:
-            error, text = self._do_hocr()
-            if not error:
-                return text
 
-        error, text = self._do_ocr()
+        @param ocr_tool: 'phetools' or 'googleOCR', default is 'phetools'
+        @type ocr_tool: basestring
+
+        @return: OCR text for the page.
+
+        @raise TypeError: wrong ocr_tool keyword arg.
+        @raise ValueError: something went wrong with OCR process.
+        """
+        if ocr_tool is None:  # default value
+            ocr_tool = self._PHETOOLS
+
+        if ocr_tool not in self._OCR_METHODS:
+            raise TypeError(
+                "ocr_tool must be in %s, not '%s'." %
+                (self._OCR_METHODS, ocr_tool))
+
+        if ocr_tool == self._PHETOOLS:
+            # if _multi_page, try _do_hocr() first and fall back to _do_ocr()
+            if self._multi_page:
+                error, text = self._do_hocr()
+                if not error:
+                    return text
+                pywikibot.warning('%s: phetools hocr failed, '
+                                  'falling back to ocr.' % self)
+
+        error, text = self._do_ocr(ocr_tool=ocr_tool)
+
         if not error:
             return text
         else:
-            raise ValueError('Not possible to perform HOCR/OCR on %s.' % self)
+            raise ValueError(
+                '{0}: not possible to perform OCR. {1}'.format(self, text))
 
 
 class PurgeRequest(Request):
@@ -654,6 +750,8 @@ class PurgeRequest(Request):
 class IndexPage(pywikibot.Page):
 
     """Index Page page used in Mediawiki ProofreadPage extension."""
+
+    INDEX_TEMPLATE = ':MediaWiki:Proofreadpage_index_template'
 
     def __init__(self, source, title=''):
         """Instantiate a IndexPage object.
@@ -706,12 +804,43 @@ class IndexPage(pywikibot.Page):
 
     def _parse_redlink(self, href):
         """Parse page title when link in Index is a redlink."""
-        p_href = re.compile(r'/w/index\.php\?title=(.+?)&action=edit&redlink=1')
+        p_href = re.compile(
+            r'/w/index\.php\?title=(.+?)&action=edit&redlink=1')
         title = p_href.search(href)
         if title:
             return title.group(1)
         else:
             return None
+
+    def save(self, *args, **kwargs):  # See Page.save().
+        """
+        Save page after validating the content.
+
+        Trying to save any other content fails silently with a parameterless
+        INDEX_TEMPLATE being saved.
+        """
+        if not self.has_valid_content():
+            raise OtherPageSaveError(
+                self, 'An IndexPage must consist only of a single call to '
+                '{{%s}}.' % self.INDEX_TEMPLATE)
+        kwargs['contentformat'] = 'text/x-wiki'
+        kwargs['contentmodel'] = 'proofread-index'
+        super(IndexPage, self).save(*args, **kwargs)
+
+    def has_valid_content(self):
+        """Test page only contains a single call to the index template."""
+        if (not self.text.startswith('{{' + self.INDEX_TEMPLATE)
+                or not self.text.endswith('}}')):
+            return False
+
+        # Discard all inner templates as only top-level ones matter
+        tmplts = pywikibot.textlib.extract_templates_and_params_regex_simple(
+            self.text)
+        if len(tmplts) != 1 or tmplts[0][0] != self.INDEX_TEMPLATE:
+            # Only a single call to the INDEX_TEMPLATE is allowed
+            return False
+
+        return True
 
     def purge(self):
         """Overwrite purge method.
@@ -742,7 +871,7 @@ class IndexPage(pywikibot.Page):
             del self._parsed_text
 
         self._parsed_text = self._get_parsed_page()
-        self._soup = Soup(self._parsed_text)
+        self._soup = _bs4_soup(self._parsed_text)
         # Do not search for "new" here, to avoid to skip purging if links
         # to non-existing pages are present.
         attrs = {'class': re.compile('prp-pagequality')}
@@ -764,7 +893,7 @@ class IndexPage(pywikibot.Page):
             self.purge()
             del self._parsed_text
             self._parsed_text = self._get_parsed_page()
-            self._soup = Soup(self._parsed_text)
+            self._soup = _bs4_soup(self._parsed_text)
             if not self._soup.find_all('a', attrs=attrs):
                 raise ValueError(
                     'Missing class="qualityN prp-pagequality-N" or '
@@ -815,7 +944,8 @@ class IndexPage(pywikibot.Page):
             self._labels_from_page_number[page_cnt] = label
             self._labels_from_page[page] = label
             # Reverse mapping: labels as keys, numbers/pages as values.
-            self._page_numbers_from_label.setdefault(label, set()).add(page_cnt)
+            self._page_numbers_from_label.setdefault(
+                label, set()).add(page_cnt)
             self._pages_from_label.setdefault(label, set()).add(page)
 
         # Sanity check: all links to Page: ns must have been considered.
@@ -856,9 +986,7 @@ class IndexPage(pywikibot.Page):
         if end is None:
             end = self.num_pages
 
-        if not ((1 <= start <= self.num_pages) and
-                (1 <= end <= self.num_pages) and
-                (start <= end)):
+        if not (1 <= start <= end <= self.num_pages):
             raise ValueError('start=%s, end=%s are not in valid range (%s, %s)'
                              % (start, end, 1, self.num_pages))
 
@@ -891,7 +1019,7 @@ class IndexPage(pywikibot.Page):
 
         @param page: Page instance
         @return: page label
-        @rtype: unicode string
+        @rtype: str string
         """
         try:
             return self._labels_from_page[page]
@@ -906,7 +1034,7 @@ class IndexPage(pywikibot.Page):
 
         @param page_number: int
         @return: page label
-        @rtype: unicode string
+        @rtype: str string
         """
         try:
             return self._labels_from_page_number[page_number]
@@ -962,7 +1090,8 @@ class IndexPage(pywikibot.Page):
         @return: list of pages
         @rtype: list
         """
-        return [self._page_from_numbers[i] for i in range(1, self.num_pages + 1)]
+        return [
+            self._page_from_numbers[i] for i in range(1, self.num_pages + 1)]
 
     @check_if_cached
     def get_number(self, page):

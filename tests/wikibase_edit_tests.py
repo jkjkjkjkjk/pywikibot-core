@@ -6,16 +6,15 @@ Tests which should fail should instead be in the TestWikibaseSaveTest
 class in edit_failiure_tests.py
 """
 #
-# (C) Pywikibot team, 2014-2017
+# (C) Pywikibot team, 2014-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import time
 
 import pywikibot
-from pywikibot.tools import MediaWikiVersion
 
 from tests.aspects import unittest, WikibaseTestCase
 
@@ -74,7 +73,8 @@ class TestWikibaseWriteGeneral(WikibaseTestCase):
         if 'P115' in item.claims:
             item.removeClaims(item.claims['P115'])
 
-        claim = pywikibot.page.Claim(testsite, 'P115', datatype='wikibase-item')
+        claim = pywikibot.page.Claim(
+            testsite, 'P115', datatype='wikibase-item')
         target = pywikibot.ItemPage(testsite, 'Q271')
         claim.setTarget(target)
 
@@ -95,7 +95,8 @@ class TestWikibaseWriteGeneral(WikibaseTestCase):
                 to_remove.append({'id': claim.toJSON()['id'], 'remove': ''})
             item.editEntity({'claims': to_remove})
 
-        claim = pywikibot.page.Claim(testsite, 'P115', datatype='wikibase-item')
+        claim = pywikibot.page.Claim(
+            testsite, 'P115', datatype='wikibase-item')
         target = pywikibot.ItemPage(testsite, 'Q271')
         claim.setTarget(target)
         item.editEntity({'claims': [claim.toJSON()]})
@@ -126,6 +127,27 @@ class TestWikibaseWriteGeneral(WikibaseTestCase):
         }
         item = pywikibot.ItemPage(testsite)
         item.editEntity(data)
+
+    def test_edit_entity_new_property(self):
+        """Test creating a new property using C{PropertyPage.editEntity}."""
+        testsite = self.get_repo()
+        ts = str(time.time())
+        data = {
+            'labels': {
+                'en': {
+                    'language': 'en',
+                    'value': 'Pywikibot test new property',
+                }
+            },
+            'descriptions': {
+                'en': {
+                    'language': 'en',
+                    'value': 'Pywikibot test new property - ' + ts,
+                }
+            }
+        }
+        prop = pywikibot.PropertyPage(testsite, datatype='string')
+        prop.editEntity(data)
 
     def test_edit_entity_new_linked_item(self):
         """Test linking a page using a new item."""
@@ -226,7 +248,8 @@ class TestWikibaseMakeClaim(WikibaseTestCase):
         item = self._clean_item(testsite, 'P271')
 
         # set new claim
-        claim = pywikibot.page.Claim(testsite, 'P271', datatype='monolingualtext')
+        claim = pywikibot.page.Claim(
+            testsite, 'P271', datatype='monolingualtext')
         target = pywikibot.WbMonolingualText(text='Test this!', language='en')
         claim.setTarget(target)
         item.addClaim(claim)
@@ -242,10 +265,9 @@ class TestWikibaseMakeClaim(WikibaseTestCase):
         item = self._clean_item(testsite, 'P20480')
 
         # Make sure the wiki supports wikibase-conceptbaseuri
-        version = testsite.version()
-        if MediaWikiVersion(version) < MediaWikiVersion('1.29.0-wmf.2'):
-            raise unittest.SkipTest('Wiki version must be 1.29.0-wmf.2 or '
-                                    'newer to support unbound uncertainties.')
+        if testsite.mw_version < '1.29.0-wmf.2':
+            self.skipTest('Wiki version must be 1.29.0-wmf.2 or newer to '
+                          'support unbound uncertainties.')
 
         # set new claim
         claim = pywikibot.page.Claim(testsite, 'P20480',
@@ -267,10 +289,9 @@ class TestWikibaseMakeClaim(WikibaseTestCase):
         item = self._clean_item(testsite, 'P69')
 
         # Make sure the wiki supports unbound uncertainties
-        version = testsite.version()
-        if MediaWikiVersion(version) < MediaWikiVersion('1.29.0-wmf.2'):
-            raise unittest.SkipTest('Wiki version must be 1.29.0-wmf.2 or '
-                                    'newer to support unbound uncertainties.')
+        if testsite.mw_version < '1.29.0-wmf.2':
+            self.skipTest('Wiki version must be 1.29.0-wmf.2 or newer to '
+                          'support unbound uncertainties.')
 
         # set new claim
         claim = pywikibot.page.Claim(testsite, 'P69', datatype='quantity')
@@ -290,10 +311,9 @@ class TestWikibaseMakeClaim(WikibaseTestCase):
         item = self._clean_item(testsite, 'P69')
 
         # Make sure the wiki supports wikibase-conceptbaseuri
-        version = testsite.version()
-        if MediaWikiVersion(version) < MediaWikiVersion('1.28-wmf.23'):
-            raise unittest.SkipTest('Wiki version must be 1.28-wmf.23 or '
-                                    'newer to expose wikibase-conceptbaseuri.')
+        if testsite.mw_version < '1.28-wmf.23':
+            self.skipTest('Wiki version must be 1.28-wmf.23 or newer to '
+                          'expose wikibase-conceptbaseuri.')
 
         # set new claim
         claim = pywikibot.page.Claim(testsite, 'P69', datatype='quantity')
@@ -382,7 +402,8 @@ class TestWikibaseRemoveQualifier(WikibaseTestCase):
         if 'P115' in item.claims:
             item.removeClaims(item.claims['P115'])
 
-        claim = pywikibot.page.Claim(testsite, 'P115', datatype='wikibase-item')
+        claim = pywikibot.page.Claim(
+            testsite, 'P115', datatype='wikibase-item')
         target = pywikibot.ItemPage(testsite, 'Q271')
         claim.setTarget(target)
         item.addClaim(claim)
@@ -406,7 +427,7 @@ class TestWikibaseRemoveQualifier(WikibaseTestCase):
 
         # Remove qualifier
         claim = item.claims['P115'][0]
-        qual_3 = claim.qualifiers[u'P580'][0]
+        qual_3 = claim.qualifiers['P580'][0]
         claim.removeQualifier(qual_3)
 
         # Check P580 qualifier removed but P88 qualifier remains
@@ -426,8 +447,8 @@ class TestWikibaseRemoveQualifier(WikibaseTestCase):
         # Remove qualifiers
         item.get(force=True)
         claim = item.claims['P115'][0]
-        qual_3 = claim.qualifiers[u'P580'][0]
-        qual_4 = claim.qualifiers[u'P88'][0]
+        qual_3 = claim.qualifiers['P580'][0]
+        qual_4 = claim.qualifiers['P88'][0]
         claim.removeQualifiers([qual_3, qual_4])
 
         # Check P580 and P88 qualifiers are removed

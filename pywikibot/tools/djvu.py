@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 """Wrapper around djvulibre to access djvu files properties and content."""
 #
-# (C) Pywikibot team, 2015-2018
+# (C) Pywikibot team, 2015-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from collections import Counter
 import os
@@ -27,10 +27,10 @@ def _call_cmd(args, lib='djvulibre'):
     Tiny wrapper around subprocess.Popen().
 
     @param args: same as Popen()
-    @type args: sequence or string
+    @type args: typing.Sequence[string]
 
     @param library: library to be logged in logging messages
-    @type library: string
+    @type library: str
 
     @param log: log process output; errors are always logged.
     @type library: bool
@@ -63,7 +63,7 @@ class DjVuFile(object):
 
     """Wrapper around djvulibre to access djvu files properties and content.
 
-    Perform file existance checks.
+    Perform file existence checks.
 
     Control characters in djvu text-layer are converted for convenience
     (see http://djvu.sourceforge.net/doc/man/djvused.html for control chars
@@ -77,11 +77,11 @@ class DjVuFile(object):
         Initializer.
 
         @param file: filename (including path) to djvu file
-        @type file: string/unicode
+        @type file: str
         """
         self._filename = file
         filename = os.path.expanduser(file)
-        filename = os.path.abspath(file)
+        filename = os.path.abspath(filename)
         # Check file exists and has read permissions.
         with open(filename):
             self.file = filename
@@ -336,7 +336,7 @@ class DjVuFile(object):
         # ref page info.
         if n_tot > 2:
             assert self.number_of_images(force=True) == n_tot - 1
-            # cahce cleared above
+            # cache cleared above
             assert self.page_info(new_ref_page) == info_ref_page
         else:
             # If djvu has only one page, FORM:DJVU line in djvudump has no id

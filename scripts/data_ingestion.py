@@ -8,11 +8,11 @@ usage:
     python pwb.py data_ingestion -csvdir:local_dir/ -page:config_page
 """
 #
-# (C) Pywikibot team, 2012-2018
+# (C) Pywikibot team, 2012-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import base64
 import codecs
@@ -20,23 +20,22 @@ import hashlib
 import io
 import os
 import posixpath
-import sys
 from warnings import warn
 
 import pywikibot
 from pywikibot.comms.http import fetch
 from pywikibot import pagegenerators
 from pywikibot.specialbots import UploadRobot
-from pywikibot.tools import deprecated, deprecated_args
+from pywikibot.tools import deprecated, deprecated_args, PY2
 
-if sys.version_info[0] > 2:
+if not PY2:
     import csv
-else:
-    import unicodecsv as csv
-
-if sys.version_info[0] > 2:
     from urllib.parse import urlparse
 else:
+    try:
+        import unicodecsv as csv
+    except ImportError as e:
+        csv = e
     from urlparse import urlparse
 
 
@@ -59,12 +58,12 @@ class Photo(pywikibot.FilePage):
         """
         self.URL = URL
         self.metadata = metadata
-        self.metadata["_url"] = URL
-        self.metadata["_filename"] = filename = posixpath.split(
+        self.metadata['_url'] = URL
+        self.metadata['_filename'] = filename = posixpath.split(
             urlparse(URL)[2])[1]
-        self.metadata["_ext"] = ext = filename.split(".")[-1]
+        self.metadata['_ext'] = ext = filename.split('.')[-1]
         if ext == filename:
-            self.metadata["_ext"] = ext = None
+            self.metadata['_ext'] = ext = None
         self.contents = None
 
         if not site:
@@ -98,7 +97,8 @@ class Photo(pywikibot.FilePage):
         hashObject = hashlib.sha1()
         hashObject.update(self.downloadPhoto().getvalue())
         return [page.title(with_ns=False) for page in
-                self.site.allimages(sha1=base64.b16encode(hashObject.digest()))]
+                self.site.allimages(
+                    sha1=base64.b16encode(hashObject.digest()))]
 
     def getTitle(self, fmt):
         """
@@ -108,9 +108,9 @@ class Photo(pywikibot.FilePage):
         a MediaWiki page title, and cause an API exception when used.
 
         @param fmt: format string
-        @type fmt: unicode
+        @type fmt: str
         @return: formatted string
-        @rtype: unicode
+        @rtype: str
         """
         # FIXME: normalise the title so it is usable as a MediaWiki title.
         return fmt % self.metadata
@@ -120,19 +120,19 @@ class Photo(pywikibot.FilePage):
         params = {}
         params.update(self.metadata)
         params.update(extraparams)
-        description = u'{{%s\n' % template
+        description = '{{%s\n' % template
         for key in sorted(params.keys()):
             value = params[key]
-            if not key.startswith("_"):
-                description = description + (
-                    u'|%s=%s' % (key, self._safeTemplateValue(value))) + "\n"
-        description = description + u'}}'
+            if not key.startswith('_'):
+                description += ('|{}={}\n'.format(
+                    key, self._safeTemplateValue(value)))
+        description += '}}'
 
         return description
 
     def _safeTemplateValue(self, value):
         """Replace pipe (|) with {{!}}."""
-        return value.replace("|", "{{!}}")
+        return value.replace('|', '{{!}}')
 
 
 def CSVReader(fileobj, urlcolumn, site=None, *args, **kwargs):
@@ -164,7 +164,7 @@ class DataIngestionBot(pywikibot.Bot):
         @type site: APISite, 'deprecated_default_commons' or None
         """
         if site == 'deprecated_default_commons':
-            warn('site=\'deprecated_default_commons\' is deprecated; '
+            warn("site='deprecated_default_commons' is deprecated; "
                  'please specify a site or use site=None',
                  DeprecationWarning, 2)
             site = pywikibot.Site('commons', 'commons')
@@ -188,7 +188,8 @@ class DataIngestionBot(pywikibot.Bot):
         """Process each page."""
         duplicates = photo.findDuplicateImages()
         if duplicates:
-            pywikibot.output(u"Skipping duplicate of %r" % duplicates)
+            pywikibot.output('Skipping duplicate of {!r}'
+                             .format(duplicates))
             return duplicates[0]
 
         title = photo.getTitle(self.titlefmt)
@@ -221,15 +222,15 @@ class DataIngestionBot(pywikibot.Bot):
         """
         configuration = {}
         # Set a bunch of defaults
-        configuration['csvDialect'] = u'excel'
+        configuration['csvDialect'] = 'excel'
         configuration['csvDelimiter'] = ';'
-        configuration['csvEncoding'] = u'Windows-1252'  # FIXME: Encoding hell
+        configuration['csvEncoding'] = 'Windows-1252'  # FIXME: Encoding hell
 
         templates = configurationPage.templatesWithParams()
         for (template, params) in templates:
             if template.title(with_ns=False) == 'Data ingestion':
                 for param in params:
-                    (field, sep, value) = param.partition(u'=')
+                    (field, sep, value) = param.partition('=')
 
                     # Remove leading or trailing spaces
                     field = field.strip()
@@ -248,7 +249,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     # Process global args and prepare generator args parser
     local_args = pywikibot.handle_args(args)
@@ -263,17 +264,23 @@ def main(*args):
 
     config_generator = genFactory.getCombinedGenerator()
 
-    if not config_generator or not csv_dir:
+    if isinstance(csv, ImportError):
+        missing_dependencies = ('unicodecsv',)
+    else:
+        missing_dependencies = None
+
+    if not config_generator or not csv_dir or missing_dependencies:
         pywikibot.bot.suggest_help(
             missing_parameters=[] if csv_dir else ['-csvdir'],
-            missing_generator=not config_generator)
+            missing_generator=not config_generator,
+            missing_dependencies=missing_dependencies)
         return False
 
     for config_page in config_generator:
         try:
             config_page.get()
         except pywikibot.NoPage:
-            pywikibot.error('%s does not exist' % config_page)
+            pywikibot.error('{} does not exist'.format(config_page))
             continue
 
         configuration = DataIngestionBot.parseConfigurationPage(config_page)
@@ -282,7 +289,7 @@ def main(*args):
         try:
             f = codecs.open(filename, 'r', configuration['csvEncoding'])
         except (IOError, OSError) as e:
-            pywikibot.error('%s could not be opened: %s' % (filename, e))
+            pywikibot.error('{} could not be opened: {}'.format(filename, e))
         else:
             with f:
                 files = CSVReader(f, urlcolumn='url',
@@ -297,5 +304,5 @@ def main(*args):
                 bot.run()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

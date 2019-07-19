@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Test that each script can be compiled and executed."""
 #
-# (C) Pywikibot team, 2014-2018
+# (C) Pywikibot team, 2014-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, print_function, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import os
 import sys
@@ -15,20 +15,16 @@ from pywikibot.tools import has_module, PY2, StringTypes
 from tests import join_root_path, unittest_print
 from tests.aspects import (unittest, DefaultSiteTestCase, MetaTestCaseClass,
                            PwbTestCase)
-from tests.utils import allowed_failure, execute_pwb, add_metaclass
+from tests.utils import execute_pwb, add_metaclass
 
 scripts_path = join_root_path('scripts')
-
-archive_path = join_root_path('scripts', 'archive')
 
 # These dependencies are not always the package name which is in setup.py.
 # e.g. 'PIL.ImageTk' is a object provided by several different pypi packages,
 # and setup.py requests that 'Pillow' is installed to provide 'PIL.ImageTk'.
-# Here, it doesnt matter which pypi package was requested and installed.
+# Here, it doesn't matter which pypi package was requested and installed.
 # Here, the name given to the module which will be imported is required.
 script_deps = {
-    'script_wui': ['crontab', 'lua'],
-    # Note: package 'lunatic-python' provides module 'lua'
     'flickrripper': ['flickrapi', 'Pillow'],
     'imageharvest': ['bs4'],
     'isbn': ['python-stdnum'],
@@ -59,22 +55,20 @@ failed_dep_script_set = {name for name in script_deps
 
 unrunnable_script_set = {
     'version',  # does not use global args
-    'script_wui',  # depends on lua compiling
 }
 
 
 def list_scripts(path, exclude=None):
     """Return list of scripts in given path."""
     scripts = [name[0:-3] for name in os.listdir(path)  # strip '.py'
-               if name.endswith('.py') and
-               not name.startswith('_') and  # skip __init__.py and _*
-               name != exclude]
+               if name.endswith('.py')
+               and not name.startswith('_')  # skip __init__.py and _*
+               and name != exclude]
     return scripts
 
 
-script_list = (['login'] +
-               list_scripts(scripts_path, 'login.py') +
-               list_scripts(archive_path))
+script_list = (['login']
+               + list_scripts(scripts_path, 'login.py'))
 
 runnable_script_list = (
     ['login'] + sorted(set(script_list) - {'login'} - unrunnable_script_set))
@@ -107,7 +101,6 @@ auto_run_script_list = [
     'checkimages',
     'clean_sandbox',
     'disambredir',
-    'featured',
     'followlive',
     'imagerecat',
     'login',
@@ -117,7 +110,6 @@ auto_run_script_list = [
     'noreferences',
     'nowcommons',
     'patrol',
-    'script_wui',
     'shell',
     'standardize_interwiki',
     'states_redirect',
@@ -134,7 +126,6 @@ no_args_expected_results = {
     # TODO: until done here, remember to set editor = None in user-config.py
     'checkimages': 'Execution time: 0 seconds',
     'editarticle': 'Nothing changed',
-    'featured': '0 pages written.',
     'freebasemappingupload': 'Cannot find ',
     'harvest_template': 'ERROR: Please specify',
     'imageuncat':
@@ -145,13 +136,12 @@ no_args_expected_results = {
     'login': 'Logged in on ',
     'pagefromfile': 'Please enter the file name',
     'replace': 'Press Enter to use this automatic message',
-    'script_wui': 'Pre-loading all relevant page contents',
     'shell': ('>>> ', 'Welcome to the'),
     'transferbot': 'Target site not different from source site',
     'unusedfiles': ('Working on', None),
     'watchlist': 'Retrieving watchlist',
 
-    # The following auto-run and typically cant be validated,
+    # The following auto-run and typically can't be validated,
     # however these strings are very likely to exist within
     # the timeout of 5 seconds.
     'revertbot': 'Fetching new batch of contributions',
@@ -181,27 +171,27 @@ def collector(loader=unittest.loader.defaultTestLoader):
 
     if not enable_autorun_tests:
         unittest_print('Skipping execution of auto-run scripts '
-                       '(set PYWIKIBOT_TEST_AUTORUN=1 to enable):\n  %r'
-                       % auto_run_script_list)
+                       '(set PYWIKIBOT_TEST_AUTORUN=1 to enable):\n  {!r}'
+                       .format(auto_run_script_list))
 
-    tests = (['test__login'] +
-             ['test_' + name
-              for name in sorted(script_list)
-              if name != 'login'
-              and name not in unrunnable_script_set
-              ])
+    tests = (['test__login']
+             + ['test_' + name
+                 for name in sorted(script_list)
+                 if name != 'login'
+                 and name not in unrunnable_script_set
+                ])
 
     test_list = ['tests.script_tests.TestScriptHelp.' + name
                  for name in tests]
 
-    tests = (['test__login'] +
-             ['test_' + name
-              for name in sorted(script_list)
-              if name != 'login'
-              and name not in failed_dep_script_set
-              and name not in unrunnable_script_set
-              and (enable_autorun_tests or name not in auto_run_script_list)
-              ])
+    tests = (['test__login']
+             + ['test_' + name
+                 for name in sorted(script_list)
+                 if name != 'login'
+                 and name not in failed_dep_script_set
+                 and name not in unrunnable_script_set
+                 and (enable_autorun_tests or name not in auto_run_script_list)
+                ])
 
     test_list += ['tests.script_tests.TestScriptSimulate.' + name
                   for name in tests]
@@ -225,8 +215,8 @@ class TestScriptMeta(MetaTestCaseClass):
     def __new__(cls, name, bases, dct):
         """Create the new class."""
         def test_execution(script_name, args=[]):
-            is_autorun = ('-help' not in args and
-                          script_name in auto_run_script_list)
+            is_autorun = ('-help' not in args
+                          and script_name in auto_run_script_list)
 
             def test_skip_script(self):
                 raise unittest.SkipTest(
@@ -297,20 +287,20 @@ class TestScriptMeta(MetaTestCaseClass):
 
                     if (not result['stdout'] and not result['stderr']):
                         unittest_print(' auto-run script unresponsive after '
-                                       '%d seconds' % timeout, end=' ')
+                                       '{} seconds'.format(timeout), end=' ')
                     elif 'SIMULATION: edit action blocked' in result['stderr']:
                         unittest_print(' auto-run script simulated edit '
                                        'blocked', end='  ')
                     else:
                         unittest_print(
-                            ' auto-run script stderr within %d seconds: %r'
-                            % (timeout, result['stderr']), end='  ')
+                            ' auto-run script stderr within {} seconds: {!r}'
+                            .format(timeout, result['stderr']), end='  ')
 
                 self.assertNotIn('Traceback (most recent call last)',
                                  result['stderr'])
                 self.assertNotIn('deprecated', result['stderr'].lower())
 
-                # If stdout doesnt include global help..
+                # If stdout doesn't include global help..
                 if global_args not in result['stdout']:
                     # Specifically look for deprecated
                     self.assertNotIn('deprecated', result['stdout'].lower())
@@ -330,7 +320,7 @@ class TestScriptMeta(MetaTestCaseClass):
                 return test_skip_script
             return testScript
 
-        argument = '-' + dct['_argument']
+        arguments = dct['_arguments']
 
         for script_name in script_list:
             # force login to be the first, alphabetically, so the login
@@ -344,13 +334,16 @@ class TestScriptMeta(MetaTestCaseClass):
                 test_name = 'test_' + script_name
 
             cls.add_method(dct, test_name,
-                           test_execution(script_name, [argument]),
-                           'Test running %s %s.' % (script_name, argument))
+                           test_execution(script_name, arguments.split()),
+                           'Test running {} {}.'
+                           .format(script_name, arguments))
 
             if script_name in dct['_expected_failures']:
                 dct[test_name] = unittest.expectedFailure(dct[test_name])
             elif script_name in dct['_allowed_failures']:
-                dct[test_name] = allowed_failure(dct[test_name])
+                dct[test_name] = unittest.skip(
+                    '{} is in _allowed_failures list'
+                    .format(script_name))(dct[test_name])
 
             # Disable test by default in nosetests
             if script_name in unrunnable_script_set:
@@ -373,14 +366,12 @@ class TestScriptHelp(PwbTestCase):
 
     net = False
 
-    _expected_failures = failed_dep_script_set
-    # -help tests may pass even when packages are required
-    _expected_failures.discard('imageharvest')
-    _expected_failures.discard('isbn')
-    _expected_failures.discard('weblinkchecker')
+    # Here come scripts requiring and missing dependencies, that haven't been
+    # fixed to output -help in that case.
+    _expected_failures = set()
     _allowed_failures = []
 
-    _argument = 'help'
+    _arguments = '-help'
     _results = None
 
 
@@ -401,7 +392,6 @@ class TestScriptSimulate(DefaultSiteTestCase, PwbTestCase):
 
     _expected_failures = {
         'catall',          # stdout user interaction
-        'flickrripper',    # Requires a flickr api key
         'upload',          # raises custom ValueError
     }.union(failed_dep_script_set)
 
@@ -413,7 +403,7 @@ class TestScriptSimulate(DefaultSiteTestCase, PwbTestCase):
         'lonelypages',   # T94680: uses exit code 1
     ]
 
-    _argument = 'simulate'
+    _arguments = '-simulate'
     _results = no_args_expected_results
 
 

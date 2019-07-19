@@ -19,18 +19,10 @@
 # $ awk -F '[#>=]' '{print $1}' requirements.txt | xargs apt-cache search
 
 # mandatory; see README.conversion.txt
-requests>=2.9,!=2.18.2
+requests>=2.20.0
 
 # requests security extra
-cryptography>=1.3.4 ; python_full_version == '2.7.7' or  python_full_version == '2.7.8'
-cryptography>=1.3.4,<2.3 ; python_full_version <= '2.7.6'
-pyOpenSSL>=0.14,!=17.2.0 ; python_full_version < '2.7.9'
-
-idna>=2.0.0 ; python_full_version < '2.7.9'
-# https://github.com/eliben/pycparser/issues/147
-pycparser != 2.14
-
-future>=0.15.0 ; python_full_version < '2.7.3'
+requests[security] ; python_full_version > '2.7.6' and python_full_version < '2.7.9'
 
 ipaddr>=2.1.10 ; python_version < '3'
 
@@ -40,7 +32,7 @@ ipaddr>=2.1.10 ; python_version < '3'
 mwoauth>=0.2.4,!=0.3.1
 
 # core interwiki_graph.py:
-git+https://github.com/nlhepler/pydot#egg=pydot-1.0.29
+pydot >= 1.2
 
 # wikistats.py and scripts
 unicodecsv ; python_version < '3'
@@ -49,20 +41,16 @@ unicodecsv ; python_version < '3'
 python-stdnum
 
 # GUI
-Pillow
+Pillow < 7.0.0 ; python_version < '3'
+Pillow < 6.0.0 ; python_version == '3.4'
+Pillow ; python_version >= '3.5'
 
 # core pagegenerators
 google >= 1.7
-sseclient >= 0.0.18
-
-# scripts/script_wui.py:
-crontab
+sseclient >= 0.0.18,!=0.0.23,!=0.0.24
 
 # scripts/flickrripper.py
 flickrapi
-
-# incomplete core component botirc
-irc
 
 # textlib.py and patrol.py
 mwparserfromhell>=0.3.3
@@ -70,11 +58,6 @@ mwparserfromhell>=0.3.3
 # The mysql generator in pagegenerators depends on either PyMySQL or MySQLdb
 # pywikibot prefers PyMySQL over MySQLdb (Python 2 only)
 PyMySQL
-
-# scripts/script_wui.py depends on Lua, which is not available using pip
-# but can be obtained from: https://github.com/bastibe/lunatic-python
-# However, a better fork is: https://github.com/AlereDevices/lunatic-python
-# Also script_wui.py is not currently functional, so it isnt installed here.
 
 # core HTML comparison parser in diff module
 beautifulsoup4

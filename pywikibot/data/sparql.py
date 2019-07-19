@@ -1,23 +1,22 @@
 # -*- coding: utf-8 -*-
 """SPARQL Query interface."""
 #
-# (C) Pywikibot team, 2016-2018
+# (C) Pywikibot team, 2016-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import json
-import sys
 
 from requests.exceptions import Timeout
 
 from pywikibot import config, warning, Site, sleep
 from pywikibot.comms import http
-from pywikibot.tools import UnicodeMixin, py2_encode_utf_8
+from pywikibot.tools import UnicodeMixin, PY2, py2_encode_utf_8
 from pywikibot.exceptions import Error, TimeoutError
 
-if sys.version_info[0] > 2:
+if not PY2:
     from urllib.parse import quote
 else:
     from urllib2 import quote
@@ -40,9 +39,9 @@ class SparqlQuery(object):
         Create endpoint.
 
         @param endpoint: SPARQL endpoint URL
-        @type endpoint: string
+        @type endpoint: str
         @param entity_url: URL prefix for any entities returned in a query.
-        @type entity_url: string
+        @type entity_url: str
         @param repo: The Wikibase site which we want to run queries on. If
             provided this overrides any value in endpoint and entity_url.
             Defaults to Wikidata.
@@ -52,7 +51,7 @@ class SparqlQuery(object):
         @type max_retries: int
         @param retry_wait: (optional) Minimum time in seconds to wait after an
                error, defaults to config.retry_wait seconds (doubles each retry
-               until max of 120 seconds is reached).
+               until config.retry_max is reached).
         @type retry_wait: float
         """
         # default to Wikidata
@@ -106,7 +105,7 @@ class SparqlQuery(object):
         https://www.w3.org/TR/2013/REC-sparql11-results-json-20130321/
 
         @param query: Query text
-        @type query: string
+        @type query: str
         @param full_data: Whether return full data objects or only values
         @type full_data: bool
         @return: List of query results or None if query failed
@@ -139,21 +138,21 @@ class SparqlQuery(object):
         Run SPARQL query and return parsed JSON result.
 
         @param query: Query text
-        @type query: string
+        @type query: str
         """
-        url = '%s?query=%s' % (self.endpoint, quote(query))
+        url = '{0}?query={1}'.format(self.endpoint, quote(query))
         while True:
             try:
                 self.last_response = http.fetch(url, headers=headers)
-                if not self.last_response.text:
-                    return None
-                try:
-                    return json.loads(self.last_response.text)
-                except ValueError:
-                    return None
             except Timeout:
                 self.wait()
                 continue
+            if not self.last_response.text:
+                return None
+            try:
+                return json.loads(self.last_response.text)
+            except ValueError:
+                return None
 
     def wait(self):
         """Determine how long to wait after a failed request."""
@@ -162,15 +161,15 @@ class SparqlQuery(object):
             raise TimeoutError('Maximum retries attempted without success.')
         warning('Waiting {0} seconds before retrying.'.format(self.retry_wait))
         sleep(self.retry_wait)
-        # double the next wait, but do not exceed 120 seconds
-        self.retry_wait = min(120, self.retry_wait * 2)
+        # double the next wait, but do not exceed config.retry_max seconds
+        self.retry_wait = min(config.retry_max, self.retry_wait * 2)
 
     def ask(self, query, headers=DEFAULT_HEADERS):
         """
         Run SPARQL ASK query and return boolean result.
 
         @param query: Query text
-        @type query: string
+        @type query: str
         @rtype: bool
         """
         data = self.query(query, headers=headers)
@@ -272,7 +271,7 @@ class Bnode(SparqlNode):
 
     @py2_encode_utf_8
     def __repr__(self):
-        return "_:" + self.value
+        return '_:' + self.value
 
 
 VALUE_TYPES = {'uri': URI, 'literal': Literal, 'bnode': Bnode}

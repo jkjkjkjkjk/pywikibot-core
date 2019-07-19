@@ -1,27 +1,17 @@
 # -*- coding: utf-8 -*-
 """Installer script for Pywikibot 3.0 framework."""
 #
-# (C) Pywikibot team, 2009-2018
+# (C) Pywikibot team, 2009-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, print_function, unicode_literals
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
 
 import os
 import sys
 
 from setuptools import find_packages, setup
-
-if sys.version_info[:3] < (2, 7, 4):
-    try:
-        # Work around a traceback on Python < 2.7.4
-        # http://bugs.python.org/issue15881#msg170215
-        import multiprocessing
-    except ImportError:
-        pass
-    else:
-        _unused = multiprocessing  # pyflakes workaround
-
 
 PYTHON_VERSION = sys.version_info[:3]
 PY2 = (PYTHON_VERSION[0] == 2)
@@ -30,14 +20,14 @@ versions_required_message = """
 Pywikibot is not available on:
 {version}
 
-This version of Pywikibot only supports Python 2.7.2+ or 3.4+.
+This version of Pywikibot only supports Python 2.7.4+ or 3.4+.
 """
 
 
 def python_is_supported():
     """Check that Python is supported."""
     # Any change to this must be copied to pwb.py
-    return PYTHON_VERSION >= (3, 4, 0) or PY2 and PYTHON_VERSION >= (2, 7, 2)
+    return PYTHON_VERSION >= (3, 4, 0) or PY2 and PYTHON_VERSION >= (2, 7, 4)
 
 
 if not python_is_supported():
@@ -45,36 +35,44 @@ if not python_is_supported():
 
 test_deps = ['bz2file', 'mock']
 
-dependencies = ['requests>=2.9,!=2.18.2']
+dependencies = ['requests>=2.20.0']
+
+pydocstyle = 'pydocstyle<=3.0.0' if PY2 else 'pydocstyle>=2.5.0,!=4.0.0'
+if PY2:
+    pillow = 'Pillow<7.0.0'
+elif PYTHON_VERSION < (3, 5):
+    pillow = 'Pillow<6.0.0'
+else:
+    pillow = 'Pillow'
 
 extra_deps = {
     # Core library dependencies
-    'eventstreams': ['sseclient>=0.0.18'],
+    'eventstreams': ['sseclient>=0.0.18,!=0.0.23,!=0.0.24'],
     'isbn': ['python-stdnum'],
-    'Graphviz': ['pydot>=1.0.28'],
+    'Graphviz': ['pydot>=1.2'],
     'Google': ['google>=1.7'],
-    'IRC': ['irc'],
     'mwparserfromhell': ['mwparserfromhell>=0.3.3'],
-    'Tkinter': ['Pillow'],
+    'Tkinter': [pillow],
     'security': ['requests[security]', 'pycparser!=2.14'],
     'mwoauth': ['mwoauth>=0.2.4,!=0.3.1'],
     'html': ['BeautifulSoup4'],
+    'http': ['fake_useragent'],
     'flake8': [  # Due to incompatibilities between packages the order matters.
-        'flake8>=3.0.2',
-        'pydocstyle',
+        'flake8>=3.7.5',
+        pydocstyle,
         'hacking',
         'flake8-coding',
         'flake8-comprehensions',
         'flake8-docstrings>=1.1.0',
         'flake8-future-import',
-        'flake8-invalid-escape-sequences',
         'flake8-mock>=0.3',
-        'flake8-per-file-ignores',
         'flake8-print>=2.0.1',
+        'flake8-quotes>=2.0.1',
         'flake8-string-format',
         'flake8-tuple>=0.2.8',
+        'flake8-no-u-prefixed-strings>=0.2',
         'pep8-naming>=0.7',
-        'pyflakes>=1.1',
+        'pyflakes>=2.1.0',
     ]
 }
 
@@ -82,40 +80,15 @@ if PY2:
     # Additional core library dependencies which are only available on Python 2
     extra_deps.update({
         'csv': ['unicodecsv'],
-        'MySQL': ['oursql'],
     })
 
 script_deps = {
-    'flickrripper.py': ['flickrapi', 'Pillow'],
+    'flickrripper.py': ['flickrapi', pillow],
     'states_redirect.py': ['pycountry'],
     'weblinkchecker.py': ['memento_client>=0.5.1,!=0.6.0'],
     'patrol.py': ['mwparserfromhell>=0.3.3'],
 }
 
-# lunatic-python is only available for Linux
-if sys.platform.startswith('linux'):
-    script_deps['script_wui.py'] = ['irc', 'lunatic-python', 'crontab']
-
-# The main pywin32 repository contains a Python 2 only setup.py with a small
-# wrapper setup3.py for Python 3.
-# http://pywin32.hg.sourceforge.net:8000/hgroot/pywin32/pywin32
-# The main pywinauto repository doesnt support Python 3.
-# The repositories used below have a Python 3 compliant setup.py
-dependency_links = [
-    'git+https://github.com/AlereDevices/lunatic-python.git#egg=lunatic-python',
-    'hg+https://bitbucket.org/TJG/pywin32#egg=pywin32',
-    'git+https://github.com/vasily-v-ryabov/pywinauto-64#egg=pywinauto',
-    'git+https://github.com/nlhepler/pydot#egg=pydot-1.0.29',
-]
-
-if PYTHON_VERSION == (2, 7, 2):
-    # work around distutils hardcoded unittest dependency
-    # work around T106512
-    import unittest
-    _unused = unittest
-    if 'test' in sys.argv:
-        import unittest2
-        sys.modules['unittest'] = unittest2
 
 if PY2:
     # tools.ip does not have a hard dependency on an IP address module,
@@ -128,16 +101,18 @@ if PY2:
     # ipaddr 2.1.10+ is distributed with Debian and Fedora. See T105443.
     dependencies.append('ipaddr>=2.1.10')
 
-    if PYTHON_VERSION == (2, 7, 2):
-        dependencies.append('future>=0.15.0')  # Bug fixes for HTMLParser
+    # version.package_version() uses pathlib which is a python 3 library.
+    # pathlib2 is required for python 2.7
+    dependencies.append('pathlib2')
 
-    if PYTHON_VERSION < (2, 7, 9):
+    if (2, 7, 6) < PYTHON_VERSION < (2, 7, 9):
         # Python versions before 2.7.9 will cause urllib3 to trigger
         # InsecurePlatformWarning warnings for all HTTPS requests. By
         # installing with security extras, requests will automatically set
         # them up and the warnings will stop. See
         # <https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning>
         # for more details.
+        # There is no secure version of cryptography for Python 2.7.6 or older.
         dependencies += extra_deps['security']
 
     script_deps['data_ingestion.py'] = extra_deps['csv']
@@ -155,14 +130,18 @@ else:
 # to set the console font and copy and paste, achieved using pywinauto
 # which depends on pywin32.
 # These tests may be disabled because pywin32 depends on VC++, is time
-# comsuming to build, and the console window cant be accessed during appveyor
+# consuming to build, and the console window can't be accessed during appveyor
 # builds.
 # Microsoft makes available a compiler for Python 2.7
 # http://www.microsoft.com/en-au/download/details.aspx?id=44266
 if os.name == 'nt' and os.environ.get('PYSETUP_TEST_NO_UI', '0') != '1':
-    # FIXME: tests/ui_tests.py suggests pywinauto 0.4.2
-    # which isnt provided on pypi.
-    test_deps += ['pywin32', 'pywinauto>=0.4.0']
+    if PYTHON_VERSION >= (3, 5, 0) or PY2:
+        pywinauto = 'pywinauto>0.6.4'
+        pywin32 = 'pywin32>220'
+    else:  # Python 3.4
+        pywinauto = 'pywinauto<=0.6.4'
+        pywin32 = 'pywin32<=220'
+    test_deps += [pywin32, pywinauto]
 
 extra_deps.update(script_deps)
 
@@ -170,8 +149,6 @@ extra_deps.update(script_deps)
 # so all scripts can be compiled for script_tests, etc.
 if 'PYSETUP_TEST_EXTRAS' in os.environ:
     test_deps += [i for k, v in extra_deps.items() if k != 'flake8' for i in v]
-    if 'oursql' in test_deps and os.name == 'nt':
-        test_deps.remove('oursql')  # depends on Cython
 
     if 'requests[security]' in test_deps:
         # Bug T105767 on Python 2.7 release 9+
@@ -229,22 +206,21 @@ setup(
     version=get_version(),
     description='Python MediaWiki Bot Framework',
     long_description=read_desc('README.rst'),
-    keywords=('API', 'bot', 'framework', 'mediawiki', 'pwb', 'python',
+    keywords=['API', 'bot', 'framework', 'mediawiki', 'pwb', 'python',
               'pywikibot', 'pywikipedia', 'pywikipediabot', 'wiki',
-              'wikimedia', 'wikipedia'),
+              'wikimedia', 'wikipedia'],
     maintainer='The Pywikibot team',
     maintainer_email='pywikibot@lists.wikimedia.org',
     license='MIT License',
     packages=[str(name)] + [package
                             for package in find_packages()
                             if package.startswith('pywikibot.')],
-    python_requires='>=2.7.2, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
+    python_requires='>=2.7.4, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
     install_requires=dependencies,
-    dependency_links=dependency_links,
     extras_require=extra_deps,
     url='https://www.mediawiki.org/wiki/Manual:Pywikibot',
     download_url='https://tools.wmflabs.org/pywikibot/',
-    test_suite="tests.collector",
+    test_suite='tests.collector',
     tests_require=test_deps,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -260,6 +236,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content :: Wiki',
         'Topic :: Software Development :: Libraries :: Python Modules',

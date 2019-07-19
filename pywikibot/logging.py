@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Logging functions."""
 #
-# (C) Pywikibot team, 2010-2018
+# (C) Pywikibot team, 2010-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import logging
 import os
@@ -62,7 +62,7 @@ def _init():
 # string indicating the debugging layer.
 
 
-def logoutput(text, decoder=None, newline=True, _level=INFO, _logger="",
+def logoutput(text, decoder=None, newline=True, _level=INFO, _logger='',
               **kwargs):
     """Format output and send to the logging module.
 
@@ -70,9 +70,9 @@ def logoutput(text, decoder=None, newline=True, _level=INFO, _logger="",
 
     """
     if _logger:
-        logger = logging.getLogger("pywiki." + _logger)
+        logger = logging.getLogger('pywiki.' + _logger)
     else:
-        logger = logging.getLogger("pywiki")
+        logger = logging.getLogger('pywiki')
 
     if not logger.handlers:  # lastResort for Python 2 (T188417)
         logger.handlers.append(StreamHandler())
@@ -90,7 +90,7 @@ def logoutput(text, decoder=None, newline=True, _level=INFO, _logger="",
     context = {'caller_name': frame.f_code.co_name,
                'caller_file': module,
                'caller_line': frame.f_lineno,
-               'newline': ("\n" if newline else "")}
+               'newline': ('\n' if newline else '')}
 
     if decoder:
         text = text.decode(decoder)
@@ -137,7 +137,7 @@ def output(text, decoder=None, newline=True, toStdout=False, **kwargs):
     if toStdout:  # maintained for backwards-compatibity only
         from pywikibot.tools import issue_deprecation_warning
         issue_deprecation_warning('"toStdout" parameter',
-                                  'pywikibot.stdout()', 2, since='20160228')
+                                  'pywikibot.stdout()', since='20160228')
         logoutput(text, decoder, newline, STDOUT, **kwargs)
     else:
         logoutput(text, decoder, newline, INFO, **kwargs)
@@ -149,7 +149,18 @@ def stdout(text, decoder=None, newline=True, **kwargs):
 
 
 def warning(text, decoder=None, newline=True, **kwargs):
-    """Output a warning message to the user via the userinterface."""
+    """Output a warning message to the user via the userinterface.
+
+    @param text: the message the user wants to display.
+    @type text: str
+    @param decoder: If None, text should be a unicode string. Otherwise it
+        should be encoded in the given encoding.
+    @type decoder: str
+    @param newline: If True, a line feed will be added after printing the text.
+    @type newline: bool
+    @param kwargs: The keyword arguments can be found in the python doc:
+        https://docs.python.org/3/howto/logging-cookbook.html.
+    """
     logoutput(text, decoder, newline, WARNING, **kwargs)
 
 
@@ -199,8 +210,8 @@ def exception(msg=None, decoder=None, newline=True, tb=False, **kwargs):
         exc_info = 1
     else:
         exc_info = sys.exc_info()
-        msg = u'%s: %s' % (repr(exc_info[1]).split('(')[0],
-                           unicode(exc_info[1]).strip())
+        msg = '%s: %s' % (
+            repr(exc_info[1]).split('(')[0], unicode(exc_info[1]).strip())
     if tb:
         kwargs['exc_info'] = exc_info
     logoutput(msg, decoder, newline, ERROR, **kwargs)

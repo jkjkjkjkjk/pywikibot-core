@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Tests for the tools.MediaWikiVersion class."""
 #
-# (C) Pywikibot team, 2008-2017
+# (C) Pywikibot team, 2008-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 
 from pywikibot.tools import MediaWikiVersion
@@ -30,7 +30,6 @@ class TestMediaWikiVersion(TestCase):
     def test_normal_versions(self):
         """Test comparison between release versions."""
         self.assertGreater(self._make('1.23'), self._make('1.22.0'))
-        self.assertTrue(self._make('1.23') == self._make('1.23'))
         self.assertEqual(self._make('1.23'), self._make('1.23'))
 
     def test_wmf_versions(self):
@@ -74,9 +73,12 @@ class TestMediaWikiVersion(TestCase):
 
     def test_invalid_versions(self):
         """Verify that insufficient version fail creating."""
-        self.assertRaisesRegex(ValueError, self.INVALID_VERSION_RE, MediaWikiVersion, 'invalid')
-        self.assertRaisesRegex(ValueError, self.INVALID_VERSION_RE, MediaWikiVersion, '1number')
-        self.assertRaisesRegex(ValueError, self.INVALID_VERSION_RE, MediaWikiVersion, '1.missing')
+        self.assertRaisesRegex(ValueError, self.INVALID_VERSION_RE,
+                               MediaWikiVersion, 'invalid')
+        self.assertRaisesRegex(ValueError, self.INVALID_VERSION_RE,
+                               MediaWikiVersion, '1number')
+        self.assertRaisesRegex(ValueError, self.INVALID_VERSION_RE,
+                               MediaWikiVersion, '1.missing')
 
         self.assertRaisesRegex(AssertionError, 'Found \"wmf\" in \"wmf-1\"',
                                MediaWikiVersion, '1.23wmf-1')
@@ -86,7 +88,8 @@ class TestMediaWikiVersion(TestCase):
         self.assertEqual(MediaWikiVersion.from_generator('MediaWiki 1.2.3'),
                          self._make('1.2.3'))
         self.assertRaisesRegex(ValueError, self.GENERATOR_STRING_RE,
-                               MediaWikiVersion.from_generator, 'Invalid 1.2.3')
+                               MediaWikiVersion.from_generator,
+                               'Invalid 1.2.3')
 
 
 if __name__ == '__main__':  # pragma: no cover

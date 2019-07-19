@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 """Objects representing MediaWiki families."""
 #
-# (C) Pywikibot team, 2004-2018
+# (C) Pywikibot team, 2004-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import collections
 from importlib import import_module
+from itertools import chain
 import logging
 from os.path import basename, dirname, splitext
 import re
@@ -22,18 +23,17 @@ from pywikibot.comms.http import fetch
 from pywikibot import config
 from pywikibot.exceptions import UnknownFamily, FamilyMaintenanceWarning
 from pywikibot.tools import (
-    deprecated, deprecated_args, issue_deprecation_warning,
-    FrozenDict, classproperty
+    deprecated, deprecated_args, remove_last_args, issue_deprecation_warning,
+    ModuleDeprecationWrapper, FrozenDict, classproperty, PY2
 )
 
-PY3 = sys.version_info[0] > 2
-if PY3:
+if not PY2:
     import urllib.parse as urlparse
 else:
     import urlparse
 
 
-logger = logging.getLogger("pywiki.wiki.family")
+logger = logging.getLogger('pywiki.wiki.family')
 
 # Legal characters for Family.name and Family.langs keys
 NAME_CHARACTERS = string.ascii_letters + string.digits
@@ -66,8 +66,8 @@ class Family(object):
             cls.__init__ = deprecated(cls.__dict__['__init__'])
 
             # Invoke initializer immediately and make initializer no-op.
-            # This is to avoid repeated initializer invokation on repeated
-            # invokations of the metaclass's __call__.
+            # This is to avoid repeated initializer invocation on repeated
+            # invocations of the metaclass's __call__.
             cls.instance.__init__()
             cls.__init__ = lambda self: None  # no-op
 
@@ -90,73 +90,71 @@ class Family(object):
     # The sorting order by language name from meta
     # MediaWiki:Interwiki_config-sorting_order-native-languagename
     alphabetic = [
-        'ace', 'kbd', 'ady', 'af', 'ak', 'als', 'am', 'ang', 'ab', 'ar',
-        'an', 'arc', 'roa-rup', 'frp', 'as', 'ast', 'atj', 'gn', 'av',
-        'ay', 'az', 'bm', 'bn', 'bjn', 'zh-min-nan', 'nan', 'map-bms',
-        'ba', 'be', 'be-tarask', 'bh', 'bcl', 'bi', 'bg', 'bar', 'bo',
-        'bs', 'br', 'bxr', 'ca', 'cv', 'ceb', 'cs', 'ch', 'cbk-zam', 'ny',
-        'sn', 'tum', 'cho', 'co', 'cy', 'da', 'dk', 'pdc', 'de', 'dv',
-        'nv', 'dsb', 'dty', 'dz', 'mh', 'et', 'el', 'eml', 'en', 'myv',
-        'es', 'eo', 'ext', 'eu', 'ee', 'fa', 'hif', 'fo', 'fr', 'fy', 'ff',
-        'fur', 'ga', 'gv', 'gag', 'gd', 'gl', 'gan', 'ki', 'glk', 'gu',
-        'got', 'hak', 'xal', 'ko', 'ha', 'haw', 'hy', 'hi', 'ho', 'hsb',
-        'hr', 'io', 'ig', 'ilo', 'bpy', 'id', 'ia', 'ie', 'iu', 'ik', 'os',
-        'xh', 'zu', 'is', 'it', 'he', 'jv', 'kbp', 'kl', 'kn', 'kr', 'pam',
-        'krc', 'ka', 'ks', 'csb', 'kk', 'kw', 'rw', 'rn', 'sw', 'kv', 'kg',
-        'gom', 'ht', 'ku', 'kj', 'ky', 'mrj', 'lad', 'lbe', 'lez', 'lo',
-        'ltg', 'la', 'lv', 'lb', 'lt', 'lij', 'li', 'ln', 'olo', 'jbo',
-        'lg', 'lmo', 'lrc', 'hu', 'mai', 'mk', 'mg', 'ml', 'mt', 'mi',
-        'mr', 'xmf', 'arz', 'mzn', 'ms', 'min', 'cdo', 'mwl', 'mdf', 'mo',
-        'mn', 'mus', 'my', 'nah', 'na', 'fj', 'nl', 'nds-nl', 'cr', 'ne',
-        'new', 'ja', 'nap', 'ce', 'frr', 'pih', 'no', 'nb', 'nn', 'nrm',
-        'nov', 'ii', 'oc', 'mhr', 'or', 'om', 'ng', 'hz', 'uz', 'pa', 'pi',
-        'pfl', 'pag', 'pnb', 'pap', 'ps', 'jam', 'koi', 'km', 'pcd', 'pms',
-        'tpi', 'nds', 'pl', 'pnt', 'pt', 'aa', 'kaa', 'crh', 'ty', 'ksh',
-        'ro', 'rmy', 'rm', 'qu', 'rue', 'ru', 'sah', 'se', 'sm', 'sa',
-        'sg', 'sc', 'sco', 'stq', 'st', 'nso', 'tn', 'sq', 'scn', 'si',
-        'simple', 'sd', 'ss', 'sk', 'sl', 'cu', 'szl', 'so', 'ckb', 'srn',
-        'sr', 'sh', 'su', 'fi', 'sv', 'tl', 'ta', 'kab', 'roa-tara', 'tt',
-        'te', 'tet', 'th', 'ti', 'tg', 'to', 'chr', 'chy', 've', 'tcy',
-        'tr', 'azb', 'tk', 'tw', 'tyv', 'udm', 'bug', 'uk', 'ur', 'ug',
-        'za', 'vec', 'vep', 'vi', 'vo', 'fiu-vro', 'wa', 'zh-classical',
-        'vls', 'war', 'wo', 'wuu', 'ts', 'yi', 'yo', 'zh-yue', 'diq',
-        'zea', 'bat-smg', 'zh', 'zh-tw', 'zh-cn',
+        'ace', 'kbd', 'ady', 'af', 'ak', 'als', 'am', 'ang', 'ab', 'ar', 'an',
+        'arc', 'roa-rup', 'frp', 'as', 'ast', 'atj', 'gn', 'av', 'ay', 'az',
+        'bm', 'bn', 'bjn', 'zh-min-nan', 'nan', 'map-bms', 'ba', 'be',
+        'be-tarask', 'bh', 'bcl', 'bi', 'bg', 'bar', 'bo', 'bs', 'br', 'bxr',
+        'ca', 'cv', 'ceb', 'cs', 'ch', 'cbk-zam', 'ny', 'sn', 'tum', 'cho',
+        'co', 'cy', 'da', 'dk', 'pdc', 'de', 'dv', 'nv', 'dsb', 'dty', 'dz',
+        'mh', 'et', 'el', 'eml', 'en', 'myv', 'es', 'eo', 'ext', 'eu', 'ee',
+        'fa', 'hif', 'fo', 'fr', 'fy', 'ff', 'fur', 'ga', 'gv', 'gag', 'gd',
+        'gl', 'gan', 'ki', 'glk', 'gu', 'gor', 'got', 'hak', 'xal', 'ko', 'ha',
+        'haw', 'hy', 'hi', 'ho', 'hsb', 'hr', 'hyw', 'io', 'ig', 'ilo', 'inh',
+        'bpy', 'id', 'ia', 'ie', 'iu', 'ik', 'os', 'xh', 'zu', 'is', 'it',
+        'he', 'jv', 'kbp', 'kl', 'kn', 'kr', 'pam', 'krc', 'ka', 'ks', 'csb',
+        'kk', 'kw', 'rw', 'rn', 'sw', 'kv', 'kg', 'gom', 'ht', 'ku', 'kj',
+        'ky', 'mrj', 'lad', 'lbe', 'lo', 'ltg', 'la', 'lv', 'lb', 'lez', 'lfn',
+        'lt', 'lij', 'li', 'ln', 'olo', 'jbo', 'lg', 'lmo', 'lrc', 'hu', 'mai',
+        'mk', 'mg', 'ml', 'mt', 'mi', 'mr', 'xmf', 'arz', 'mzn', 'ms', 'min',
+        'cdo', 'mwl', 'mdf', 'mo', 'mn', 'mus', 'my', 'nah', 'na', 'fj', 'nl',
+        'nds-nl', 'cr', 'ne', 'new', 'ja', 'nap', 'ce', 'frr', 'pih', 'no',
+        'nb', 'nn', 'nrm', 'nov', 'ii', 'oc', 'mhr', 'or', 'om', 'ng', 'hz',
+        'uz', 'pa', 'pi', 'pfl', 'pag', 'pnb', 'pap', 'ps', 'jam', 'koi', 'km',
+        'pcd', 'pms', 'tpi', 'nds', 'pl', 'pnt', 'pt', 'aa', 'kaa', 'crh',
+        'ty', 'ksh', 'ro', 'rmy', 'rm', 'qu', 'rue', 'ru', 'sah', 'se', 'sm',
+        'sa', 'sg', 'sat', 'sc', 'sco', 'stq', 'st', 'nso', 'tn', 'sq', 'scn',
+        'si', 'simple', 'sd', 'ss', 'sk', 'sl', 'cu', 'szl', 'so', 'ckb',
+        'srn', 'sr', 'sh', 'su', 'fi', 'sv', 'tl', 'shn', 'ta', 'kab',
+        'roa-tara', 'tt', 'te', 'tet', 'th', 'ti', 'tg', 'to', 'chr', 'chy',
+        've', 'tcy', 'tr', 'azb', 'tk', 'tw', 'tyv', 'din', 'udm', 'bug', 'uk',
+        'ur', 'ug', 'za', 'vec', 'vep', 'vi', 'vo', 'fiu-vro', 'wa',
+        'zh-classical', 'vls', 'war', 'wo', 'wuu', 'ts', 'yi', 'yo', 'zh-yue',
+        'diq', 'zea', 'bat-smg', 'zh', 'zh-tw', 'zh-cn'
     ]
 
     # The revised sorting order by first word from meta
     # MediaWiki:Interwiki_config-sorting_order-native-languagename-firstword
     alphabetic_revised = [
-        'ace', 'ady', 'kbd', 'af', 'ak', 'als', 'am', 'ang', 'ab', 'ar',
-        'an', 'arc', 'roa-rup', 'frp', 'as', 'ast', 'atj', 'gn', 'av',
-        'ay', 'az', 'bjn', 'id', 'ms', 'bm', 'bn', 'zh-min-nan', 'nan',
-        'map-bms', 'jv', 'su', 'ba', 'min', 'be', 'be-tarask', 'bh', 'bcl',
-        'bi', 'bar', 'bo', 'bs', 'br', 'bug', 'bg', 'bxr', 'ca', 'ceb',
-        'cv', 'cs', 'ch', 'cbk-zam', 'ny', 'sn', 'tum', 'cho', 'co', 'cy',
-        'da', 'dk', 'pdc', 'de', 'dv', 'nv', 'dsb', 'na', 'dty', 'dz',
-        'mh', 'et', 'el', 'eml', 'en', 'myv', 'es', 'eo', 'ext', 'eu',
-        'ee', 'fa', 'hif', 'fo', 'fr', 'fy', 'ff', 'fur', 'ga', 'gv', 'sm',
-        'gag', 'gd', 'gl', 'gan', 'ki', 'glk', 'gu', 'got', 'hak', 'xal',
-        'ko', 'ha', 'haw', 'hy', 'hi', 'ho', 'hsb', 'hr', 'io', 'ig',
-        'ilo', 'bpy', 'ia', 'ie', 'iu', 'ik', 'os', 'xh', 'zu', 'is', 'it',
-        'he', 'kl', 'kn', 'kr', 'pam', 'ka', 'ks', 'csb', 'kk', 'kw', 'rw',
-        'ky', 'rn', 'mrj', 'sw', 'kv', 'kg', 'gom', 'ht', 'ku', 'kj',
-        'lad', 'lbe', 'lez', 'lo', 'la', 'ltg', 'lv', 'to', 'lb', 'lt',
-        'lij', 'li', 'ln', 'olo', 'jbo', 'lg', 'lmo', 'lrc', 'hu', 'mai',
-        'mk', 'mg', 'ml', 'krc', 'mt', 'mi', 'mr', 'xmf', 'arz', 'mzn',
-        'cdo', 'mwl', 'koi', 'mdf', 'mo', 'mn', 'mus', 'my', 'nah', 'fj',
-        'nl', 'nds-nl', 'cr', 'ne', 'new', 'ja', 'nap', 'ce', 'frr', 'pih',
-        'no', 'nb', 'nn', 'nrm', 'nov', 'ii', 'oc', 'mhr', 'or', 'om',
-        'ng', 'hz', 'uz', 'pa', 'pi', 'pfl', 'pag', 'pnb', 'pap', 'ps',
-        'jam', 'km', 'pcd', 'pms', 'nds', 'pl', 'pnt', 'pt', 'aa', 'kaa',
-        'crh', 'ty', 'ksh', 'ro', 'rmy', 'rm', 'qu', 'ru', 'rue', 'sah',
-        'se', 'sa', 'sg', 'sc', 'sco', 'stq', 'st', 'nso', 'tn', 'sq',
-        'scn', 'si', 'simple', 'sd', 'ss', 'sk', 'sl', 'cu', 'szl', 'so',
-        'ckb', 'srn', 'sr', 'sh', 'fi', 'sv', 'tl', 'ta', 'kab',
-        'roa-tara', 'tt', 'te', 'tet', 'th', 'vi', 'ti', 'tg', 'tpi',
-        'chr', 'chy', 've', 'tcy', 'tr', 'azb', 'tk', 'tw', 'tyv', 'udm',
-        'uk', 'ur', 'ug', 'za', 'vec', 'vep', 'vo', 'fiu-vro', 'wa',
-        'zh-classical', 'vls', 'war', 'wo', 'wuu', 'ts', 'yi', 'yo',
-        'zh-yue', 'diq', 'zea', 'bat-smg', 'zh', 'zh-tw', 'zh-cn',
+        'ace', 'ady', 'kbd', 'af', 'ak', 'als', 'am', 'ang', 'ab', 'ar', 'an',
+        'arc', 'roa-rup', 'frp', 'as', 'ast', 'atj', 'gn', 'av', 'ay', 'az',
+        'bjn', 'id', 'ms', 'bm', 'bn', 'zh-min-nan', 'nan', 'map-bms', 'jv',
+        'su', 'ba', 'min', 'be', 'be-tarask', 'bh', 'bcl', 'bi', 'bar', 'bo',
+        'bs', 'br', 'bug', 'bg', 'bxr', 'ca', 'ceb', 'cv', 'cs', 'ch',
+        'cbk-zam', 'ny', 'sn', 'tum', 'cho', 'co', 'cy', 'da', 'dk', 'pdc',
+        'de', 'dv', 'nv', 'dsb', 'na', 'dty', 'dz', 'mh', 'et', 'el', 'eml',
+        'en', 'myv', 'es', 'eo', 'ext', 'eu', 'ee', 'fa', 'hif', 'fo', 'fr',
+        'fy', 'ff', 'fur', 'ga', 'gv', 'sm', 'gag', 'gd', 'gl', 'gan', 'ki',
+        'glk', 'gu', 'got', 'hak', 'xal', 'ko', 'ha', 'haw', 'hy', 'hi', 'ho',
+        'hsb', 'hr', 'hyw', 'io', 'ig', 'ilo', 'inh', 'bpy', 'ia', 'ie', 'iu',
+        'ik', 'os', 'xh', 'zu', 'is', 'it', 'he', 'kl', 'kn', 'kr', 'pam',
+        'ka', 'ks', 'csb', 'kk', 'kw', 'rw', 'ky', 'rn', 'mrj', 'sw', 'kv',
+        'kg', 'gom', 'gor', 'ht', 'ku', 'shn', 'kj', 'lad', 'lbe', 'lez',
+        'lfn', 'lo', 'la', 'ltg', 'lv', 'to', 'lb', 'lt', 'lij', 'li', 'ln',
+        'olo', 'jbo', 'lg', 'lmo', 'lrc', 'hu', 'mai', 'mk', 'mg', 'ml', 'krc',
+        'mt', 'mi', 'mr', 'xmf', 'arz', 'mzn', 'cdo', 'mwl', 'koi', 'mdf',
+        'mo', 'mn', 'mus', 'my', 'nah', 'fj', 'nl', 'nds-nl', 'cr', 'ne',
+        'new', 'ja', 'nap', 'ce', 'frr', 'pih', 'no', 'nb', 'nn', 'nrm', 'nov',
+        'ii', 'oc', 'mhr', 'or', 'om', 'ng', 'hz', 'uz', 'pa', 'pi', 'pfl',
+        'pag', 'pnb', 'pap', 'ps', 'jam', 'km', 'pcd', 'pms', 'nds', 'pl',
+        'pnt', 'pt', 'aa', 'kaa', 'crh', 'ty', 'ksh', 'ro', 'rmy', 'rm', 'qu',
+        'ru', 'rue', 'sah', 'se', 'sa', 'sg', 'sat', 'sc', 'sco', 'stq', 'st',
+        'nso', 'tn', 'sq', 'scn', 'si', 'simple', 'sd', 'ss', 'sk', 'sl', 'cu',
+        'szl', 'so', 'ckb', 'srn', 'sr', 'sh', 'fi', 'sv', 'tl', 'ta', 'kab',
+        'kbp', 'roa-tara', 'tt', 'te', 'tet', 'th', 'vi', 'ti', 'tg', 'tpi',
+        'chr', 'chy', 've', 'tcy', 'tr', 'azb', 'tk', 'tw', 'tyv', 'din',
+        'udm', 'uk', 'ur', 'ug', 'za', 'vec', 'vep', 'vo', 'fiu-vro', 'wa',
+        'zh-classical', 'vls', 'war', 'wo', 'wuu', 'ts', 'yi', 'yo', 'zh-yue',
+        'diq', 'zea', 'bat-smg', 'zh', 'zh-tw', 'zh-cn'
     ]
 
     # Order for fy: alphabetical by code, but y counts as i
@@ -172,16 +170,16 @@ class Family(object):
     # Note: this is a regular expression.
     linktrails = {
         '_default': '[a-z]*',
-        'ab': '[a-zабвгдеёжзийклмнопрстуфхцчшщъыьэюя]*',
+        'ab': '[a-zабвгҕдежзӡикқҟлмнопҧрстҭуфхҳцҵчҷҽҿшыҩџьә]*',
         'als': '[äöüßa-z]*',
         'an': '[a-záéíóúñ]*',
         'ar': '[a-zء-ي]*',
+        'arz': '[a-zء-ي]*',
         'ast': '[a-záéíóúñ]*',
         'atj': '[a-zàâçéèêîôûäëïöüùÇÉÂÊÎÔÛÄËÏÖÜÀÈÙ]*',
-        'arz': '[a-zء-ي]*',
-        'azb': '[ابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیآأئؤة‌]*',
         'av': '[a-zабвгдеёжзийклмнопрстуфхцчшщъыьэюя]*',
         'ay': '[a-záéíóúñ]*',
+        'azb': '[ابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیآأئؤة‌]*',
         'bar': '[äöüßa-z]*',
         'bat-smg': '[a-ząčęėįšųūž]*',
         'be': '[абвгґджзеёжзійклмнопрстуўфхцчшыьэюяćčłńśšŭźža-z]*',
@@ -197,7 +195,7 @@ class Family(object):
         'ce': '[a-zабвгдеёжзийклмнопрстуфхцчшщъыьэюя]*',
         'ckb': '[ئابپتجچحخدرڕزژسشعغفڤقکگلڵمنوۆهھەیێ‌]*',
         'co': '[a-zàéèíîìóòúù]*',
-        'crh': '[a-zâçğıñöşüа-яё“»]*',
+        'crh': '[a-zâçğıñöşüа-яёʺʹ“»]*',
         'cs': '[a-záčďéěíňóřšťúůýž]*',
         'csb': '[a-zęóąśłżźćńĘÓĄŚŁŻŹĆŃ]*',
         'cu': ('[a-zабвгдеєжѕзїіıићклмнопсстѹфхѡѿцчшщъыьѣюѥѧѩѫѭѯѱѳѷѵґѓђё'
@@ -212,8 +210,8 @@ class Family(object):
                'ίόύώϊϋΐΰΆΈΉΊΌΎΏΪΫ]*'),
         'eml': '[a-zàéèíîìóòúù]*',
         'es': '[a-záéíóúñ]*',
-        'eu': '[a-záéíóúñ]*',
         'et': '[äöõšüža-z]*',
+        'eu': '[a-záéíóúñ]*',
         'ext': '[a-záéíóúñ]*',
         'fa': '[ابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیآأئؤة‌]*',
         'ff': '[a-zàâçéèêîôûäëïöüùÇÉÂÊÎÔÛÄËÏÖÜÀÈÙ]*',
@@ -237,6 +235,7 @@ class Family(object):
         'ht': '[a-zàèòÀÈÒ]*',
         'hu': '[a-záéíóúöüőűÁÉÍÓÚÖÜŐŰ]*',
         'hy': '[a-zաբգդեզէըթժիլխծկհձղճմյնշոչպջռսվտրցւփքօֆև«»]*',
+        'inh': '[a-zабвгдеёжзийклмнопрстуфхцчшщъыьэюя]*',
         'is': '[áðéíóúýþæöa-z-–]*',
         'it': '[a-zàéèíîìóòúù]*',
         'ka': '[a-zაბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰ“»]*',
@@ -302,7 +301,7 @@ class Family(object):
         'ru': '[a-zабвгдеёжзийклмнопрстуфхцчшщъыьэюя]*',
         'rue': '[a-zабвгґдеєжзиіїйклмнопрстуфхцчшщьєюяёъы“»]*',
         'sa': '[a-zऀ-ॣ०-꣠-ꣿ]*',
-        'sah': '[a-zабвгдеёжзийклмнопрстуфхцчшщъыьэюя]*',
+        'sah': '[a-zабвгҕдеёжзийклмнҥоөпрсһтуүфхцчшщъыьэюя]*',
         'scn': '[a-zàéèíîìóòúù]*',
         'sg': '[a-zàâçéèêîôûäëïöüùÇÉÂÊÎÔÛÄËÏÖÜÀÈÙ]*',
         'sh': '[a-zčćđžš]*',
@@ -316,6 +315,7 @@ class Family(object):
         'szl': '[a-zęóąśłżźćńĘÓĄŚŁŻŹĆŃ]*',
         'ta': '[஀-௿]*',
         'te': '[ఁ-౯]*',
+        'tet': '[a-záâãàéêẽçíòóôõq̃úüűũ]*',
         'tg': '[a-zабвгдеёжзийклмнопрстуфхчшъэюяғӣқўҳҷцщыь]*',
         'tk': '[a-zÄäÇçĞğŇňÖöŞşÜüÝýŽž]*',
         'tr': '[a-zÇĞçğİıÖöŞşÜüÂâÎîÛû]*',
@@ -344,71 +344,54 @@ class Family(object):
 
     # TODO: replace this with API interwikimap call
     known_families = {
-        'abbenormal':       'abbenormal',
         'acronym':          'acronym',
         'advisory':         'advisory',
         'advogato':         'advogato',
         'aew':              'aew',
-        'airwarfare':       'airwarfare',
-        'aiwiki':           'aiwiki',
-        'allwiki':          'allwiki',
         'appropedia':       'appropedia',
         'aquariumwiki':     'aquariumwiki',
+        'arborwiki':        'arborwiki',
         'arxiv':            'arxiv',
-        'aspienetwiki':     'aspienetwiki',
         'atmwiki':          'atmwiki',
         'b':                'wikibooks',
-        'bemi':             'bemi',
-        'benefitswiki':     'benefitswiki',
-        'betawiki':         'betawiki',
+        'baden':            'baden',
+        'battlestarwiki':   'battlestarwiki',
+        'bcnbio':           'bcnbio',
+        'beacha':           'beacha',
+        'betawiki':         'translatewiki',
         'betawikiversity':  'betawikiversity',
-        'biblewiki':        'biblewiki',
+        'bibcode':          'bibcode',
+        'bibliowiki':       'bibliowiki',
         'bluwiki':          'bluwiki',
+        'blw':              'blw',
         'botwiki':          'botwiki',
         'boxrec':           'boxrec',
         'brickwiki':        'brickwiki',
-        'bridgeswiki':      'bridgeswiki',
         'bugzilla':         'bugzilla',
-        'buzztard':         'buzztard',
-        'bytesmiths':       'bytesmiths',
+        'bulba':            'bulba',
+        'c':                'commons',
         'c2':               'c2',
         'c2find':           'c2find',
-        'cache':            'cache',
-        'canwiki':          'canwiki',
-        'canyonwiki':       'canyonwiki',
         'Ĉej':              'Ĉej',
         'cellwiki':         'cellwiki',
         'centralwikia':     'centralwikia',
-        'chapter':          'chapter',
+        'chapter':          'wikimedia',
         'chej':             'chej',
         'choralwiki':       'choralwiki',
-        'ciscavate':        'ciscavate',
         'citizendium':      'citizendium',
         'ckwiss':           'ckwiss',
-        'closed-zh-tw':     'closed-zh-tw',
-        'cndbname':         'cndbname',
-        'cndbtitle':        'cndbtitle',
-        'colab':            'colab',
-        'comcom':           'comcom',
         'comixpedia':       'comixpedia',
         'commons':          'commons',
         'communityscheme':  'communityscheme',
         'comune':           'comune',
-        'consciousness':    'consciousness',
-        'corpknowpedia':    'corpknowpedia',
-        'crazyhacks':       'crazyhacks',
-        'creatureswiki':    'creatureswiki',
+        'creativecommonswiki': 'creativecommonswiki',
         'cxej':             'cxej',
-        'dawiki':           'dawiki',
-        'dbdump':           'dbdump',
         'dcc':              'dcc',
         'dcdatabase':       'dcdatabase',
         'dcma':             'dcma',
-        'dejanews':         'dejanews',
-        'delicious':        'delicious',
-        'demokraatia':      'demokraatia',
+        'debian':           'debian',
         'devmo':            'devmo',
-        'dict':             'dict',
+        'dict':             'dictionary',
         'dictionary':       'dictionary',
         'disinfopedia':     'disinfopedia',
         'distributedproofreaders': 'distributedproofreaders',
@@ -416,39 +399,35 @@ class Family(object):
         'dk':               'dk',
         'dmoz':             'dmoz',
         'dmozs':            'dmozs',
-        'docbook':          'docbook',
         'doom_wiki':        'doom_wiki',
         'download':         'download',
+        'dbdump':           'dbdump',
+        'dpd':              'dpd',
         'drae':             'drae',
         'dreamhost':        'dreamhost',
         'drumcorpswiki':    'drumcorpswiki',
         'dwjwiki':          'dwjwiki',
         'eĉei':             'eĉei',
-        'echei':            'echei',
         'ecoreality':       'ecoreality',
         'ecxei':            'ecxei',
-        'efnetceewiki':     'efnetceewiki',
-        'efnetcppwiki':     'efnetcppwiki',
-        'efnetpythonwiki':  'efnetpythonwiki',
-        'efnetxmlwiki':     'efnetxmlwiki',
         'elibre':           'elibre',
         'emacswiki':        'emacswiki',
+        'encyc':            'encyc',
         'energiewiki':      'energiewiki',
+        'englyphwiki':      'englyphwiki',
+        'enkol':            'enkol',
         'eokulturcentro':   'eokulturcentro',
-        'epo':              'epo',
-        'ethnologue':       'ethnologue',
+        'esolang':          'esolang',
+        'etherpad':         'etherpad',
         'evowiki':          'evowiki',
         'exotica':          'exotica',
         'fanimutationwiki': 'fanimutationwiki',
-        'finalempire':      'finalempire',
         'finalfantasy':     'finalfantasy',
         'finnix':           'finnix',
-        'flickruser':       'flickruser',
         'floralwiki':       'floralwiki',
-        'flyerwiki-de':     'flyerwiki-de',
         'foldoc':           'foldoc',
-        'forthfreak':       'forthfreak',
-        'foundation':       'foundation',
+        'foundation':       'wikimedia',
+        'foundationsite':   'foundationsite',
         'foxwiki':          'foxwiki',
         'freebio':          'freebio',
         'freebsdman':       'freebsdman',
@@ -457,68 +436,71 @@ class Family(object):
         'freefeel':         'freefeel',
         'freekiwiki':       'freekiwiki',
         'ganfyd':           'ganfyd',
+        'gardenology':      'gardenology',
         'gausswiki':        'gausswiki',
-        'gentoo-wiki':      'gentoo',
+        'gentoo':           'gentoo',
         'genwiki':          'genwiki',
-        'globalvoices':     'globalvoices',
-        'glossarwiki':      'glossarwiki',
-        'glossarywiki':     'glossarywiki',
-        'golem':            'golem',
+        'gerrit':           'gerrit',
+        'git':              'git',
         'google':           'google',
         'googledefine':     'googledefine',
         'googlegroups':     'googlegroups',
-        'gotamac':          'gotamac',
-        'greatlakeswiki':   'greatlakeswiki',
         'guildwiki':        'guildwiki',
+        'guc':              'guc',
+        'gucprefix':        'guc',
         'gutenberg':        'gutenberg',
         'gutenbergwiki':    'gutenbergwiki',
+        'hackerspaces':     'hackerspaces',
         'h2wiki':           'h2wiki',
         'hammondwiki':      'hammondwiki',
+        'hdl':              'hdl',
+        'heraldik':         'heraldik',
         'heroeswiki':       'heroeswiki',
-        'herzkinderwiki':   'herzkinderwiki',
-        'hkmule':           'hkmule',
-        'holshamtraders':   'holshamtraders',
-        'hrfwiki':          'hrfwiki',
+        'horizonlabs':      'horizonlabs',
         'hrwiki':           'hrwiki',
-        'humancell':        'humancell',
+        'hrfwiki':          'hrfwiki',
         'hupwiki':          'hupwiki',
-        'imdbcharacter':    'imdbcharacter',
-        'imdbcompany':      'imdbcompany',
+        'iarchive':         'iarchive',
         'imdbname':         'imdbname',
         'imdbtitle':        'imdbtitle',
+        'imdbcompany':      'imdbcompany',
+        'imdbcharacter':    'imdbcharacter',
         'incubator':        'incubator',
-        'infoanarchy':      'infoanarchy',
         'infosecpedia':     'infosecpedia',
         'infosphere':       'infosphere',
+        'irc':              'irc',
+        'ircs':             'ircs',
+        'rcirc':            'rcirc',
         'iso639-3':         'iso639-3',
+        'issn':             'issn',
         'iuridictum':       'iuridictum',
-        'jameshoward':      'jameshoward',
+        'jaglyphwiki':      'jaglyphwiki',
         'javanet':          'javanet',
         'javapedia':        'javapedia',
         'jefo':             'jefo',
-        'jiniwiki':         'jiniwiki',
+        'jerseydatabase':   'jerseydatabase',
+        'jira':             'jira',
         'jspwiki':          'jspwiki',
         'jstor':            'jstor',
         'kamelo':           'kamelo',
         'karlsruhe':        'karlsruhe',
-        'kerimwiki':        'kerimwiki',
         'kinowiki':         'kinowiki',
-        'kmwiki':           'kmwiki',
+        'komicawiki':       'komicawiki',
         'kontuwiki':        'kontuwiki',
-        'koslarwiki':       'koslarwiki',
-        'kpopwiki':         'kpopwiki',
+        'wikitech':         'wikitech',
+        'libreplanet':      'libreplanet',
         'linguistlist':     'linguistlist',
         'linuxwiki':        'linuxwiki',
         'linuxwikide':      'linuxwikide',
         'liswiki':          'liswiki',
         'literateprograms': 'literateprograms',
         'livepedia':        'livepedia',
+        'localwiki':        'localwiki',
         'lojban':           'lojban',
         'lostpedia':        'lostpedia',
         'lqwiki':           'lqwiki',
         'lugkr':            'lugkr',
         'luxo':             'luxo',
-        'lyricwiki':        'lyricwiki',
         'm':                'meta',
         'm-w':              'm-w',
         'mail':             'mail',
@@ -526,11 +508,14 @@ class Family(object):
         'mariowiki':        'mariowiki',
         'marveldatabase':   'marveldatabase',
         'meatball':         'meatball',
+        'mw':               'mediawiki',
         'mediazilla':       'mediazilla',
         'memoryalpha':      'memoryalpha',
-        'meta':             'meta',
+        'meta':             'metawiki',
         'metawiki':         'metawiki',
-        'metawikipedia':    'metawikipedia',
+        'metawikimedia':    'metawiki',
+        'metawikipedia':    'metawiki',
+        'metawikisearch':   'metawikisearch',
         'mineralienatlas':  'mineralienatlas',
         'moinmoin':         'moinmoin',
         'monstropedia':     'monstropedia',
@@ -539,147 +524,134 @@ class Family(object):
         'mozillawiki':      'mozillawiki',
         'mozillazinekb':    'mozillazinekb',
         'musicbrainz':      'musicbrainz',
-        'mw':               'mw',
         'mwod':             'mwod',
         'mwot':             'mwot',
         'n':                'wikinews',
-        'netvillage':       'netvillage',
         'nkcells':          'nkcells',
-        'nomcom':           'nomcom',
+        'nara':             'nara',
         'nosmoke':          'nosmoke',
         'nost':             'nost',
+        'nostalgia':        'nostalgia',
         'oeis':             'oeis',
         'oldwikisource':    'oldwikisource',
         'olpc':             'olpc',
+        'omegawiki':        'omegawiki',
         'onelook':          'onelook',
-        'openfacts':        'openfacts',
+        'openlibrary':      'openlibrary',
         'openstreetmap':    'openstreetmap',
         'openwetware':      'openwetware',
-        'openwiki':         'openwiki',
         'opera7wiki':       'opera7wiki',
         'organicdesign':    'organicdesign',
-        'orgpatterns':      'orgpatterns',
         'orthodoxwiki':     'orthodoxwiki',
-        'osi reference model': 'osi reference model',
         'otrs':             'otrs',
         'otrswiki':         'otrswiki',
         'ourmedia':         'ourmedia',
-        'paganwiki':        'paganwiki',
+        'outreach':         'outreach',
+        'outreachwiki':     'outreach',
+        'owasp':            'owasp',
         'panawiki':         'panawiki',
-        'pangalacticorg':   'pangalacticorg',
         'patwiki':          'patwiki',
-        'perlconfwiki':     'perlconfwiki',
-        'perlnet':          'perlnet',
         'personaltelco':    'personaltelco',
-        'phpwiki':          'phpwiki',
+        'petscan':          'petscan',
+        'phab':             'phabricator',
+        'phabricator':      'phabricator',
         'phwiki':           'phwiki',
+        'phpwiki':          'phpwiki',
         'planetmath':       'planetmath',
         'pmeg':             'pmeg',
-        'pmwiki':           'pmwiki',
-        'psycle':           'psycle',
+        'pmid':             'pmid',
+        'pokewiki':         'pokewiki',
+        'pokéwiki':         'pokewiki',
+        'policy':           'policy',
         'purlnet':          'purlnet',
-        'pythoninfo':       'pythoninfo',
+        'pyrev':            'pyrev',
         'pythonwiki':       'pythonwiki',
         'pywiki':           'pywiki',
+        'psycle':           'psycle',
         'q':                'wikiquote',
-        'qcwiki':           'qcwiki',
         'quality':          'quality',
-        'qwiki':            'qwiki',
-        'r3000':            'r3000',
-        'raec':             'raec',
-        'rakwiki':          'rakwiki',
-        'reuterswiki':      'reuterswiki',
+        'quarry':           'quarry',
         'rev':              'rev',
         'revo':             'revo',
-        'rfc':              'rfc',
         'rheinneckar':      'rheinneckar',
         'robowiki':         'robowiki',
+        'rodovid':          'rodovid',
+        'reuterswiki':      'reuterswiki',
         'rowiki':           'rowiki',
+        'rt':               'rt',
+        'rtfm':             'rtfm',
         's':                'wikisource',
         's23wiki':          's23wiki',
-        'scholar':          'scholar',
         'schoolswp':        'schoolswp',
         'scores':           'scores',
         'scoutwiki':        'scoutwiki',
         'scramble':         'scramble',
         'seapig':           'seapig',
         'seattlewiki':      'seattlewiki',
-        'seattlewireless':  'seattlewireless',
+        'slwiki':           'slwiki',
         'senseislibrary':   'senseislibrary',
         'silcode':          'silcode',
         'slashdot':         'slashdot',
-        'slwiki':           'slwiki',
-        'smikipedia':       'smikipedia',
         'sourceforge':      'sourceforge',
         'spcom':            'spcom',
         'species':          'species',
         'squeak':           'squeak',
-        'stable':           'stable',
+        'stats':            'stats',
+        'stewardry':        'stewardry',
+        'strategy':         'strategy',
         'strategywiki':     'strategywiki',
         'sulutil':          'sulutil',
-        'susning':          'susning',
-        'svgwiki':          'svgwiki',
-        'svn':              'svn',
-        'swinbrain':        'swinbrain',
-        'swingwiki':        'swingwiki',
         'swtrain':          'swtrain',
+        'svn':              'svn',
         'tabwiki':          'tabwiki',
-        'takipedia':        'takipedia',
-        'tavi':             'tavi',
         'tclerswiki':       'tclerswiki',
         'technorati':       'technorati',
-        'tejo':             'tejo',
-        'tesoltaiwan':      'tesoltaiwan',
+        'tenwiki':          'tenwiki',
         'testwiki':         'testwiki',
+        'testwikidata':     'testwikidata',
+        'test2wiki':        'test2wiki',
+        'tfwiki':           'tfwiki',
         'thelemapedia':     'thelemapedia',
         'theopedia':        'theopedia',
-        'theppn':           'theppn',
         'thinkwiki':        'thinkwiki',
-        'tibiawiki':        'tibiawiki',
         'ticket':           'ticket',
         'tmbw':             'tmbw',
         'tmnet':            'tmnet',
         'tmwiki':           'tmwiki',
-        'tokyonights':      'tokyonights',
-        'tools':            'tools',
+        'toolforge':        'toollabs',
+        'toollabs':        'toollabs',
         'translatewiki':    'translatewiki',
-        'trash!italia':     'trash!italia',
-        'tswiki':           'tswiki',
-        'turismo':          'turismo',
         'tviv':             'tviv',
         'tvtropes':         'tvtropes',
         'twiki':            'twiki',
-        'twistedwiki':      'twistedwiki',
         'tyvawiki':         'tyvawiki',
+        'umap':             'umap',
         'uncyclopedia':     'uncyclopedia',
+        'unihan':           'unihan',
         'unreal':           'unreal',
         'urbandict':        'urbandict',
         'usej':             'usej',
         'usemod':           'usemod',
+        'usability':        'usability',
+        'utrs':             'utrs',
         'v':                'wikiversity',
-        'valuewiki':        'valuewiki',
-        'veropedia':        'veropedia',
-        'vinismo':          'vinismo',
-        'vkol':             'vkol',
+        'vikidia':          'vikidia',
         'vlos':             'vlos',
+        'vkol':             'vkol',
         'voipinfo':         'voipinfo',
+        'votewiki':         'votewiki',
         'voy':              'wikivoyage',
         'w':                'wikipedia',
-        'warpedview':       'warpedview',
-        'webdevwikinl':     'webdevwikinl',
-        'webisodes':        'webisodes',
-        'webseitzwiki':     'webseitzwiki',
+        'werelate':         'werelate',
         'wg':               'wg',
-        'wiki':             'wiki',
         'wikia':            'wikia',
-        'wikianso':         'wikianso',
-        'wikiasite':        'wikiasite',
-        'wikible':          'wikible',
+        'wikiasite':        'wikia',
         'wikibooks':        'wikibooks',
-        'wikichat':         'wikichat',
         'wikichristian':    'wikichristian',
         'wikicities':       'wikicities',
         'wikicity':         'wikicity',
+        'wikiconference':   'wikiconference',
+        'wikidata':         'wikidata',
         'wikif1':           'wikif1',
         'wikifur':          'wikifur',
         'wikihow':          'wikihow',
@@ -687,31 +659,79 @@ class Family(object):
         'wikilemon':        'wikilemon',
         'wikilivres':       'wikilivres',
         'wikimac-de':       'wikimac-de',
-        'wikimac-fr':       'wikimac-fr',
         'wikimedia':        'wikimedia',
         'wikinews':         'wikinews',
         'wikinfo':          'wikinfo',
-        'wikinurse':        'wikinurse',
         'wikinvest':        'wikinvest',
-        'wikipaltz':        'wikipaltz',
+        'wikipapers':       'wikipapers',
         'wikipedia':        'wikipedia',
-        'wikipediawikipedia': 'wikipediawikipedia',
+        'wikipediawikipedia': 'wikipedia',
         'wikiquote':        'wikiquote',
-        'wikireason':       'wikireason',
-        'wikischool':       'wikischool',
-        'wikisophia':       'wikisophia',
+        'wikisophia':       'wikisophoa',
         'wikisource':       'wikisource',
         'wikispecies':      'wikispecies',
         'wikispot':         'wikispot',
+        'wikiskripta':      'wikiscripta',
+        'labsconsole':      'labsconsole',
         'wikiti':           'wikiti',
-        'wikitravel':       'wikitravel',
-        'wikitree':         'wikitree',
         'wikiversity':      'wikiversity',
+        'wikivoyage':       'wikivoyage',
         'wikiwikiweb':      'wikiwikiweb',
         'wikt':             'wiktionary',
         'wiktionary':       'wiktionary',
         'wipipedia':        'wipipedia',
         'wlug':             'wlug',
+        'wmam':             'wmam',
+        'wmar':             'wmar',
+        'wmat':             'wmat',
+        'wmau':             'wmau',
+        'wmbd':             'wmbd',
+        'wmbe':             'wmbe',
+        'wmbr':             'wmbr',
+        'wmca':             'wmca',
+        'wmch':             'wmch',
+        'wmcl':             'wmcl',
+        'wmcn':             'wmcn',
+        'wmco':             'wmco',
+        'wmcz':             'wmcz',
+        'wmdc':             'wmdc',
+        'securewikidc':     'securewikidc',
+        'wmdk':             'wmdk',
+        'wmee':             'wmee',
+        'wmec':             'wmec',
+        'wmes':             'wmes',
+        'wmet':             'wmet',
+        'wmfdashboard':     'wmfdashboard',
+        'wmfi':             'wmfi',
+        'wmfr':             'wmfr',
+        'wmhi':             'wmhi',
+        'wmhk':             'wmhk',
+        'wmid':             'wmid',
+        'wmil':             'wmil',
+        'wmin':             'wmin',
+        'wmit':             'wmit',
+        'wmke':             'wmke',
+        'wmmk':             'wmmk',
+        'wmmx':             'wmmx',
+        'wmnl':             'wmnl',
+        'wmnyc':            'wmnyc',
+        'wmno':             'wmno',
+        'wmpa-us':          'wmpa-us',
+        'wmph':             'wmph',
+        'wmpl':             'wmpl',
+        'wmpt':             'wmpt',
+        'wmpunjabi':        'wmpunjabi',
+        'wmromd':           'wmromd',
+        'wmrs':             'wmrs',
+        'wmru':             'wmru',
+        'wmse':             'wmse',
+        'wmsk':             'wmsk',
+        'wmtr':             'wmtr',
+        'wmtw':             'wmtw',
+        'wmua':             'wmua',
+        'wmuk':             'wmuk',
+        'wmve':             'wmve',
+        'wmza':             'wmza',
         'wm2005':           'wm2005',
         'wm2006':           'wm2006',
         'wm2007':           'wm2007',
@@ -726,23 +746,18 @@ class Family(object):
         'wm2016':           'wm2016',
         'wm2017':           'wm2017',
         'wm2018':           'wm2018',
-        'wmania':           'wmania',
-        'wmcz':             'wmcz',
+        'wmania':           'wikimania',
+        'wikimania':        'wikimania',
+        'wmteam':           'wmteam',
         'wmf':              'wmf',
-        'wmrs':             'wmrs',
-        'wmse':             'wmse',
         'wookieepedia':     'wookieepedia',
-        'world66':          'world66',
         'wowwiki':          'wowwiki',
         'wqy':              'wqy',
         'wurmpedia':        'wurmpedia',
-        'wznan':            'wznan',
-        'xboxic':           'xboxic',
-        'zh-cfr':           'zh-cfr',
+        'viaf':             'viaf',
         'zrhwiki':          'zrhwiki',
         'zum':              'zum',
         'zwiki':            'zwiki',
-        'zzz wiki':         'zzz wiki',
     }
 
     # A list of category redirect template names in different languages
@@ -934,6 +949,10 @@ class Family(object):
     #       'pt': { '_default': [0]}
     #   }
 
+    # Some wiki farms have UrlShortener extension enabled only on the main
+    # site. This value can specify this last one with (lang, family) tuple.
+    shared_urlshortner_wiki = None
+
     _families = {}
 
     def __getattribute__(self, name):
@@ -947,15 +966,15 @@ class Family(object):
         if name == 'nocapitalize':
             issue_deprecation_warning('nocapitalize',
                                       "APISite.siteinfo['case'] or "
-                                      "Namespace.case == 'case-sensitive'", 2,
+                                      "Namespace.case == 'case-sensitive'",
                                       since='20150214')
         elif name == 'known_families':
             issue_deprecation_warning('known_families',
-                                      'APISite.interwiki(prefix)', 2,
+                                      'APISite.interwiki(prefix)',
                                       since='20150503')
         elif name == 'shared_data_repository':
             issue_deprecation_warning('shared_data_repository',
-                                      'APISite.data_repository()', 2,
+                                      'APISite.data_repository()',
                                       since='20151023')
         return super(Family, self).__getattribute__(name)
 
@@ -993,19 +1012,19 @@ class Family(object):
             # TODO: use more specific filter, so that family classes can use
             #     RuntimeWarning's while loading.
             with warnings.catch_warnings():
-                warnings.simplefilter("ignore", RuntimeWarning)
+                warnings.simplefilter('ignore', RuntimeWarning)
                 sys.path.append(dirname(family_file))
                 mod = import_module(splitext(basename(family_file))[0])
         except ImportError:
-            raise UnknownFamily(u'Family %s does not exist' % fam)
+            raise UnknownFamily('Family %s does not exist' % fam)
         cls = mod.Family.instance
         if cls.name != fam:
-            warn(u'Family name %s does not match family module name %s'
+            warn('Family name %s does not match family module name %s'
                  % (cls.name, fam), FamilyMaintenanceWarning)
         # Family 'name' and the 'langs' codes must be ascii, and the
         # codes must be lower-case due to the Site loading algorithm.
         if not all(x in NAME_CHARACTERS for x in cls.name):
-            warn(u'Family name %s contains non-ascii characters' % cls.name,
+            warn('Family name %s contains non-ascii characters' % cls.name,
                  FamilyMaintenanceWarning)
         # FIXME: wikisource uses code '-' for www.wikisource.org
         for code in cls.langs.keys():
@@ -1045,19 +1064,19 @@ class Family(object):
             return self.linktrails[fallback]
         else:
             raise KeyError(
-                "ERROR: linktrail in language %(language_code)s unknown"
+                'ERROR: linktrail in language %(language_code)s unknown'
                 % {'language_code': code})
 
     def category_redirects(self, code, fallback='_default'):
         """Return list of category redirect templates."""
-        if not hasattr(self, "_catredirtemplates") or \
+        if not hasattr(self, '_catredirtemplates') or \
            code not in self._catredirtemplates:
             self._get_cr_templates(code, fallback)
         return self._catredirtemplates[code]
 
     def _get_cr_templates(self, code, fallback):
         """Build list of category redirect templates."""
-        if not hasattr(self, "_catredirtemplates"):
+        if not hasattr(self, '_catredirtemplates'):
             self._catredirtemplates = {}
         if code in self.category_redirect_templates:
             cr_template_tuple = self.category_redirect_templates[code]
@@ -1093,7 +1112,7 @@ class Family(object):
             return self.disambiguationTemplates[fallback]
         else:
             raise KeyError(
-                "ERROR: title for disambig template in language %s unknown"
+                'ERROR: title for disambig template in language %s unknown'
                 % code)
 
     # Methods
@@ -1104,9 +1123,9 @@ class Family(object):
         May be overridden to return 'https'. Other protocols are not supported.
 
         @param code: language code
-        @type code: string
+        @type code: str
         @return: protocol that this family uses
-        @rtype: string
+        @rtype: str
         """
         return 'http'
 
@@ -1115,7 +1134,7 @@ class Family(object):
         Return whether a HTTPS certificate error should be ignored.
 
         @param code: language code
-        @type code: string
+        @type code: str
         @return: flag to allow access if certificate has an error.
         @rtype: bool
         """
@@ -1139,6 +1158,12 @@ class Family(object):
         The default value is the one used on Wikimedia Foundation wikis,
         but needs to be overridden in the family file for any wiki that
         uses a different value.
+
+        @param code: Site code
+        @type code: str
+        @raises KeyError: code is not recognised
+        @return: URL path without ending '/'
+        @rtype: str
         """
         return '/w'
 
@@ -1162,10 +1187,12 @@ class Family(object):
         Prefix uri with port and hostname.
 
         @param code: The site code
+        @type code: str
         @param uri: The absolute path after the hostname
+        @type uri: str
         @param protocol: The protocol which is used. If None it'll determine
             the protocol from the code.
-        @return: The full URL
+        @return: The full URL ending with uri
         @rtype: str
         """
         protocol, host = self._hostname(code, protocol)
@@ -1196,7 +1223,7 @@ class Family(object):
 
     def rcstream_path(self, code):
         """Return path for RCStream."""
-        raise NotImplementedError("This family does not support RCStream")
+        raise NotImplementedError('This family does not support RCStream')
 
     def rcstream_port(self, code):
         """Return port for RCStream."""
@@ -1230,12 +1257,12 @@ class Family(object):
             if code in self.codes:
                 pywikibot.warn('Interwiki removal %s is in %s codes'
                                % (code, self))
-            return 'RemovedSite'
+            if code in self.closed_wikis:
+                return 'ClosedSite'
+            if code in self.removed_wikis:
+                return 'RemovedSite'
 
         return config.site_interface
-
-    # List of codes which aren't returned by from_url; True returns None always
-    _ignore_from_url = []
 
     def from_url(self, url):
         """
@@ -1261,14 +1288,10 @@ class Family(object):
             which would work with the given URL.
         @raises ValueError: When text is present after $1.
         """
-        if self._ignore_from_url is True:
-            return None
-        else:
-            ignored = self._ignore_from_url
-
         parsed = urlparse.urlparse(url)
-        if not re.match('^(https?)?$', parsed.scheme):
+        if not re.match('(https?)?$', parsed.scheme):
             return None
+
         path = parsed.path
         if parsed.query:
             path += '?' + parsed.query
@@ -1279,35 +1302,34 @@ class Family(object):
             raise ValueError('Text after the $1 placeholder is not supported '
                              '(T111513).')
 
-        matched_sites = []
         for domain in self.domains:
             if domain in parsed.netloc:
                 break
         else:
-            domain = False
-        if domain is not False:
-            for code in self.codes:
-                if code in ignored:
-                    continue
-                if self._hostname(code)[1] == parsed.netloc:
-                    # Use the code and family instead of the url
-                    # This is only creating a Site instance if domain matches
-                    site = pywikibot.Site(code, self.name)
-                    pywikibot.log('Found candidate {0}'.format(site))
+            return None
 
-                    for iw_url in site._interwiki_urls():
-                        if path.startswith(iw_url):
-                            matched_sites += [site]
-                            break
+        matched_sites = []
+        for code in chain(self.codes, getattr(self, 'test_codes', ())):
+            if self._hostname(code)[1] == parsed.netloc:
+                # Use the code and family instead of the url
+                # This is only creating a Site instance if domain matches
+                site = pywikibot.Site(code, self.name)
+                pywikibot.log('Found candidate {0}'.format(site))
+
+                for iw_url in site._interwiki_urls():
+                    if path.startswith(iw_url):
+                        matched_sites += [site]
+                        break
 
         if len(matched_sites) == 1:
             return matched_sites[0].code
-        elif not matched_sites:
+
+        if not matched_sites:
             return None
-        else:
-            raise RuntimeError(
-                'Found multiple matches for URL "{0}": {1}'
-                .format(url, ', '.join(str(s) for s in matched_sites)))
+
+        raise RuntimeError(
+            'Found multiple matches for URL "{0}": {1}'
+            .format(url, ', '.join(str(s) for s in matched_sites)))
 
     def maximum_GET_length(self, code):
         """Return the maximum URL length for GET instead of POST."""
@@ -1322,7 +1344,7 @@ class Family(object):
     def version(self, code):
         """Return MediaWiki version number as a string.
 
-        Use L{pywikibot.tools.MediaWikiVersion} to compare version strings.
+        Use L{pywikibot.site.mw_version} to compare version strings.
         """
         # Here we return the latest mw release for downloading
         if not hasattr(self, '_version'):
@@ -1356,13 +1378,13 @@ class Family(object):
     def versionnumber(self, code):
         """DEPRECATED, use version() instead.
 
-        Use L{pywikibot.tools.MediaWikiVersion} to compare version strings.
+        Use L{pywikibot.site.mw_version} to compare version strings.
         Return an int identifying MediaWiki version.
 
         Currently this is implemented as returning the minor version
         number; i.e., 'X' in version '1.X.Y'
         """
-        R = re.compile(r"(\d+).(\d+)")
+        R = re.compile(r'(\d+).(\d+)')
         M = R.search(self.version(code))
         if not M:
             # Version string malformatted; assume it should have been 1.10
@@ -1375,7 +1397,7 @@ class Family(object):
 
     def code2encodings(self, code):
         """Return list of historical encodings for a specific language Wiki."""
-        return self.code2encoding(code),
+        return (self.code2encoding(code), )
 
     # aliases
     def encoding(self, code):
@@ -1416,7 +1438,8 @@ class Family(object):
         return (None, None)
 
     # Deprecated via __getattribute__
-    def shared_data_repository(self, code, transcluded=False):
+    @remove_last_args(['transcluded'])
+    def shared_data_repository(self, code):
         """Return the shared Wikibase repository, if any."""
         repo = pywikibot.Site(code, self).data_repository()
         if repo is not None:
@@ -1539,9 +1562,12 @@ class SubdomainFamily(Family):
     @classproperty
     def langs(cls):
         """Property listing family languages."""
-        codes = cls.codes
+        codes = cls.codes[:]
+
         if hasattr(cls, 'test_codes'):
-            codes = codes + cls.test_codes
+            codes += cls.test_codes
+        if hasattr(cls, 'closed_wikis'):
+            codes += cls.closed_wikis
 
         # shortcut this classproperty
         cls.langs = {code: '{0}.{1}'.format(code, cls.domain)
@@ -1563,13 +1589,13 @@ class SubdomainFamily(Family):
         return [cls.domain]
 
 
-class WikiaFamily(Family):
+class FandomFamily(Family):
 
-    """Common features of Wikia families."""
+    """Common features of Fandom families."""
 
     def scriptpath(self, code):
         """Return the script path for this family."""
-        return ''
+        return '' if code == 'en' else ('/' + code)
 
 
 class WikimediaFamily(Family):
@@ -1602,23 +1628,23 @@ class WikimediaFamily(Family):
     ]
 
     content_families = set(
-        multi_language_content_families +
-        wikimedia_org_content_families +
-        other_content_families
+        multi_language_content_families
+        + wikimedia_org_content_families
+        + other_content_families
     )
 
     wikimedia_org_families = set(
-        wikimedia_org_content_families +
-        wikimedia_org_meta_families +
-        wikimedia_org_other_families
+        wikimedia_org_content_families
+        + wikimedia_org_meta_families
+        + wikimedia_org_other_families
     )
 
-    # CentralAuth cross avaliable projects.
+    # CentralAuth cross available projects.
     cross_projects = set(
-        multi_language_content_families +
-        wikimedia_org_content_families +
-        wikimedia_org_meta_families +
-        other_content_families
+        multi_language_content_families
+        + wikimedia_org_content_families
+        + wikimedia_org_meta_families
+        + other_content_families
     )
 
     # Code mappings which are only an alias, and there is no 'old' wiki.
@@ -1631,6 +1657,9 @@ class WikimediaFamily(Family):
 
         # Language aliases
         'nb': 'no',  # T86924
+
+        # closed wiki redirection aliases
+        'mo': 'ro',
 
         # Incomplete language code change. T86915
         'minnan': 'zh-min-nan',
@@ -1655,18 +1684,14 @@ class WikimediaFamily(Family):
     # Completely removed
     removed_wikis = []
 
-    # Mappings which should be in effect, even for
-    # closed/removed wikis
-    interwiki_replacement_overrides = {
-        # Moldovan projects are closed, however
-        # Romanian was to be the replacement.
-        'mo': 'ro',
-    }
-
     # WikimediaFamily uses wikibase for the category name containing
     # disambiguation pages for the various languages. We need the
     # wikibase code and item number:
     disambcatname = {'wikidata': 'Q1982926'}
+
+    # UrlShortener extension is only usable on metawiki, and this wiki can
+    # process links to all WM domains.
+    shared_urlshortner_wiki = ('meta', 'meta')
 
     @classproperty
     def domain(cls):
@@ -1678,7 +1703,7 @@ class WikimediaFamily(Family):
             return 'wikimedia.org'
 
         raise NotImplementedError(
-            'Family %s needs to define property \'domain\'' % cls.name)
+            "Family %s needs to define property 'domain'" % cls.name)
 
     @classproperty
     def interwiki_removals(cls):
@@ -1689,7 +1714,6 @@ class WikimediaFamily(Family):
     def interwiki_replacements(cls):
         """Return an interwiki code replacement mapping."""
         rv = cls.code_aliases.copy()
-        rv.update(cls.interwiki_replacement_overrides)
         return FrozenDict(rv)
 
     def shared_image_repository(self, code):
@@ -1754,3 +1778,8 @@ def AutoFamily(name, url):
     # str() used because py2 can't accept a unicode as the name of a class
     AutoFamily = type(str('AutoFamily'), (SingleSiteFamily,), locals())
     return AutoFamily()
+
+
+wrapper = ModuleDeprecationWrapper(__name__)
+wrapper._add_deprecated_attr('WikiaFamily', replacement=FandomFamily,
+                             since='20190420')

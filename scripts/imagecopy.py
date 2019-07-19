@@ -19,8 +19,6 @@ write him in German and English.
 
 Command line options:
 
-&params;
-
 -always      Skip the GUI validation
 
 -setcat:     Set the category of the copied image
@@ -29,27 +27,30 @@ Command line options:
              only work if the user has sysops privileges, otherwise the image
              will only be marked for deletion.
 
-Examples
+&params;
 
-Work on a single image::
+Examples
+--------
+
+Work on a single image:
 
     python pwb.py imagecopy -page:Image:<imagename>
 
-Work on the 100 newest images::
+Work on the 100 newest images:
 
     python pwb.py imagecopy -newimages:100
 
-Work on all images in a category:<cat>::
+Work on all images in a category:<cat>:
 
     python pwb.py imagecopy -cat:<cat>
 
-Work on all images which transclude a template::
+Work on all images which transclude a template:
 
     python pwb.py imagecopy -transcludes:<template>
 
 Work on a single image and deletes the image when the transfer is complete
 (only works if the user has sysops privilege, otherwise it will be marked for
-deletion)::
+deletion):
 
     python pwb.py imagecopy -page:Image:<imagename> -delete
 
@@ -64,11 +65,11 @@ By default the bot works on your home wiki (set in user-config)
 #
 # Another rewrite by:
 # (C) Multichill 2008-2011
-# (C) Pywikibot team, 2007-2018
+# (C) Pywikibot team, 2007-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import codecs
 import re
@@ -84,6 +85,7 @@ import pywikibot
 from pywikibot import config, i18n, pagegenerators
 from pywikibot.comms.http import fetch
 from pywikibot.specialbots import UploadRobot
+from pywikibot.tools import remove_last_args
 
 from scripts.image import ImageRobot
 
@@ -275,10 +277,10 @@ class imageTransfer(threading.Thread):
 
         # I want every picture to be tagged with the bottemplate so i can check
         # my contributions later.
-        CH = ('\n\n{{BotMoveToCommons|' + self.imagePage.site.lang +
-              '.' + self.imagePage.site.family.name +
-              '|year={{subst:CURRENTYEAR}}|month={{subst:CURRENTMONTHNAME}}'
-              '|day={{subst:CURRENTDAY}}}}' + CH)
+        CH = ('\n\n{{BotMoveToCommons|%s.%s|year={{subst:CURRENTYEAR}}'
+              '|month={{subst:CURRENTMONTHNAME}}|day={{subst:CURRENTDAY}}}}'
+              % (self.imagePage.site.lang, self.imagePage.site.family.name)
+              + CH)
 
         if self.category:
             CH = CH.replace(
@@ -295,7 +297,7 @@ class imageTransfer(threading.Thread):
         # Should check if the image actually was uploaded
         if pywikibot.Page(self.image_repo,
                           'Image:' + self.newname).exists():
-            # Get a fresh copy, force to get the page so we dont run into edit
+            # Get a fresh copy, force to get the page so we don't run into edit
             # conflicts
             imtxt = self.imagePage.get(force=True)
 
@@ -372,12 +374,13 @@ class imageTransfer(threading.Thread):
         return pageText
 
 
-# -label ok skip view
-# textarea
-archivo = config.datafilepath('Uploadbot.localskips.txt')
-if not path.exists(archivo):
-    with open(archivo, 'w') as tocreate:
-        tocreate.write('{{NowCommons')
+def load_global_archivo():
+    """Load/create Uploadbot.localskips.txt and save the path in `archivo`."""
+    global archivo
+    archivo = config.datafilepath('Uploadbot.localskips.txt')
+    if not path.exists(archivo):
+        with open(archivo, 'w') as tocreate:
+            tocreate.write('{{NowCommons')
 
 
 def getautoskip():
@@ -392,8 +395,8 @@ class TkdialogIC(Tkdialog):
 
     """The dialog window for image info."""
 
-    def __init__(self, image_title, content, uploader, url, templates,
-                 commonsconflict=0):
+    @remove_last_args(('commonsconflict',))
+    def __init__(self, image_title, content, uploader, url, templates):
         """Initializer."""
         # Check if `Tkinter` wasn't imported
         if isinstance(Tkinter, ImportError):
@@ -412,7 +415,8 @@ class TkdialogIC(Tkdialog):
         # uploader.decode('utf-8')
         scrollbar = Tkinter.Scrollbar(self.root, orient=Tkinter.VERTICAL)
         label = Tkinter.Label(self.root, text='Enter new name or leave blank.')
-        imageinfo = Tkinter.Label(self.root, text='Uploaded by %s.' % uploader)
+        imageinfo = Tkinter.Label(self.root, text='Uploaded by {}.'.format(
+            uploader))
         textarea = Tkinter.Text(self.root)
         textarea.insert(Tkinter.END, content.encode('utf-8'))
         textarea.config(state=Tkinter.DISABLED,
@@ -494,7 +498,6 @@ def doiskip(pagetext):
 
 def main(*args):
     """Process command line arguments and invoke bot."""
-    imagepage = None
     always = False
     category = ''
     delete_after_done = False
@@ -517,6 +520,8 @@ def main(*args):
         pywikibot.bot.suggest_help(missing_generator=True)
         return False
 
+    load_global_archivo()
+
     for page in pregenerator:
         skip = False
         if page.exists() and page.namespace() == 6 \
@@ -530,11 +535,11 @@ def main(*args):
             else:
                 # The first upload is last in the list.
                 try:
-                    username = imagepage.getLatestUploader()[0]
+                    username = imagepage.latest_file_info.user
                 except NotImplementedError:
                     # No API, using the page file instead
                     (datetime, username, resolution, size,
-                     comment) = imagepage.getFileVersionHistory().pop()
+                     comment) = imagepage.get_file_history().pop()
                 if always:
                     newname = imagepage.title(with_ns=False)
                     CommonsPage = pywikibot.Page(pywikibot.Site('commons',
@@ -544,7 +549,7 @@ def main(*args):
                         skip = True
                 else:
                     while True:
-                        # Do the TkdialogIC to accept/reject and change te name
+                        # Do TkdialogIC to accept/reject and change the name
                         newname, skip = TkdialogIC(
                             imagepage.title(with_ns=False),
                             imagepage.get(), username,
@@ -572,15 +577,15 @@ def main(*args):
                             pywikibot.output(
                                 'Image already exists, pick another name or '
                                 'skip this image')
-                        # We dont overwrite images, pick another name, go to
+                        # We don't overwrite images, pick another name, go to
                         # the start of the loop
 
             if not skip:
                 imageTransfer(imagepage, newname, category,
                               delete_after_done).start()
 
-    pywikibot.output('Still ' + str(threading.activeCount()) +
-                     ' active threads, lets wait')
+    pywikibot.output('Still ' + str(threading.activeCount())
+                     + ' active threads, lets wait')
     for openthread in threading.enumerate():
         if openthread != threading.currentThread():
             openthread.join()

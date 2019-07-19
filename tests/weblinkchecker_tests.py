@@ -5,7 +5,7 @@
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import datetime
 
@@ -42,7 +42,8 @@ class MementoTestCase(TestCase):
             self.skipTest(e)
 
 
-class WeblibTestMementoInternetArchive(MementoTestCase, weblib_tests.TestInternetArchive):
+class WeblibTestMementoInternetArchive(MementoTestCase,
+                                       weblib_tests.TestInternetArchive):
 
     """Test InternetArchive Memento using old weblib tests."""
 

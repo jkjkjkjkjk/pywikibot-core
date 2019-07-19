@@ -5,14 +5,14 @@
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import re
 
 from scripts.imagecopy import pageTextPost
 
+from tests import join_data_path, unittest
 from tests.aspects import TestCase
-from tests import join_data_path
 
 
 class CommonsHelperMethodTest(TestCase):
@@ -20,6 +20,7 @@ class CommonsHelperMethodTest(TestCase):
 
     hostname = 'https://tools.wmflabs.org/commonshelper/'
 
+    @unittest.expectedFailure  # T207579
     def test_pageTextPost(self):
         """Test scripts.imagecopy.pageTextPost() method."""
         parameters_dict = {
@@ -41,3 +42,10 @@ class CommonsHelperMethodTest(TestCase):
                 re.DOTALL | re.M).findall(commons_helper)[0])
         with open(join_data_path('commonsHelper_description.txt')) as f:
             self.assertEqual(f.read(), commons_helper)
+
+
+if __name__ == '__main__':  # pragma: no cover
+    try:
+        unittest.main()
+    except SystemExit:
+        pass

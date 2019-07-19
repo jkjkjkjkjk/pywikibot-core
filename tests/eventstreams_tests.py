@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Tests for the eventstreams module."""
 #
-# (C) Pywikibot team, 2017-2018
+# (C) Pywikibot team, 2017-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from tests import mock
 
@@ -41,28 +41,29 @@ class TestEventStreamsUrlTests(TestCase):
         self.assertEqual(e._url, e.url)
         self.assertEqual(e._url, e.sse_kwargs.get('url'))
         self.assertIsNone(e._total)
-        self.assertIsNone(e._stream)
+        self.assertIsNone(e._streams)
 
     def test_url_from_site(self, key):
         """Test EventStreams with url from site."""
         site = self.get_site(key)
-        stream = 'recentchanges'
-        e = EventStreams(site=site, stream=stream)
+        streams = 'recentchange'
+        e = EventStreams(site=site, streams=streams)
         self.assertEqual(
-            e._url, 'https://stream.wikimedia.org/v2/stream/' + stream)
+            e._url, 'https://stream.wikimedia.org/v2/stream/' + streams)
         self.assertEqual(e._url, e.url)
         self.assertEqual(e._url, e.sse_kwargs.get('url'))
         self.assertIsNone(e._total)
-        self.assertEqual(e._stream, stream)
+        self.assertEqual(e._streams, streams)
 
 
 @mock.patch('pywikibot.comms.eventstreams.EventSource', new=mock.MagicMock())
-class TestEventStreamsStreamTests(DefaultSiteTestCase):
+class TestEventStreamsStreamsTests(DefaultSiteTestCase):
 
     """Stream tests for eventstreams module."""
 
-    def test_url_with_stream(self):
-        """Test EventStreams with url from default site."""
+    def setUp(self):
+        """Setup tests."""
+        super(TestEventStreamsStreamsTests, self).setUp()
         site = self.get_site()
         fam = site.family
         if not isinstance(fam, WikimediaFamily):
@@ -70,17 +71,31 @@ class TestEventStreamsStreamTests(DefaultSiteTestCase):
                 "Family '{0}' of site '{1}' is not a WikimediaFamily."
                 .format(fam, site))
 
-        stream = 'recentchanges'
-        e = EventStreams(stream=stream)
+    def test_url_with_streams(self):
+        """Test EventStreams with url from default site."""
+        streams = 'recentchange'
+        e = EventStreams(streams=streams)
         self.assertEqual(
-            e._url, 'https://stream.wikimedia.org/v2/stream/' + stream)
+            e._url, 'https://stream.wikimedia.org/v2/stream/' + streams)
         self.assertEqual(e._url, e.url)
         self.assertEqual(e._url, e.sse_kwargs.get('url'))
         self.assertIsNone(e._total)
-        self.assertEqual(e._stream, stream)
+        self.assertEqual(e._streams, streams)
 
-    def test_url_missing_stream(self):
-        """Test EventStreams with url from site with missing stream."""
+    def test_multiple_streams(self):
+        """Test EventStreams with multiple streams."""
+        streams = ('page-create', 'page-move', 'page-delete')
+        e = EventStreams(streams=streams)
+        combined_streams = ','.join(streams)
+        self.assertEqual(
+            e._url,
+            'https://stream.wikimedia.org/v2/stream/' + combined_streams)
+        self.assertEqual(e._url, e.url)
+        self.assertEqual(e._url, e.sse_kwargs.get('url'))
+        self.assertEqual(e._streams, combined_streams)
+
+    def test_url_missing_streams(self):
+        """Test EventStreams with url from site with missing streams."""
         with self.assertRaises(NotImplementedError):
             EventStreams()
 
@@ -139,7 +154,7 @@ class TestEventStreamsSettingTests(TestCase):
         self.es.register_filter(foo='bar')
         self.assertTrue(callable(self.es.filter['all'][0]))
         self.es.register_filter(bar='baz')
-        self.assertEqual(len(self.es.filter['all']), 2)
+        self.assertLength(self.es.filter['all'], 2)
 
 
 class TestEventStreamsFilterTests(TestCase):

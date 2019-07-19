@@ -7,19 +7,19 @@ Periodically grab list of new articles and analyze to blank or flag them.
 Script to follow new articles on a wikipedia and flag them
 with a template or eventually blank them.
 
-There must be A LOT of bugs ! Use with caution and verify what
-it is doing !
+There must be A LOT of bugs! Use with caution and verify what
+it is doing!
 
 The following parameters are supported:
 
 &params;
 """
 #
-# (C) Pywikibot team, 2005-2018
+# (C) Pywikibot team, 2005-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import datetime
 
@@ -32,9 +32,7 @@ __metaclass__ = type
 
 # This is required for the text that is shown when you run this script
 # with the parameter -help.
-docuReplacements = {
-    '&params;': pagegenerators.parameterHelp
-}
+docuReplacements = {'&params;': pagegenerators.parameterHelp}  # noqa: N816
 
 # templates that can be used followed by the message used as comment
 # templates contains list of languages code
@@ -400,7 +398,7 @@ What is it? """
         self.generator = self.site.newpages()
 
     def show_page_info(self):
-        """Display informations about an article."""
+        """Display information about an article."""
         pywikibot.output('Date:   {info.date}\n'
                          'Length: {info.length} bytes\n'
                          'User:   {info.user.username}'
@@ -439,8 +437,8 @@ What is it? """
             if answer == 'q':
                 raise QuitKeyboardInterrupt
             if answer == 'd':
-                pywikibot.output('Trying to delete page [[%s]].'
-                                 % self.page.title())
+                pywikibot.output('Trying to delete page [[{}]].'
+                                 .format(self.page.title()))
                 self.page.delete()
                 return
             if answer == 'e':
@@ -460,11 +458,11 @@ What is it? """
                                       {'content': self.content}))
                 except pywikibot.EditConflict:
                     pywikibot.output(
-                        'An edit conflict occured ! Automatically retrying')
+                        'An edit conflict occurred! Automatically retrying')
                     self.handle_bad_page(self)
                 return
             if answer == '':
-                pywikibot.output('Page correct ! Proceeding with next pages.')
+                pywikibot.output('Page correct! Proceeding with next pages.')
                 return
             # Check user input:
             if answer[0] == '':
@@ -473,9 +471,9 @@ What is it? """
             try:
                 choices = answer.split(',')
             except ValueError:
-                    # User entered wrong value
-                    pywikibot.error('"{}" is not valid'.format(answer))
-                    continue
+                # User entered wrong value
+                pywikibot.error('"{}" is not valid'.format(answer))
+                continue
             # test input
             for choice in choices:
                 try:
@@ -495,17 +493,18 @@ What is it? """
                                       templates)[self.questionlist[answer]]
             if tpl['pos'] == 'top':
                 pywikibot.output(
-                    'prepending %s...' % self.questionlist[answer])
+                    'prepending {}...'.format(self.questionlist[answer]))
                 self.content = self.questionlist[answer] + '\n' + self.content
             elif tpl['pos'] == 'bottom':
-                pywikibot.output('appending %s...' % self.questionlist[answer])
+                pywikibot.output('appending {}...'
+                                 .format(self.questionlist[answer]))
                 self.content += '\n' + self.questionlist[answer]
             else:
                 raise RuntimeError(
                     '"pos" should be "top" or "bottom" for template {}. '
                     'Contact a developer.'.format(self.questionlist[answer]))
             summary += tpl['msg'] + ' '
-            pywikibot.output('Probably added %s' % self.questionlist[answer])
+            pywikibot.output('Probably added ' + self.questionlist[answer])
 
         self.page.put(self.content, summary=summary)
         pywikibot.output('with comment {}\n'.format(summary))
@@ -516,7 +515,8 @@ What is it? """
         if self.could_be_bad():
             pywikibot.output('Integrity of page doubtful...')
             self.handle_bad_page()
-        pywikibot.output('----- Current time: %s' % datetime.datetime.now())
+        pywikibot.output('----- Current time: {}'
+                         .format(datetime.datetime.now()))
 
     def init_page(self, item):
         """Init the page tuple before processing and return a page object.
@@ -526,7 +526,7 @@ What is it? """
         @type page: pywikibot.Page
         @ivar date: creation date
         @type date: str in ISO8601 format
-        @ivar length: content lenght
+        @ivar length: content length
         @type length: int
         @ivar user: creator of page
         @type user: pywikibot.User
@@ -551,7 +551,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     # Generate the question text
     pywikibot.handle_args(*args)

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Choices for input_choice."""
 #
-# (C) Pywikibot team, 2015-2018
+# (C) Pywikibot team, 2015-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import re
 from textwrap import fill
@@ -34,12 +34,20 @@ class Option(object):
 
     def __init__(self, stop=True):
         """Initializer."""
-        super(Option, self).__init__()
         self._stop = stop
 
     @staticmethod
     def formatted(text, options, default=None):
-        """Create a text with the options formatted into it."""
+        """
+        Create a text with the options formatted into it.
+
+        @param text: Text into which options are to be formatted
+        @type text: str
+        @param options: Option instances to be formatted
+        @type options: Iterable
+        @return: Text with the options formatted into it
+        @rtype: str
+        """
         formatted_options = []
         for option in options:
             formatted_options.append(option.format(default=default))
@@ -94,7 +102,7 @@ class OutputOption(Option):
         self.output()
 
     def output(self):
-        """Output a string when selected and possibily before the question."""
+        """Output a string when selected and possibly before the question."""
         raise NotImplementedError()
 
 
@@ -102,9 +110,16 @@ class StandardOption(Option):
 
     """An option with a description and shortcut and returning the shortcut."""
 
-    def __init__(self, option, shortcut, stop=True):
-        """Initializer."""
-        super(StandardOption, self).__init__(stop)
+    def __init__(self, option, shortcut, **kwargs):
+        """
+        Initializer.
+
+        @param option: option string
+        @type option: str
+        @param shortcut: Shortcut of the option
+        @type shortcut: str
+        """
+        super(StandardOption, self).__init__(**kwargs)
         self.option = option
         self.shortcut = shortcut.lower()
 
@@ -115,8 +130,9 @@ class StandardOption(Option):
         if self.shortcut == default:
             shortcut = self.shortcut.upper()
         if index >= 0:
-            return '{0}[{1}]{2}'.format(self.option[:index], shortcut,
-                                        self.option[index + len(self.shortcut):])
+            return '{0}[{1}]{2}'.format(
+                self.option[:index], shortcut,
+                self.option[index + len(self.shortcut):])
         else:
             return '{0} [{1}]'.format(self.option, shortcut)
 
@@ -126,17 +142,17 @@ class StandardOption(Option):
 
     def test(self, value):
         """Return True whether this option applies."""
-        return (self.shortcut.lower() == value.lower() or
-                self.option.lower() == value.lower())
+        return (self.shortcut.lower() == value.lower()
+                or self.option.lower() == value.lower())
 
 
 class OutputProxyOption(OutputOption, StandardOption):
 
     """An option which calls output of the given output class."""
 
-    def __init__(self, option, shortcut, output):
+    def __init__(self, option, shortcut, output, **kwargs):
         """Create a new option for the given sequence."""
-        super(OutputProxyOption, self).__init__(option, shortcut)
+        super(OutputProxyOption, self).__init__(option, shortcut, **kwargs)
         self._outputter = output
 
     def output(self):
@@ -155,7 +171,7 @@ class NestedOption(OutputOption, StandardOption):
 
     def __init__(self, option, shortcut, description, options):
         """Initializer."""
-        super(NestedOption, self).__init__(option, shortcut, False)
+        super(NestedOption, self).__init__(option, shortcut, stop=False)
         self.description = description
         self.options = options
 
@@ -165,7 +181,7 @@ class NestedOption(OutputOption, StandardOption):
         return super(NestedOption, self).format(default=default)
 
     def handled(self, value):
-        """Return itself if it applies or the appling sub option."""
+        """Return itself if it applies or the applying sub option."""
         for option in self.options:
             handled = option.handled(value)
             if handled is not None:
@@ -182,9 +198,11 @@ class ContextOption(OutputOption, StandardOption):
 
     """An option to show more and more context."""
 
-    def __init__(self, option, shortcut, text, context, delta=100, start=0, end=0):
+    def __init__(
+        self, option, shortcut, text, context, delta=100, start=0, end=0
+    ):
         """Initializer."""
-        super(ContextOption, self).__init__(option, shortcut, False)
+        super(ContextOption, self).__init__(option, shortcut, stop=False)
         self.text = text
         self.context = context
         self.delta = delta
@@ -211,11 +229,11 @@ class IntegerOption(Option):
 
     """An option allowing a range of integers."""
 
-    def __init__(self, minimum=1, maximum=None, prefix=''):
+    def __init__(self, minimum=1, maximum=None, prefix='', **kwargs):
         """Initializer."""
-        super(IntegerOption, self).__init__()
-        if not ((minimum is None or isinstance(minimum, int)) and
-                (maximum is None or isinstance(maximum, int))):
+        super(IntegerOption, self).__init__(**kwargs)
+        if not ((minimum is None or isinstance(minimum, int))
+                and (maximum is None or isinstance(maximum, int))):
             raise ValueError(
                 'The minimum and maximum parameters must be int or None.')
         if minimum is not None and maximum is not None and minimum > maximum:
@@ -231,8 +249,8 @@ class IntegerOption(Option):
         except ValueError:
             return False
         else:
-            return ((self.minimum is None or value >= self.minimum) and
-                    (self.maximum is None or value <= self.maximum))
+            return ((self.minimum is None or value >= self.minimum)
+                    and (self.maximum is None or value <= self.maximum))
 
     @property
     def minimum(self):
@@ -288,11 +306,11 @@ class ListOption(IntegerOption):
 
     """An option to select something from a list."""
 
-    def __init__(self, sequence, prefix=''):
+    def __init__(self, sequence, prefix='', **kwargs):
         """Initializer."""
         self._list = sequence
         try:
-            super(ListOption, self).__init__(1, self.maximum, prefix)
+            super(ListOption, self).__init__(1, self.maximum, prefix, **kwargs)
         except ValueError:
             raise ValueError('The sequence is empty.')
         del self._max
@@ -314,15 +332,84 @@ class ListOption(IntegerOption):
         return (self.prefix, self._list[self.parse(value) - 1])
 
 
+class ShowingListOption(ListOption, OutputOption):
+
+    """An option to show a list and select an item."""
+
+    before_question = True
+
+    def __init__(self, sequence, prefix='', pre=None, post=None, **kwargs):
+        """Initializer.
+
+        @param pre: Additional comment printed before the list.
+        @type pre: str
+        @param post: Additional comment printed after the list.
+        @type post: str
+        """
+        super(ShowingListOption, self).__init__(sequence, prefix, **kwargs)
+        self.pre = pre
+        self.post = post
+
+    @property
+    def stop(self):
+        """Return whether this option stops asking."""
+        return self._stop
+
+    def output(self):
+        """Output the enumerated list."""
+        if self.pre is not None:
+            pywikibot.output(self.pre)
+        width = len(str(self.maximum))
+        for i, item in enumerate(self._list, self.minimum):
+            pywikibot.output('{:>{width}} - {}'.format(i, item, width=width))
+        if self.post is not None:
+            pywikibot.output(self.post)
+
+
+class MultipleChoiceList(ListOption):
+
+    """An option to select multiple items from a list."""
+
+    def test(self, value):
+        """Return whether the values are int and in the specified range."""
+        try:
+            values = [self.parse(val) for val in value.split(',')]
+        except ValueError:
+            return False
+
+        for val in values:
+            if self.minimum is not None and val < self.minimum:
+                break
+            if self.maximum is not None and val > self.maximum:
+                break
+        else:
+            return True
+
+        return False
+
+    def result(self, value):
+        """Return a tuple with the prefix and selected values as a list."""
+        values = (self.parse(val) for val in value.split(','))
+        result = [self._list[val - 1] for val in values]
+        return (self.prefix, result)
+
+
+class ShowingMultipleChoiceList(ShowingListOption, MultipleChoiceList):
+
+    """An option to show a list and select multiple items."""
+
+    pass
+
+
 class HighlightContextOption(ContextOption):
 
     """Show the original region highlighted."""
 
     def output_range(self, start, end):
         """Show normal context with a red center region."""
-        pywikibot.output(self.text[start:self.start] + '\03{lightred}' +
-                         self.text[self.start:self.end] + '\03{default}' +
-                         self.text[self.end:end])
+        pywikibot.output(self.text[start:self.start] + '\03{lightred}'
+                         + self.text[self.start:self.end] + '\03{default}'
+                         + self.text[self.end:end])
 
 
 class ChoiceException(StandardOption, Exception):

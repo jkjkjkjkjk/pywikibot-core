@@ -7,27 +7,31 @@ Parameters:
 
 -always         Don't be asked every time.
 -nouserwarning  Do not warn uploader about orphaned file.
--total          Specify number of pages to work on with "-total:n" where
+-limit          Specify number of pages to work on with "-limit:n" where
                 n is the maximum number of articles to work on.
                 If not used, all pages are used.
 """
 #
 # (C) Leonardo Gregianin, 2007
 # (C) Filnik, 2008
-# (c) xqt, 2011-2018
-# (C) Pywikibot team, 2013-2018
+# (c) xqt, 2011-2019
+# (C) Pywikibot team, 2013-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
-from pywikibot import i18n, pagegenerators, Bot
+from pywikibot import i18n, pagegenerators
+from pywikibot.bot import SingleSiteBot, AutomaticTWSummaryBot, ExistingPageBot
+from pywikibot.exceptions import ArgumentDeprecationWarning
+from pywikibot.tools import issue_deprecation_warning
 
 template_to_the_image = {
     'meta': '{{Orphan file}}',
-    'it': u'{{immagine orfana}}',
-    'fa': u'{{تصاویر بدون استفاده}}',
+    'test': '{{Orphan file}}',
+    'it': '{{immagine orfana}}',
+    'fa': '{{تصاویر بدون استفاده}}',
     'ur': '{{غیر مستعمل تصاویر}}',
 }
 
@@ -38,47 +42,43 @@ template_to_the_user = {
 }
 
 
-class UnusedFilesBot(Bot):
+class UnusedFilesBot(SingleSiteBot, AutomaticTWSummaryBot, ExistingPageBot):
 
     """Unused files bot."""
 
-    def __init__(self, site, **kwargs):
+    summary_key = 'unusedfiles-comment'
+
+    def __init__(self, **kwargs):
         """Initializer."""
         self.availableOptions.update({
             'nouserwarning': False  # do not warn uploader
         })
         super(UnusedFilesBot, self).__init__(**kwargs)
-        self.site = site
 
         self.template_image = i18n.translate(self.site,
                                              template_to_the_image)
         self.template_user = i18n.translate(self.site,
                                             template_to_the_user)
-        self.summary = i18n.twtranslate(self.site, 'unusedfiles-comment')
-        if not (self.template_image and
-                (self.template_user or self.getOption('nouserwarning'))):
-            raise pywikibot.Error(u'This script is not localized for %s site.'
-                                  % self.site)
+        if not (self.template_image
+                and (self.template_user or self.getOption('nouserwarning'))):
+            raise i18n.TranslationError('This script is not localized for {0} '
+                                        'site.'.format(self.site))
 
     def treat(self, image):
         """Process one image page."""
-        if not image.exists():
-            pywikibot.output("File '%s' does not exist (see bug T71133)."
-                             % image.title())
-            return
         # Use fileUrl() and fileIsShared() to confirm it is local media
         # rather than a local page with the same name as shared media.
-        if (image.fileUrl() and not image.fileIsShared() and
-                u'http://' not in image.text):
+        if (image.fileUrl() and not image.fileIsShared()
+                and 'http://' not in image.text):
             if self.template_image in image.text:
-                pywikibot.output(u"%s done already"
-                                 % image.title(as_link=True))
+                pywikibot.output('{0} done already'
+                                 .format(image.title(as_link=True)))
                 return
 
             self.append_text(image, '\n\n' + self.template_image)
             if self.getOption('nouserwarning'):
                 return
-            uploader = image.getFileVersionHistory().pop(0)['user']
+            uploader = image.get_file_history().pop(0)['user']
             user = pywikibot.User(image.site, uploader)
             usertalkpage = user.getUserTalkPage()
             msg2uploader = self.template_user % {'title': image.title()}
@@ -92,13 +92,13 @@ class UnusedFilesBot(Bot):
             text = page.text
         else:
             if page.isTalkPage():
-                text = u''
+                text = ''
             else:
                 raise pywikibot.NoPage(page)
 
-        oldtext = text
         text += apptext
-        self.userPut(page, oldtext, text, summary=self.summary)
+        self.current_page = page
+        self.put_current(text)
 
 
 def main(*args):
@@ -108,7 +108,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     options = {}
     total = None
@@ -117,8 +117,13 @@ def main(*args):
 
     for arg in local_args:
         arg, sep, value = arg.partition(':')
-        if arg == '-total':
+        if arg == '-limit':
             total = value
+        elif arg == '-total':
+            total = value
+            issue_deprecation_warning('The usage of "{0}"'.format(arg),
+                                      '-limit', 2, ArgumentDeprecationWarning,
+                                      since='20190120')
         else:
             options[arg[1:]] = True
 
@@ -126,7 +131,7 @@ def main(*args):
     gen = pagegenerators.UnusedFilesGenerator(total=total, site=site)
     gen = pagegenerators.PreloadingGenerator(gen)
 
-    bot = UnusedFilesBot(site, generator=gen, **options)
+    bot = UnusedFilesBot(site=site, generator=gen, **options)
     try:
         bot.run()
     except pywikibot.Error as e:
@@ -136,5 +141,5 @@ def main(*args):
         return True
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

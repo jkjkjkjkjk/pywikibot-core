@@ -102,7 +102,7 @@ The contents of the package
     +------------------------++--------------------------------------------------------+
     | harvest_template.py    | [IMPROV] Reduce maximum line length to 130              |
     +------------------------+---------------------------------------------------------+
-    | illustrate_wikidata.py | Dont use 'gen' to refer to the generator factory        |
+    | illustrate_wikidata.py | Don't use 'gen' to refer to the generator factory       |
     +------------------------+---------------------------------------------------------+
     | image.py               | This script can be used to change one image to another  |
     |                        | or remove an image entirely.                            |
@@ -194,8 +194,6 @@ The contents of the package
     +------------------------+---------------------------------------------------------+
     | revertbot.py           | Revert edits.                                           |
     +------------------------+---------------------------------------------------------+
-    | script_wui.py          | Fix anomalous escape (\)                                |
-    +------------------------+---------------------------------------------------------+
     | selflink.py            | This bot goes over multiple pages of the home wiki,     |
     |                        | searches for selflinks, and allows removing them.       |
     +------------------------+---------------------------------------------------------+
@@ -265,6 +263,8 @@ The contents of the package
     | archive                | Scripts no longer maintained.                           |
     +========================+=========================================================+
     | featured.py            | A robot to check feature articles.                      |
+    +------------------------+---------------------------------------------------------+
+    | script_wui.py          | Run scripts as sub-bot                                  |
     +------------------------+---------------------------------------------------------+
 
 

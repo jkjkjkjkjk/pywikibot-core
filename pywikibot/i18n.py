@@ -14,14 +14,14 @@ in pagegenerators which will use i18 messages if they can be loaded.
 The default message location may be changed by calling
 L{set_message_package} with a package name. The package must contain
 an __init__.py, and a message bundle called 'pywikibot' containing
-messages. See L{twntranslate} for more information on the messages.
+messages. See L{twtranslate} for more information on the messages.
 """
 #
-# (C) Pywikibot team, 2004-2018
+# (C) Pywikibot team, 2004-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import json
 import os
@@ -33,6 +33,7 @@ try:
     from collections.abc import Mapping
 except ImportError:  # Python 2.7
     from collections import Mapping
+from textwrap import fill
 from warnings import warn
 
 import pywikibot
@@ -213,6 +214,8 @@ _LANG_TO_GROUP_NAME = defaultdict(str, {
     'pms': 'eml',
     'pnt': 'grc',
     'ps': 'azb',
+    'pt': 'pt',
+    'pt-br': 'pt',
     'qu': 'an',
     'rm': 'rm',
     'rmy': 'mo',
@@ -339,6 +342,7 @@ _GROUP_NAME_TO_FALLBACKS = {
     'nso': ['st', 'nso'],
     'oc': ['fr', 'ca', 'es'],
     'olo': ['fi'],
+    'pt': ['pt', 'pt-br'],
     'rm': ['de', 'it'],
     'roa-rup': ['roa-rup', 'rup', 'ro'],
     'rue': ['uk', 'ru'],
@@ -404,7 +408,7 @@ def _altlang(lang):
     This code is used by other translating methods below.
 
     @param lang: The language code
-    @type lang: string
+    @type lang: str
     @return: language codes
     @rtype: list of str
     """
@@ -451,7 +455,7 @@ def _extract_plural(code, message, parameters):
     """Check for the plural variants in message and replace them.
 
     @param message: the message to be replaced
-    @type message: unicode string
+    @type message: str
     @param parameters: plural parameters passed from other methods
     @type parameters: Mapping of str to int
     @return: The message with the plural instances replaced
@@ -475,28 +479,29 @@ def _extract_plural(code, message, parameters):
         specific_entries = {}
         # A plural entry can not start at the end of the variants list,
         # and must end with | or the end of the variants list.
-        for number, plural in re.findall(r'(?!$)(?: *(\d+) *= *)?(.*?)(?:\||$)',
-                                         variants):
+        for number, plural in re.findall(
+            r'(?!$)(?: *(\d+) *= *)?(.*?)(?:\||$)', variants
+        ):
             if number:
                 specific_entries[int(number)] = plural
             else:
-                assert not specific_entries, \
-                    'generic entries defined after specific in "{0}"'.format(variants)
+                assert not specific_entries, (
+                    'generic entries defined after specific in "{0}"'
+                    .format(variants))
                 plural_entries += [plural]
 
         if num in specific_entries:
             return specific_entries[num]
 
         index = plural_value(num)
-        if rule['nplurals'] == 1:
+        needed = rule['nplurals']
+        if needed == 1:
             assert index == 0
 
         if index >= len(plural_entries):
-            raise IndexError(
-                'requested plural {0} for {1} but only {2} ("{3}") '
-                'provided'.format(
-                    index, selector, len(plural_entries),
-                    '", "'.join(plural_entries)))
+            # take the last entry in that case, see
+            # https://translatewiki.net/wiki/Plural#Plural_syntax_in_MediaWiki
+            index = -1
         return plural_entries[index]
 
     assert isinstance(parameters, Mapping), \
@@ -560,14 +565,14 @@ def translate(code, xdict, parameters=None, fallback=False):
 
     The language itself is always checked first, then languages that
     have been defined to be alternatives, and finally English. If none of
-    the options gives result, we just take the one language from xdict which may
-    not be always the same. When fallback is iterable it'll return None if no
-    code applies (instead of returning one).
+    the options gives result, we just take the one language from xdict which
+    may not be always the same. When fallback is iterable it'll return None if
+    no code applies (instead of returning one).
 
     For PLURAL support have a look at the twtranslate method.
 
     @param code: The language code
-    @type code: string or Site object
+    @type code: str or Site object
     @param xdict: dictionary with language codes as keys or extended dictionary
                   with family names as keys containing language dictionaries or
                   a single (unicode) string. May contain PLURAL tags as
@@ -615,16 +620,16 @@ def translate(code, xdict, parameters=None, fallback=False):
                 # was True before 65518573d2b0, it did just that. When False it
                 # did just return None. It's now also returning None in the new
                 # iterable mode.
-                return
+                return None
             code = list(xdict.keys())[0]
             trans = xdict[code]
     if trans is None:
-        return  # return None if we have no translation found
+        return None  # return None if we have no translation found
     if parameters is None:
         return trans
 
     if not isinstance(parameters, Mapping):
-        issue_deprecation_warning('parameters not being a mapping', None, 2,
+        issue_deprecation_warning('parameters not being a mapping',
                                   since='20151008')
         plural_parameters = _PluralMappingAlias(parameters)
     else:
@@ -642,9 +647,10 @@ def translate(code, xdict, parameters=None, fallback=False):
 
 
 @deprecated_args(code='source')
-def twtranslate(source, twtitle, parameters=None, fallback=True,
-                only_plural=False):
-    """
+def twtranslate(
+    source, twtitle, parameters=None, fallback=True, only_plural=False
+):
+    r"""
     Translate a message using JSON files in messages_package_name.
 
     fallback parameter must be True for i18n and False for L10N or testing
@@ -655,21 +661,22 @@ def twtranslate(source, twtitle, parameters=None, fallback=True,
 
         {{PLURAL:<number>|<variant1>|<variant2>[|<variantn>]}}
 
-    it takes that variant calculated by the plural_rules depending on the number
-    value. Multiple plurals are allowed.
+    it takes that variant calculated by the plural_rules depending on the
+    number value. Multiple plurals are allowed.
 
     As an examples, if we had several json dictionaries in test folder like:
 
     en.json::
 
       {
-          "test-plural": "Bot: Changing %(num)s {{PLURAL:%(num)d|page|pages}}.",
+         "test-plural": "Bot: Changing %(num)s {{PLURAL:%(num)d|page|pages}}.",
       }
 
     fr.json::
 
       {
-          "test-plural": "Robot: Changer %(descr)s {{PLURAL:num|une page|quelques pages}}.",
+         "test-plural": \
+         "Robot: Changer %(descr)s {{PLURAL:num|une page|quelques pages}}.",
       }
 
     and so on.
@@ -680,11 +687,13 @@ def twtranslate(source, twtitle, parameters=None, fallback=True,
     >>> str(i18n.twtranslate('en', 'test-plural', {'num':2}))
     'Bot: Changing 2 pages.'
     >>> # use additional format strings
-    >>> str(i18n.twtranslate('fr', 'test-plural', {'num': 1, 'descr': 'seulement'}))
+    >>> str(i18n.twtranslate(
+    ...    'fr', 'test-plural', {'num': 1, 'descr': 'seulement'}))
     'Robot: Changer seulement une page.'
     >>> # use format strings also outside
-    >>> str(i18n.twtranslate('fr', 'test-plural', {'num': 10}, only_plural=True)
-    ...     % {'descr': 'seulement'})
+    >>> str(i18n.twtranslate(
+    ...    'fr', 'test-plural', {'num': 10}, only_plural=True
+    ... ) % {'descr': 'seulement'})
     'Robot: Changer seulement quelques pages.'
 
     @param source: When it's a site it's using the lang attribute and otherwise
@@ -719,7 +728,8 @@ def twtranslate(source, twtitle, parameters=None, fallback=True,
     # check whether we need the language code back
     elif isinstance(source, list):
         # For backwards compatibility still support lists, when twntranslate
-        # was not deprecated and needed a way to get the used language code back
+        # was not deprecated and needed a way to get the used language code
+        # back.
         warn('The source argument should not be a list but either a BaseSite '
              'or a str/unicode.', DeprecationWarning, 2)
         lang = source.pop()
@@ -738,12 +748,12 @@ def twtranslate(source, twtitle, parameters=None, fallback=True,
         if trans:
             break
     else:
-        raise TranslationError(
-            'No %s translation has been defined for TranslateWiki key %r\n'
-            'It can happen due to lack of i18n submodule or files. See '
-            '%s/i18n'
-            % ('English' if 'en' in langs else "'%s'" % lang,
-               twtitle, __url__))
+        raise TranslationError(fill(
+            'No {} translation has been defined for TranslateWiki key "{}". '
+            'It can happen due to lack of i18n submodule or files or an '
+            'outdated submodule. See {}/i18n'
+            .format('English' if 'en' in langs else "'{}'".format(lang),
+                    twtitle, __url__)))
     # send the language code back via the given mutable list parameter
     if source_needed:
         source.append(alt)
@@ -768,7 +778,7 @@ def twtranslate(source, twtitle, parameters=None, fallback=True,
         parameters = None
 
     if parameters is not None and not isinstance(parameters, Mapping):
-        issue_deprecation_warning('parameters not being a Mapping', None, 2,
+        issue_deprecation_warning('parameters not being a Mapping',
                                   since='20151008')
 
     if not only_plural and parameters:
@@ -816,7 +826,7 @@ def twget_keys(twtitle):
     @raises OSError: the package i18n can not be loaded
     """
     # obtain the directory containing all the json files for this package
-    package = twtitle.split("-")[0]
+    package = twtitle.split('-')[0]
     mod = __import__(_messages_package_name, fromlist=[str('__file__')])
     pathname = os.path.join(next(iter(mod.__path__)), package)
 
@@ -828,8 +838,7 @@ def twget_keys(twtitle):
     # exclude languages does not have this specific message in that package
     # i.e. an incomplete set of translated messages.
     return [lang for lang in langs
-            if lang != 'qqq' and
-            _get_translation(lang, twtitle)]
+            if lang != 'qqq' and _get_translation(lang, twtitle)]
 
 
 def input(twtitle, parameters=None, password=False, fallback_prompt=None):
@@ -843,7 +852,7 @@ def input(twtitle, parameters=None, password=False, fallback_prompt=None):
     @param parameters: The values which will be applied to the translated text
     @param password: Hides the user's input (for password entry)
     @param fallback_prompt: The English prompt if i18n is not available.
-    @rtype: unicode string
+    @rtype: str
     """
     if not messages_available():
         if not fallback_prompt:

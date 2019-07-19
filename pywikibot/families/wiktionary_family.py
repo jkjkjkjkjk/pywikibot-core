@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Family module for Wiktionary."""
 #
-# (C) Pywikibot team, 2005-2018
+# (C) Pywikibot team, 2005-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from pywikibot import family
 from pywikibot.tools import classproperty
@@ -19,32 +19,32 @@ class Family(family.SubdomainFamily, family.WikimediaFamily):
     name = 'wiktionary'
 
     closed_wikis = [
-        # See https://noc.wikimedia.org/conf/highlight.php?file=closed.dblist
+        # See https://noc.wikimedia.org/conf/highlight.php?file=dblists/closed.dblist  # noqa
         'aa', 'ab', 'ak', 'als', 'as', 'av', 'ba', 'bh', 'bi', 'bm', 'bo',
-        'ch', 'cr', 'dz', 'ik', 'mh', 'mo', 'pi', 'rm', 'rn', 'sc', 'sn',
-        'to', 'tw', 'xh', 'yo', 'za',
+        'ch', 'cr', 'dz', 'ik', 'mh', 'pi', 'rm', 'rn', 'sc', 'sn', 'to', 'tw',
+        'xh', 'yo', 'za',
     ]
 
     removed_wikis = [
-        # See https://noc.wikimedia.org/conf/highlight.php?file=deleted.dblist
+        # See https://noc.wikimedia.org/conf/highlight.php?file=dblists/deleted.dblist  # noqa
         'ba', 'dk', 'tlh', 'tokipona',
     ]
 
     languages_by_size = [
-        'en', 'mg', 'fr', 'ru', 'sh', 'es', 'zh', 'de', 'nl', 'sv', 'ku', 'pl',
-        'lt', 'el', 'it', 'fi', 'ca', 'ta', 'hu', 'tr', 'ko', 'io', 'kn', 'hy',
-        'pt', 'vi', 'sr', 'ja', 'chr', 'hi', 'th', 'ro', 'no', 'id', 'ml',
-        'et', 'my', 'uz', 'li', 'or', 'te', 'cs', 'fa', 'eo', 'ar', 'jv', 'az',
-        'eu', 'gl', 'oc', 'da', 'br', 'lo', 'uk', 'hr', 'fj', 'tg', 'bg', 'ky',
-        'simple', 'ps', 'ur', 'sk', 'cy', 'vo', 'la', 'wa', 'is', 'zh-min-nan',
-        'af', 'scn', 'ast', 'he', 'tl', 'sw', 'fy', 'nn', 'pa', 'lv', 'bn',
-        'co', 'mn', 'pnb', 'ka', 'nds', 'sl', 'sq', 'lb', 'bs', 'nah', 'sa',
-        'kk', 'tk', 'sm', 'mk', 'km', 'hsb', 'be', 'ms', 'ga', 'an', 'wo',
-        'vec', 'ang', 'tt', 'sd', 'mt', 'gn', 'mr', 'ie', 'so', 'csb', 'ug',
-        'gd', 'st', 'roa-rup', 'si', 'hif', 'ia', 'mi', 'ay', 'kl', 'fo',
-        'jbo', 'ln', 'zu', 'na', 'gu', 'gv', 'kw', 'rw', 'ts', 'ne', 'om',
-        'qu', 'su', 'ss', 'ha', 'iu', 'am', 'dv', 'tpi', 'yi', 'ti', 'sg',
-        'tn', 'ks',
+        'en', 'mg', 'fr', 'ru', 'sh', 'es', 'zh', 'de', 'nl', 'sv', 'pl', 'ku',
+        'lt', 'it', 'el', 'ca', 'fi', 'hu', 'ta', 'tr', 'ko', 'io', 'hy', 'kn',
+        'pt', 'vi', 'sr', 'ja', 'chr', 'th', 'hi', 'ro', 'no', 'id', 'et',
+        'ml', 'my', 'uz', 'li', 'cs', 'or', 'te', 'eo', 'fa', 'ar', 'jv', 'az',
+        'eu', 'gl', 'oc', 'br', 'uk', 'da', 'lo', 'hr', 'fj', 'tg', 'ky', 'bg',
+        'simple', 'la', 'sk', 'ps', 'ur', 'ast', 'wa', 'cy', 'vo', 'is',
+        'zh-min-nan', 'af', 'he', 'scn', 'tl', 'pa', 'sw', 'fy', 'nn', 'lv',
+        'bn', 'co', 'ka', 'sq', 'mn', 'pnb', 'nds', 'sl', 'lb', 'bs', 'nah',
+        'sa', 'kk', 'tk', 'sm', 'km', 'mk', 'hsb', 'ms', 'be', 'vec', 'ga',
+        'yue', 'an', 'wo', 'ang', 'tt', 'mt', 'sd', 'gn', 'mr', 'ie', 'so',
+        'gd', 'csb', 'ug', 'ia', 'st', 'roa-rup', 'si', 'hif', 'mi', 'ay',
+        'kl', 'fo', 'jbo', 'ln', 'su', 'zu', 'na', 'gu', 'gv', 'kw', 'rw',
+        'ts', 'ne', 'om', 'qu', 'ss', 'ha', 'iu', 'am', 'dv', 'tpi', 'yi',
+        'ti', 'sg', 'tn', 'ks',
     ]
 
     category_redirect_templates = {
@@ -87,20 +87,20 @@ class Family(family.SubdomainFamily, family.WikimediaFamily):
     alphabetic_sv = [
         'aa', 'af', 'ak', 'als', 'an', 'roa-rup', 'ast', 'gn', 'ay', 'az',
         'id', 'ms', 'bm', 'zh-min-nan', 'jv', 'su', 'mt', 'bi', 'bo', 'bs',
-        'br', 'ca', 'cs', 'ch', 'sn', 'co', 'za', 'cy', 'da', 'de', 'na',
-        'mh', 'et', 'ang', 'en', 'es', 'eo', 'eu', 'to', 'fr', 'fy', 'fo',
-        'ga', 'gv', 'sm', 'gd', 'gl', 'hr', 'io', 'ia', 'ie', 'ik', 'xh',
-        'is', 'zu', 'it', 'kl', 'csb', 'kw', 'rw', 'rn', 'sw', 'ky', 'ku',
-        'la', 'lv', 'lb', 'lt', 'li', 'ln', 'jbo', 'hu', 'mg', 'mi', 'mo',
-        'my', 'fj', 'nah', 'nl', 'cr', 'no', 'nn', 'hsb', 'oc', 'om', 'ug',
-        'uz', 'nds', 'pl', 'pt', 'ro', 'rm', 'qu', 'sg', 'sc', 'st', 'tn',
-        'sq', 'scn', 'simple', 'ss', 'sk', 'sl', 'so', 'sh', 'fi', 'sv',
-        'tl', 'tt', 'vi', 'tpi', 'tr', 'tw', 'vo', 'wa', 'wo', 'ts', 'yo',
-        'el', 'av', 'ab', 'ba', 'be', 'bg', 'mk', 'mn', 'ru', 'sr', 'tg',
-        'uk', 'kk', 'hy', 'yi', 'he', 'ur', 'ar', 'tk', 'sd', 'fa', 'ha',
-        'ps', 'dv', 'ks', 'ne', 'pi', 'bh', 'mr', 'sa', 'hi', 'as', 'bn',
-        'pa', 'pnb', 'gu', 'or', 'ta', 'te', 'kn', 'ml', 'si', 'th', 'lo',
-        'dz', 'ka', 'ti', 'am', 'chr', 'iu', 'km', 'zh', 'ja', 'ko',
+        'br', 'ca', 'cs', 'ch', 'sn', 'co', 'za', 'cy', 'da', 'de', 'na', 'mh',
+        'et', 'ang', 'en', 'es', 'eo', 'eu', 'to', 'fr', 'fy', 'fo', 'ga',
+        'gv', 'sm', 'gd', 'gl', 'hr', 'io', 'ia', 'ie', 'ik', 'xh', 'is', 'zu',
+        'it', 'kl', 'csb', 'kw', 'rw', 'rn', 'sw', 'ky', 'ku', 'la', 'lv',
+        'lb', 'lt', 'li', 'ln', 'jbo', 'hu', 'mg', 'mi', 'mo', 'my', 'fj',
+        'nah', 'nl', 'cr', 'no', 'nn', 'hsb', 'oc', 'om', 'ug', 'uz', 'nds',
+        'pl', 'pt', 'ro', 'rm', 'qu', 'sg', 'sc', 'st', 'tn', 'sq', 'scn',
+        'simple', 'ss', 'sk', 'sl', 'so', 'sh', 'fi', 'sv', 'tl', 'tt', 'vi',
+        'tpi', 'tr', 'tw', 'vo', 'wa', 'wo', 'ts', 'yo', 'el', 'av', 'ab',
+        'ba', 'be', 'bg', 'mk', 'mn', 'ru', 'sr', 'tg', 'uk', 'kk', 'hy', 'yi',
+        'he', 'ur', 'ar', 'tk', 'sd', 'fa', 'ha', 'ps', 'dv', 'ks', 'ne', 'pi',
+        'bh', 'mr', 'sa', 'hi', 'as', 'bn', 'pa', 'pnb', 'gu', 'or', 'ta',
+        'te', 'kn', 'ml', 'si', 'th', 'lo', 'dz', 'ka', 'ti', 'am', 'chr',
+        'iu', 'km', 'zh', 'ja', 'ko'
     ]
 
     @classproperty

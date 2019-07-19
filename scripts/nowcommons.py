@@ -14,6 +14,7 @@ A sysop account on the local wiki is required if you want all features of
 this script to work properly.
 
 This script understands various command-line arguments:
+
     -always         run automatically, do not ask any questions. All files
                     that qualify for deletion are deleted. Reduced screen
                     output.
@@ -48,119 +49,119 @@ Please fix these if you are capable and motivated:
 #
 # (C) Wikipedian, 2006-2007
 # (C) Siebrand Mazeland, 2007-2008
-# (C) xqt, 2010-2018
-# (C) Pywikibot team, 2006-2018
+# (C) xqt, 2010-2019
+# (C) Pywikibot team, 2006-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from itertools import chain
 import sys
 
 import pywikibot
-
-from pywikibot import i18n, Bot
+from pywikibot import Bot, i18n
+from pywikibot.exceptions import ArgumentDeprecationWarning
 from pywikibot import pagegenerators as pg
-from pywikibot.tools import filter_unique
+from pywikibot.tools import filter_unique, issue_deprecation_warning
 from pywikibot.tools.formatter import color_format
 
 from scripts.image import ImageRobot as ImageBot
 
 nowCommons = {
     '_default': [
-        u'NowCommons'
+        'NowCommons'
     ],
     'ar': [
-        u'الآن كومنز',
-        u'الآن كومونز',
+        'الآن كومنز',
+        'الآن كومونز',
     ],
     'de': [
-        u'NowCommons',
-        u'NC',
-        u'Nowcommons',
+        'NowCommons',
+        'NC',
+        'Nowcommons',
         'Now Commons',
-        u'NowCommons/Mängel',
+        'NowCommons/Mängel',
         'NC/M',
     ],
     'en': [
-        u'NowCommons',
-        u'Ncd',
+        'NowCommons',
+        'Ncd',
     ],
     'eo': [
-        u'Nun en komunejo',
-        u'NowCommons',
+        'Nun en komunejo',
+        'NowCommons',
     ],
     'fa': [
-        u'موجود در انبار',
-        u'NowCommons',
+        'موجود در انبار',
+        'NowCommons',
     ],
     'fr': [
-        u'Image sur Commons',
-        u'DoublonCommons',
-        u'Déjà sur Commons',
-        u'Maintenant sur commons',
-        u'Désormais sur Commons',
-        u'NC',
-        u'NowCommons',
-        u'Nowcommons',
-        u'Sharedupload',
-        u'Sur Commons',
-        u'Sur Commons2',
+        'Image sur Commons',
+        'DoublonCommons',
+        'Déjà sur Commons',
+        'Maintenant sur commons',
+        'Désormais sur Commons',
+        'NC',
+        'NowCommons',
+        'Nowcommons',
+        'Sharedupload',
+        'Sur Commons',
+        'Sur Commons2',
     ],
     'he': [
-        u'גם בוויקישיתוף'
+        'גם בוויקישיתוף'
     ],
     'hu': [
-        u'Azonnali-commons',
-        u'NowCommons',
-        u'Nowcommons',
-        u'NC'
+        'Azonnali-commons',
+        'NowCommons',
+        'Nowcommons',
+        'NC'
     ],
     'ia': [
-        u'OraInCommons'
+        'OraInCommons'
     ],
     'it': [
-        u'NowCommons',
+        'NowCommons',
     ],
     'ja': [
-        u'NowCommons',
+        'NowCommons',
     ],
     'ko': [
-        u'공용중복',
-        u'공용 중복',
-        u'NowCommons',
-        u'Now Commons',
-        u'Nowcommons',
+        '공용중복',
+        '공용 중복',
+        'NowCommons',
+        'Now Commons',
+        'Nowcommons',
     ],
     'nds-nl': [
-        u'NoenCommons',
-        u'NowCommons',
+        'NoenCommons',
+        'NowCommons',
     ],
     'nl': [
-        u'NuCommons',
-        u'Nucommons',
-        u'NowCommons',
-        u'Nowcommons',
-        u'NCT',
-        u'Nct',
+        'NuCommons',
+        'Nucommons',
+        'NowCommons',
+        'Nowcommons',
+        'NCT',
+        'Nct',
     ],
     'ro': [
-        u'NowCommons'
+        'NowCommons'
     ],
     'ru': [
-        u'NowCommons',
-        u'NCT',
-        u'Nowcommons',
-        u'Now Commons',
-        u'Db-commons',
-        u'Перенесено на Викисклад',
-        u'На Викискладе',
+        'NowCommons',
+        'NCT',
+        'Nowcommons',
+        'Now Commons',
+        'Db-commons',
+        'Перенесено на Викисклад',
+        'На Викискладе',
     ],
     'zh': [
-        u'NowCommons',
-        u'Nowcommons',
-        u'NCT',
+        'NowCommons',
+        'Nowcommons',
+        'NCT',
     ],
 }
 
@@ -242,7 +243,8 @@ class NowCommonsDeleteBot(Bot):
                             filenameOnCommons = par[par.index(':') + 1:]
                             break
                         if val[0].strip() == '1':
-                            filenameOnCommons = val[1].strip()[val[1].strip().index(':') + 1:]
+                            filenameOnCommons = \
+                                val[1].strip()[val[1].strip().index(':') + 1:]
                             break
                         skip = True
                     if not filenameOnCommons:
@@ -265,56 +267,58 @@ class NowCommonsDeleteBot(Bot):
             try:
                 localImagePage = pywikibot.FilePage(self.site, page.title())
                 if localImagePage.fileIsShared():
-                    pywikibot.output(u'File is already on Commons.')
+                    pywikibot.output('File is already on Commons.')
                     continue
                 sha1 = localImagePage.latest_file_info.sha1
                 filenameOnCommons = self.findFilenameOnCommons(localImagePage)
                 if not filenameOnCommons:
-                    pywikibot.output(u'NowCommons template not found.')
+                    pywikibot.output('NowCommons template not found.')
                     continue
-                commonsImagePage = pywikibot.FilePage(commons, 'Image:%s'
-                                                      % filenameOnCommons)
-                if (localImagePage.title(with_ns=False) !=
-                        commonsImagePage.title(with_ns=False)):
+                commonsImagePage = pywikibot.FilePage(commons, 'Image:'
+                                                      + filenameOnCommons)
+                if (localImagePage.title(with_ns=False)
+                        != commonsImagePage.title(with_ns=False)):
                     usingPages = list(localImagePage.usingPages())
                     if usingPages and usingPages != [localImagePage]:
                         pywikibot.output(color_format(
-                            '"{lightred}{0}{default}" is still used in {1} pages.',
+                            '"{lightred}{0}{default}" '
+                            'is still used in {1} pages.',
                             localImagePage.title(with_ns=False),
                             len(usingPages)))
                         if self.getOption('replace') is True:
-                                pywikibot.output(color_format(
-                                    'Replacing "{lightred}{0}{default}" by '
-                                    '"{lightgreen}{1}{default}\".',
-                                    localImagePage.title(with_ns=False),
-                                    commonsImagePage.title(with_ns=False)))
+                            pywikibot.output(color_format(
+                                'Replacing "{lightred}{0}{default}" by '
+                                '"{lightgreen}{1}{default}\".',
+                                localImagePage.title(with_ns=False),
+                                commonsImagePage.title(with_ns=False)))
+                            bot = ImageBot(
+                                pg.FileLinksGenerator(localImagePage),
+                                localImagePage.title(with_ns=False),
+                                commonsImagePage.title(with_ns=False),
+                                '', self.getOption('replacealways'),
+                                self.getOption('replaceloose'))
+                            bot.run()
+                            # If the image is used with the urlname the
+                            # previous function won't work
+                            is_used = bool(list(pywikibot.FilePage(
+                                self.site,
+                                page.title()).usingPages(total=1)))
+                            if is_used and self.getOption('replaceloose'):
                                 bot = ImageBot(
-                                    pg.FileLinksGenerator(localImagePage),
-                                    localImagePage.title(with_ns=False),
+                                    pg.FileLinksGenerator(
+                                        localImagePage),
+                                    localImagePage.title(
+                                        with_ns=False, as_url=True),
                                     commonsImagePage.title(with_ns=False),
                                     '', self.getOption('replacealways'),
                                     self.getOption('replaceloose'))
                                 bot.run()
-                                # If the image is used with the urlname the
-                                # previous function won't work
-                                is_used = bool(list(pywikibot.FilePage(
-                                    self.site, page.title()).usingPages(total=1)))
-                                if is_used and self.getOption('replaceloose'):
-                                    bot = ImageBot(
-                                        pg.FileLinksGenerator(
-                                            localImagePage),
-                                        localImagePage.title(
-                                            with_ns=False, as_url=True),
-                                        commonsImagePage.title(with_ns=False),
-                                        '', self.getOption('replacealways'),
-                                        self.getOption('replaceloose'))
-                                    bot.run()
-                                # refresh because we want the updated list
-                                usingPages = len(list(pywikibot.FilePage(
-                                    self.site, page.title()).usingPages()))
+                            # refresh because we want the updated list
+                            usingPages = len(list(pywikibot.FilePage(
+                                self.site, page.title()).usingPages()))
 
                         else:
-                            pywikibot.output(u'Please change them manually.')
+                            pywikibot.output('Please change them manually.')
                         continue
                     else:
                         pywikibot.output(color_format(
@@ -325,12 +329,12 @@ class NowCommonsDeleteBot(Bot):
                 if self.getOption('replaceonly') is False:
                     if sha1 == commonsImagePage.latest_file_info.sha1:
                         pywikibot.output(
-                            u'The image is identical to the one on Commons.')
-                        if len(localImagePage.getFileVersionHistory()) > 1:
+                            'The image is identical to the one on Commons.')
+                        if len(localImagePage.get_file_history()) > 1:
                             pywikibot.output(
                                 'This image has a version history. Please '
-                                'delete it manually after making sure that the '
-                                'old versions are not worth keeping.')
+                                'delete it manually after making sure that '
+                                'the old versions are not worth keeping.')
                             continue
                         if self.getOption('always') is False:
                             format_str = color_format(
@@ -342,28 +346,30 @@ class NowCommonsDeleteBot(Bot):
                                              commonsImagePage.title())
                             pywikibot.output(commonsText)
                             if pywikibot.input_yn(
-                                    u'Does the description on Commons contain '
+                                    'Does the description on Commons contain '
                                     'all required source and license\n'
                                     'information?',
                                     default=False, automatic_quit=False):
                                 localImagePage.delete(
-                                    '%s [[:commons:Image:%s]]'
-                                    % (comment, filenameOnCommons), prompt=False)
+                                    '{0} [[:commons:Image:{1}]]'
+                                    .format(comment, filenameOnCommons),
+                                    prompt=False)
                         else:
                             localImagePage.delete(
-                                comment + ' [[:commons:Image:%s]]'
-                                % filenameOnCommons, prompt=False)
+                                comment + ' [[:commons:Image:{0}]]'
+                                          .format(filenameOnCommons),
+                                          prompt=False)
                     else:
-                        pywikibot.output(
-                            u'The image is not identical to the one on Commons.')
+                        pywikibot.output('The image is not identical to '
+                                         'the one on Commons.')
             except (pywikibot.NoPage, pywikibot.IsRedirectPage) as e:
-                pywikibot.output(u'%s' % e[0])
+                pywikibot.output('{0}'.format(e[0]))
                 continue
             else:
                 self._treat_counter += 1
         if not self._treat_counter:
-            pywikibot.output(
-                'No transcluded files found for %s.' % self.ncTemplates()[0])
+            pywikibot.output('No transcluded files found for {0}.'
+                             .format(self.ncTemplates()[0]))
         self.exit()
 
 
@@ -374,7 +380,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     options = {}
 
@@ -386,8 +392,9 @@ def main(*args):
             raise NotImplementedError(
                 "The '-hash' argument is not implemented anymore.")
         elif arg == '-autonomous':
-            pywikibot.warning(u"The '-autonomous' argument is DEPRECATED,"
-                              u" use '-always' instead.")
+            issue_deprecation_warning('-autonomous', '-always', 2,
+                                      ArgumentDeprecationWarning,
+                                      since='20140724')
             options['always'] = True
         elif arg.startswith('-'):
             if arg[1:] in ('always', 'replace', 'replaceloose', 'replaceonly'):
@@ -397,5 +404,5 @@ def main(*args):
     bot.run()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

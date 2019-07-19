@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Test logentries module."""
 #
-# (C) Pywikibot team, 2015-2018
+# (C) Pywikibot team, 2015-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import datetime
 
@@ -15,7 +15,6 @@ from pywikibot.exceptions import HiddenKeyError
 from pywikibot.logentries import (
     LogEntryFactory, OtherLogEntry, UserTargetLogEntry)
 from pywikibot.tools import (
-    MediaWikiVersion,
     UnicodeType as unicode,
 )
 
@@ -31,10 +30,11 @@ class TestLogentriesBase(TestCase):
     """
     Base class for log entry tests.
 
-    It uses the German Wikipedia for a current representation of the log entries
-    and the test Wikipedia for the future representation. It also tests on a
-    wiki with MW 1.19 or older to check that it can still read the older format.
-    It currently uses lyricwiki which as of this commit uses 1.19.24.
+    It uses the German Wikipedia for a current representation of the
+    log entries and the test Wikipedia for the future representation.
+    It also tests on a wiki with MW 1.19 or older to check that it can
+    still read the older format. It currently uses lyricwiki which as of
+    this commit uses 1.19.24.
     """
 
     sites = {
@@ -61,15 +61,14 @@ class TestLogentriesBase(TestCase):
             # This is an assertion as the tests don't make sense with newer
             # MW versions and otherwise it might not be visible that the test
             # isn't run on an older wiki.
-            self.assertLess(MediaWikiVersion(self.site.version()),
-                            MediaWikiVersion('1.20'))
+            self.assertLess(self.site.mw_version, '1.20')
         return next(iter(self.site.logevents(logtype=logtype, total=1)))
 
     def _test_logevent(self, logtype):
         """Test a single logtype entry."""
         logentry = self._get_logentry(logtype)
         self.assertIn(logtype, logentry.__class__.__name__.lower())
-        self.assertEqual(logentry._expectedType, logtype)
+        self.assertEqual(logentry._expected_type, logtype)
         if logtype not in LogEntryFactory._logtypes:
             self.assertIsInstance(logentry, OtherLogEntry)
         if self.site_key == 'old':
@@ -125,7 +124,7 @@ class TestLogentriesMeta(MetaTestCaseClass):
 
         # create test methods for the support logtype classes
         for logtype in LogEntryFactory._logtypes:
-            cls.add_method(dct, 'test_%sEntry' % logtype.title(),
+            cls.add_method(dct, 'test_{}Entry'.format(logtype.title()),
                            test_method(logtype))
 
         return super(TestLogentriesMeta, cls).__new__(cls, name, bases, dct)
@@ -146,8 +145,8 @@ class TestSimpleLogentries(TestLogentriesBase):
     def test_simple_entries(self, key):
         """Test those entries which don't have an extra LogEntry subclass."""
         # Unfortunately it's not possible to use the metaclass to create a
-        # bunch of test methods for this too as the site instances haven't been
-        # initialized yet.
+        # bunch of test methods for this too as the site instances haven't
+        # been initialized yet.
         for simple_type in (self.site.logtypes
                             - set(LogEntryFactory._logtypes)):
             if not simple_type:
@@ -174,10 +173,13 @@ class TestLogentryParams(TestLogentriesBase):
                 # Check that there are no empty strings
                 self.assertTrue(all(logentry.flags()))
                 if logentry.expiry() is not None:
-                    self.assertIsInstance(logentry.expiry(), pywikibot.Timestamp)
-                    self.assertIsInstance(logentry.duration(), datetime.timedelta)
-                    self.assertEqual(logentry.timestamp() + logentry.duration(),
-                                     logentry.expiry())
+                    self.assertIsInstance(logentry.expiry(),
+                                          pywikibot.Timestamp)
+                    self.assertIsInstance(logentry.duration(),
+                                          datetime.timedelta)
+                    self.assertEqual(
+                        logentry.timestamp() + logentry.duration(),
+                        logentry.expiry())
                 else:
                     self.assertIsNone(logentry.duration())
                 break
@@ -210,7 +212,7 @@ class TestLogentryParams(TestLogentriesBase):
         # main page was moved around
         mainpage = self.get_mainpage(self.site)
         if self.sites[key]['target'] is None:
-            raise unittest.SkipTest('No moved target')
+            self.skipTest('No moved target')
         target = mainpage.moved_target()
         self.assertIsInstance(target, pywikibot.Page)
         self.assertEqual(target.title(),
@@ -249,7 +251,7 @@ class TestLogentryParams(TestLogentriesBase):
         le4 = next(gen1)
         le5 = next(gen2)
         self.assertEqual(le1, le2)
-        self.assertFalse(le1 != le2)  # __ne__ test
+        self.assertFalse(le1 != le2)  # noqa: H204
         self.assertNotEqual(le1, le3)
         self.assertNotEqual(le1, site)
         self.assertIsInstance(le4, OtherLogEntry)
@@ -289,7 +291,7 @@ class TestDeprecatedMethods(TestLogentriesBase, DeprecationTestCase):
         """Test getMovedTarget method."""
         # main page was moved around
         if self.sites[key]['target'] is None:
-            raise unittest.SkipTest('No moved target')
+            self.skipTest('No moved target')
         mainpage = self.get_mainpage(self.site)
         target = mainpage.getMovedTarget()
         self.assertIsInstance(target, pywikibot.Page)
@@ -307,8 +309,8 @@ class TestDeprecatedMethods(TestLogentriesBase, DeprecationTestCase):
         with self.assertRaises(pywikibot.NoPage):
             self.get_mainpage(site).getMovedTarget()
 
-        self.assertOneDeprecationParts('pywikibot.page.BasePage.getMovedTarget',
-                                       'moved_target()')
+        self.assertOneDeprecationParts(
+            'pywikibot.page.BasePage.getMovedTarget', 'moved_target()')
 
     def test_moved_target_fail_de(self):
         """Test getMovedTarget method failing on de-wiki."""
@@ -316,8 +318,8 @@ class TestDeprecatedMethods(TestLogentriesBase, DeprecationTestCase):
         with self.assertRaises(pywikibot.NoPage):
             page.getMovedTarget()
 
-        self.assertOneDeprecationParts('pywikibot.page.BasePage.getMovedTarget',
-                                       'moved_target()')
+        self.assertOneDeprecationParts(
+            'pywikibot.page.BasePage.getMovedTarget', 'moved_target()')
 
 
 if __name__ == '__main__':  # pragma: no cover

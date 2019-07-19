@@ -81,11 +81,11 @@ Todo
 # (C) Kyle/Orgullomoore, 2006-2007 (newimage.py)
 # (C) Siebrand Mazeland, 2007-2010
 # (C) Filnik, 2007-2011
-# (C) Pywikibot team, 2007-2018
+# (C) Pywikibot team, 2007-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import collections
 import re
@@ -112,6 +112,7 @@ from pywikibot.tools import issue_deprecation_warning
 n_txt = {
     'commons': '{{subst:nld}}',
     'meta': '{{No license}}',
+    'test': '{{No license}}',
     'ar': '{{subst:لم}}',
     'de': '{{Dateiüberprüfung}}',
     'en': '{{subst:nld}}',
@@ -123,7 +124,7 @@ n_txt = {
     'it': '{{subst:unverdata}}',
     'ja': '{{subst:Nld}}',
     'ko': '{{subst:nld}}',
-    'sr': '{{датотека без лиценце}}',
+    'sr': '{{subst:датотека без лиценце}}',
     'ta': '{{subst:nld}}',
     'ur': '{{subst:حقوق نسخہ تصویر نامعلوم}}',
     'zh': '{{subst:No license/auto}}',
@@ -139,6 +140,7 @@ txt_find = {
     'commons': ['{{no license', '{{no license/en',
                 '{{nld', '{{no permission', '{{no permission since'],
     'meta': ['{{no license', '{{nolicense', '{{nld'],
+    'test': ['{{no license'],
     'ar': ['{{لت', '{{لا ترخيص'],
     'de': ['{{DÜP', '{{Düp', '{{Dateiüberprüfung'],
     'en': ['{{nld', '{{no license'],
@@ -150,6 +152,7 @@ txt_find = {
     'ja': ['{{no source', '{{unknown',
            '{{non free', '<!--削除についての議論が終了するまで'],
     'ko': ['{{출처 없음', '{{라이선스 없음', '{{Unknown'],
+    'sr': ['{{датотека без лиценце', '{{датотека без извора'],
     'ta': ['{{no source', '{{nld', '{{no license'],
     'ur': ['{{ناحوالہ', '{{اجازہ نامعلوم', '{{Di-no'],
     'zh': ['{{no source', '{{unknown', '{{No license'],
@@ -172,6 +175,7 @@ empty = {
           '<!-- fine template di benvenuto -->',
     'ja': '{{subst:Welcome/intro}}\n{{subst:welcome|--~~~~}}\n',
     'ko': '{{환영}}--~~~~\n',
+    'sr': '{{dd}}--~~~~\n',
     'ta': '{{welcome}}\n~~~~\n',
     'ur': '{{خوش آمدید}}\n~~~~\n',
     'zh': '{{subst:welcome|sign=~~~~}}',
@@ -191,79 +195,14 @@ delete_immediately = {
     'it': '{{cancella subito|motivo=Il file ha come estensione ".%s"}}',
     'ja': '{{db|知らないファイルフォーマット %s}}',
     'ko': '{{delete|잘못된 파일 형식 (.%s)}}',
+    'sr': '{{speedy|Ова датотека садржи екстензију %s. '
+               'Молим вас да проверите да ли је у складу са правилима.}}',
     'ta': '{{delete|'
           'இந்தக் கோப்பு .%s என்றக் கோப்பு நீட்சியைக் கொண்டுள்ளது.}}',
     'ur': '{{سریع حذف شدگی|اس ملف میں .%s بطور توسیع موجود ہے۔ }}',
     'zh': '{{delete|未知檔案格式%s}}',
 }
 
-# The header of the Unknown extension's message.
-delete_immediately_head = {
-    'ar': 'امتداد غير معروف!',
-    'en': 'Unknown extension!',
-    'fa': 'بارگذاری تصاویر موجود در انبار',
-    'ga': 'Iarmhír neamhaithnid!',
-    'fr': 'Extension inconnue',
-    'hu': 'Ismeretlen kiterjesztésű fájl',
-    'it': 'File non specificato',
-    'ko': '잘못된 파일 형식',
-    'ta': 'இனங்காணப்படாத கோப்பு நீட்சி!',
-    'ur': 'نامعلوم توسیع!',
-    'zh': '您上載的檔案格式可能有誤',
-}
-
-# Text that will be add if the bot find a unknown extension.
-delete_immediately_notification = {
-    'ar': 'الملف %(file)s يبدو أن امتداده خاطيء, من فضلك تحقق.',
-    'en': 'The %(file)s file seems to have a wrong extension, please check.',
-    'fa': 'به نظر می‌آید تصویر %(file)s'
-          'مسیر نادرستی داشته باشد لطفا بررسی کنید.',
-    'ga': "Tá iarmhír mícheart ar an comhad %(file)s, scrúdaigh le d'thoil.",
-    'fr': 'Le fichier %(file)s semble avoir une mauvaise extension, '
-          'veuillez vérifier.',
-    'hu': 'A %(file)s fájlnak rossz a kiterjesztése, kérlek ellenőrízd.',
-    'it': 'A quanto ci risulta, %(file)s sembra non essere un file utile '
-          "all'enciclopedia. Se così non fosse, e' consigliato che tu scriva "
-          "al mio programmatore. Grazie per l'attenzione. "
-          '<u>Questo è un messaggio automatico di</u>',
-    'ko': '%(file)s의 파일 형식이 잘못되었습니다. 확인 바랍니다.',
-    'ta': '%(file)s இனங்காணப்படாத கோப்பு நீட்சியை கொண்டுள்ளது தயவு '
-          'செய்து ஒரு முறை சரி பார்க்கவும்',
-    'ur': 'ملف %(file)s کی توسیع شاید درست نہیں ہے، براہ کرم جانچ لیں۔',
-    'zh': '您好，你上傳的%(file)s無法被識別，請檢查您的檔案，謝謝。',
-}
-
-# Summary of the delete immediately.
-# (e.g: Adding {{db-meta|The file has .%s as extension.}})
-msg_del_comm = {
-    'ar': 'بوت: إضافة %(adding)s',
-    'en': 'Bot: Adding %(adding)s',
-    'fa': 'ربات: اضافه کردن %(adding)s',
-    'ga': 'Róbó: Cuir %(adding)s leis',
-    'fr': 'Robot : Ajouté %(adding)s',
-    'hr': 'Bot: Dodato %(adding)s',
-    'hu': 'Robot:"%(adding)s" hozzáadása',
-    'it': 'Bot: Aggiungo %(adding)s',
-    'ja': 'ロボットによる: 追加 %(adding)s',
-    'ko': '로봇 : %(adding)s 추가',
-    'ta': 'Bot: Adding %(adding)s',
-    'ur': 'روبالہ: اضافہ %(adding)s',
-    'zh': '機器人: 正在新增 %(adding)s',
-}
-
-# This is the most important header, because it will be used a lot. That's the
-# header that the bot will add if the image hasn't the license.
-nothing_head = {
-    'ar': 'صورة بدون ترخيص',
-    'de': 'Bild ohne Lizenz',
-    'en': 'Image without license',
-    'fa': 'تصویر بدون اجازہ',
-    'ga': 'Comhad gan ceadúnas',
-    'fr': 'Fichier sans licence',
-    'hu': 'Licenc nélküli kép',
-    'it': 'File senza licenza',
-    'ur': 'تصویر بدون اجازہ',
-}
 # That's the text that the bot will add if it doesn't find the license.
 # Note: every __botnick__ will be repleaced with your bot's nickname
 # (feel free not to use if you don't need it)
@@ -287,6 +226,7 @@ nothing_notification = {
           '%s|~~~}} --~~~~',
     'ja': '\n{{subst:Image copyright|File:%s}}--~~~~',
     'ko': '\n{{subst:User:Kwjbot IV/untagged|%s}} --~~~~',
+    'sr': '\n{{subst:Обавештење о датотеци без лиценце|%s}} --~~~~',
     'ta': '\n{{subst:Di-no license-notice|படிமம்:%s}} ~~~~',
     'ur': '{{subst:ماخذ تصویر|File:%s}}--~~~~',
     'zh': '\n{{subst:Uploadvionotice|File:%s}} ~~~~',
@@ -305,6 +245,7 @@ bot_list = {
     'it': ['Filbot', 'Nikbot', '.snoopyBot.'],
     'ja': ['Alexbot'],
     'ko': ['Kwjbot IV'],
+    'sr': ['ZoranBot'],
     'ta': ['TrengarasuBOT'],
     'ur': ['Shuaib-bot', 'Tahir-bot', 'SAMI.bot'],
     'zh': ['Alexbot'],
@@ -327,6 +268,7 @@ second_message_without_license = {
 page_with_settings = {
     'commons': 'User:Filbot/Settings',
     'it': 'Progetto:Coordinamento/Immagini/Bot/Settings#Settings',
+    'sr': 'User:ZoranBot/checkimages.py/подешавања',
     'zh': 'User:Alexbot/cisettings#Settings',
 }
 
@@ -335,6 +277,7 @@ page_with_settings = {
 report_page = {
     'commons': 'User:Filbot/Report',
     'meta': 'User:MABot/Report',
+    'test': 'User:Pywikibot-test/Report',
     'de': 'Benutzer:Xqbot/Report',
     'en': 'User:Filnik/Report',
     'fa': 'کاربر:Amirobot/گزارش تصویر',
@@ -343,26 +286,10 @@ report_page = {
     'it': 'Progetto:Coordinamento/Immagini/Bot/Report',
     'ja': 'User:Alexbot/report',
     'ko': 'User:Kwjbot IV/Report',
+    'sr': 'User:ZoranBot/checkimages.py/дневник',
     'ta': 'User:Trengarasu/commonsimages',
     'ur': 'صارف:محمد شعیب/درخواست تصویر',
     'zh': 'User:Alexsh/checkimagereport',
-}
-
-# The summary of the report
-msg_comm10 = {
-    'ar': 'بوت: تحديث السجل',
-    'de': 'Bot: schreibe Log',
-    'en': 'Bot: Updating the log',
-    'fa': 'ربات: به‌روزرسانی سیاهه',
-    'fr': 'Robot: Mise à jour du journal',
-    'ga': 'Róbó: Log a thabhairt suas chun dáta',
-    'hu': 'Robot: A napló frissítése',
-    'it': 'Bot: Aggiorno il log',
-    'ja': 'ロボットによる:更新',
-    'ko': '로봇:로그 업데이트',
-    'ta': 'தானியங்கி:பட்டியலை இற்றைப்படுத்தல்',
-    'ur': 'روبالہ: تجدید نوشتہ',
-    'zh': '機器人:更新記錄',
 }
 
 # If a template isn't a license but it's included on a lot of images, that can
@@ -378,6 +305,7 @@ HiddenTemplate = {
     # Put the other in the page on the project defined below
     'commons': ['Template:Information'],
     'meta': ['Template:Information'],
+    'test': ['Template:Information'],
     'ar': ['Template:معلومات'],
     'de': ['Template:Information'],
     'en': ['Template:Information'],
@@ -391,6 +319,7 @@ HiddenTemplate = {
            'Template:Permissionotrs'],
     'ja': ['Template:Information'],
     'ko': ['Template:그림 정보'],
+    'sr': ['Шаблон:Информација', 'Шаблон:Non-free use rationale 2'],
     'ta': ['Template:Information'],
     'ur': ['Template:معلومات'],
     'zh': ['Template:Information'],
@@ -401,6 +330,7 @@ PageWithHiddenTemplates = {
     'commons': 'User:Filbot/White_templates#White_templates',
     'it': 'Progetto:Coordinamento/Immagini/Bot/WhiteTemplates',
     'ko': 'User:Kwjbot_IV/whitetemplates/list',
+    'sr': 'User:ZoranBot/checkimages.py/дозвољенишаблони',
 }
 
 # A page where there's a list of template to consider as licenses.
@@ -409,6 +339,7 @@ PageWithAllowedTemplates = {
     'de': 'Benutzer:Xqbot/Lizenzvorlagen',
     'it': 'Progetto:Coordinamento/Immagini/Bot/AllowedTemplates',
     'ko': 'User:Kwjbot_IV/AllowedTemplates',
+    'sr': 'User:ZoranBot/checkimages.py/дозвољенишаблони',
 }
 
 # Template added when the bot finds only an hidden template and nothing else.
@@ -437,13 +368,7 @@ duplicatesText = {
     'de': '{{NowCommons}}',
     'it': '\n{{Progetto:Coordinamento/Immagini/Bot/Template duplicati|'
           '__images__}}',
-}
-
-# Head of the message given to the author
-duplicate_user_talk_head = {
-    'de': 'Datei-Duplikat',
-    'en': 'Duplicate file',
-    'it': 'File doppio',
+    'sr': '{{NowCommons|__image__}}',
 }
 
 # Message to put in the talk
@@ -452,30 +377,14 @@ duplicates_user_talk_text = {
           '%s|%s|~~~}} --~~~~',
 }
 
-# Comment used by the bot while it reports the problem in the uploader's talk
-duplicates_comment_talk = {
-    'ar': 'بوت: ملف مكرر تم العثور عليه',
-    'en': 'Bot: Notify that the file already exists on Commons',
-    'fa': 'ربات: تصویر تکراری یافت شد',
-    'it': 'Bot: Notifico il file doppio trovato',
-}
-
-# Comment used by the bot while it reports the problem in the image
-duplicates_comment_image = {
-    'de': 'Bot: Datei liegt auf Commons',
-    'en': 'Bot: File already on Commons, may be deleted',
-    'ar': 'بوت: وسم ملف مكرر',
-    'fa': 'ربات: برچسب زدن بر تصویر تکراری',
-    'it': 'Bot: File doppio, da cancellare',
-}
-
-# Regex to detect the template put in the image's decription to find the dupe
+# Regex to detect the template put in the image's description to find the dupe
 duplicatesRegex = {
     'commons': r'\{\{(?:[Tt]emplate:|)(?:[Dd]up(?:licat|)e|[Bb]ad[ _][Nn]ame)'
                r'[|}]',
     'de': r'\{\{[nN](?:C|ow(?: c|[cC])ommons)[\|\}',
     'it': r'\{\{(?:[Tt]emplate:|)[Pp]rogetto:[Cc]oordinamento/Immagini/Bot/'
           r'Template duplicati[|}]',
+    'sr': r'\{\{[nN](?:C|ow(?: c|[cC])ommons)[\|\}',
 }
 
 # Category with the licenses and / or with subcategories with the other
@@ -483,6 +392,7 @@ duplicatesRegex = {
 category_with_licenses = {
     'commons': 'Category:License tags',
     'meta': 'Category:License templates',
+    'test': 'Category:CC license tags',
     'ar': 'تصنيف:قوالب حقوق الصور',
     'de': 'Kategorie:Vorlage:Lizenz für Bilder',
     'en': 'Category:Wikipedia file copyright templates',
@@ -491,6 +401,7 @@ category_with_licenses = {
     'it': 'Categoria:Template Licenze copyright',
     'ja': 'Category:画像の著作権表示テンプレート',
     'ko': '분류:위키백과 그림 저작권 틀',
+    'sr': 'Категорија:Шаблони за слике',
     'ta': 'Category:காப்புரிமை வார்ப்புருக்கள்',
     'ur': 'زمرہ:ویکیپیڈیا سانچہ جات حقوق تصاویر',
     'zh': 'Category:版權申告模板',
@@ -524,7 +435,7 @@ serviceTemplates = {
 
 # Add your project (in alphabetical order) if you want that the bot starts
 project_inserted = ['ar', 'commons', 'de', 'en', 'fa', 'ga', 'hu', 'it', 'ja',
-                    'ko', 'meta', 'ta', 'ur', 'zh']
+                    'ko', 'meta', 'sr', 'ta', 'test', 'ur', 'zh']
 
 # END OF CONFIGURATION.
 
@@ -563,10 +474,21 @@ class checkImagesBot(object):
         self.logFullError = logFullError
         self.logFulNumber = logFulNumber
         self.rep_page = i18n.translate(self.site, report_page)
+        if not self.rep_page:
+            raise i18n.TranslationError(
+                'No report page provided in "report_page" dict '
+                'for your project!')
         self.image_namespace = site.namespaces.FILE.custom_name + ':'
         self.list_entry = '\n* [[:{0}%s]] '.format(self.image_namespace)
-        self.com = i18n.translate(self.site, msg_comm10, fallback=True)
+
+        # The summary of the report
+        self.com = i18n.twtranslate(self.site, 'checkimages-log-comment')
+
         hiddentemplatesRaw = i18n.translate(self.site, HiddenTemplate)
+        if not hiddentemplatesRaw:
+            raise i18n.TranslationError(
+                'No non-license templates provided in "HiddenTemplate" dict '
+                'for your project!')
         self.hiddentemplates = {
             pywikibot.Page(self.site, tmp, ns=self.site.namespaces.TEMPLATE)
             for tmp in hiddentemplatesRaw}
@@ -606,6 +528,10 @@ class checkImagesBot(object):
         """Function to make the reports easier."""
         self.image_to_report = image_to_report
         self.newtext = newtext
+        if not newtext:
+            raise i18n.TranslationError(
+                'No no-license template provided in "n_txt" dict '
+                'for your project!')
         self.head = head or ''
         self.notification = notification
         self.notification2 = notification2
@@ -635,7 +561,7 @@ class checkImagesBot(object):
                 except Exception:
                     pywikibot.exception()
                     pywikibot.output(
-                        'Another error... skipping the user..')
+                        'Another error... skipping the user...')
 
     def uploadBotChangeFunction(self, reportPageText, upBotArray):
         """Detect the user that has uploaded the file through upload bot."""
@@ -679,8 +605,8 @@ class checkImagesBot(object):
                 nick = reportPageObject.latest_file_info.user
         except pywikibot.PageRelatedError:
             pywikibot.output(
-                'Seems that %s has only the description and not the file...'
-                % self.image_to_report)
+                'Seems that {} has only the description and not the file...'
+                .format(self.image_to_report))
             repme = self.list_entry + "problems '''with the APIs'''"
             self.report_image(self.image_to_report, self.rep_page, self.com,
                               repme)
@@ -716,8 +642,8 @@ class checkImagesBot(object):
             history = self.talk_page.getLatestEditors(limit=10)
             latest_user = history[0]['user']
             pywikibot.output(
-                'The latest user that has written something is: %s'
-                % latest_user)
+                'The latest user that has written something is: '
+                + latest_user)
             if latest_user in self.bots:
                 second_text = True
                 # A block to prevent the second message if the bot also
@@ -749,8 +675,8 @@ class checkImagesBot(object):
                                                      self.notification)
 
         # Check maximum number of notifications for this talk page
-        if (self.num_notify is not None and
-                self.num_notify[self.talk_page.title()] == 0):
+        if (self.num_notify is not None
+                and self.num_notify[self.talk_page.title()] == 0):
             pywikibot.output('Maximum notifications reached, skip.')
             return
 
@@ -769,8 +695,8 @@ class checkImagesBot(object):
             except (pywikibot.NoPage, pywikibot.IsRedirectPage):
                 return
             if self.sendemailActive:
-                text_to_send = re.sub(r'__user-nickname__', r'%s'
-                                      % self.luser, emailText)
+                text_to_send = re.sub(r'__user-nickname__', r'{}'
+                                      .format(self.luser), emailText)
                 emailClass = pywikibot.User(self.site, self.luser)
                 try:
                     emailClass.send_email(emailSubj, text_to_send)
@@ -780,7 +706,7 @@ class checkImagesBot(object):
 
     def regexGenerator(self, regexp, textrun):
         """Find page to yield using regex to parse text."""
-        regex = re.compile(r'%s' % regexp, re.UNICODE | re.DOTALL)
+        regex = re.compile(r'{}'.format(regexp), re.UNICODE | re.DOTALL)
         results = regex.findall(textrun)
         for image in results:
             yield pywikibot.FilePage(self.site, image)
@@ -831,8 +757,8 @@ class checkImagesBot(object):
 
     def checkImageOnCommons(self):
         """Checking if the file is on commons."""
-        pywikibot.output('Checking if [[%s]] is on commons...'
-                         % self.imageName)
+        pywikibot.output('Checking if [[{}]] is on commons...'
+                         .format(self.imageName))
         try:
             hash_found = self.image.latest_file_info.sha1
         except pywikibot.NoPage:
@@ -849,8 +775,8 @@ class checkImagesBot(object):
                     if pywikibot.Page(self.site,
                                       template) in templatesInTheImage:
                         pywikibot.output(
-                            "%s is on commons but it's a service image."
-                            % self.imageName)
+                            "{} is on commons but it's a service image."
+                            .format(self.imageName))
                         return True  # continue with the check-part
 
             pywikibot.output(self.imageName + ' is on commons!')
@@ -865,20 +791,20 @@ class checkImagesBot(object):
             if re.findall(r'\bstemma\b', self.imageName.lower()) and \
                self.site.code == 'it':
                 pywikibot.output(
-                    '%s has "stemma" inside, means that it\'s ok.'
-                    % self.imageName)
+                    "{} has 'stemma' inside, means that it's ok."
+                    .format(self.imageName))
                 return True
 
             # It's not only on commons but the image needs a check
             # the second usually is a url or something like that.
             # Compare the two in equal way, both url.
-            repme = ((self.list_entry +
-                      "is also on '''Commons''': [[commons:File:%s]]")
+            repme = ((self.list_entry
+                      + "is also on '''Commons''': [[commons:File:%s]]")
                      % (self.imageName,
                         commons_image_with_this_hash.title(
                             with_ns=False)))
-            if (self.image.title(as_url=True) ==
-                    commons_image_with_this_hash.title(as_url=True)):
+            if (self.image.title(as_url=True)
+                    == commons_image_with_this_hash.title(as_url=True)):
                 repme += ' (same name)'
             self.report_image(self.imageName, self.rep_page, self.com, repme,
                               addings=False)
@@ -888,13 +814,17 @@ class checkImagesBot(object):
         """Function to check the duplicated files."""
         dupText = i18n.translate(self.site, duplicatesText)
         dupRegex = i18n.translate(self.site, duplicatesRegex)
-        dupTalkHead = i18n.translate(self.site, duplicate_user_talk_head,
-                                     fallback=True)
         dupTalkText = i18n.translate(self.site, duplicates_user_talk_text)
-        dupComment_talk = i18n.translate(self.site, duplicates_comment_talk,
-                                         fallback=True)
-        dupComment_image = i18n.translate(self.site, duplicates_comment_image,
-                                          fallback=True)
+
+        # Head of the message given to the author
+        dupTalkHead = i18n.twtranslate(self.site, 'checkimages-doubles-head')
+        # Comment while bot reports the problem in the uploader's talk
+        dupComment_talk = i18n.twtranslate(self.site,
+                                           'checkimages-doubles-talk-comment')
+        # Comment used by the bot while it reports the problem in the image
+        dupComment_image = i18n.twtranslate(self.site,
+                                            'checkimages-doubles-file-comment')
+
         imagePage = pywikibot.FilePage(self.site, self.imageName)
         hash_found = imagePage.latest_file_info.sha1
         duplicates = list(self.site.allimages(sha1=hash_found))
@@ -915,8 +845,8 @@ class checkImagesBot(object):
 
                 for dup_page in duplicates:
                     if (dup_page.title(as_url=True) != self.image.title(
-                        as_url=True) or
-                            self.timestamp is None):
+                        as_url=True)
+                            or self.timestamp is None):
                         try:
                             self.timestamp = (
                                 dup_page.latest_file_info.timestamp)
@@ -941,11 +871,11 @@ class checkImagesBot(object):
                     except pywikibot.NoPage:
                         continue
 
-                    if not (re.findall(dupRegex, DupPageText) or
-                            re.findall(dupRegex, older_page_text)):
+                    if not (re.findall(dupRegex, DupPageText)
+                            or re.findall(dupRegex, older_page_text)):
                         pywikibot.output(
-                            '%s is a duplicate and has to be tagged...'
-                            % dup_page)
+                            '{} is a duplicate and has to be tagged...'
+                            .format(dup_page))
                         images_to_tag_list.append(dup_page.title())
                         string += '* {0}\n'.format(
                             dup_page.title(as_link=True, textlink=True))
@@ -1019,18 +949,17 @@ class checkImagesBot(object):
                               "('''forced mode'''):")
                              % self.image.title(as_url=True))
                 else:
-                    repme = ((self.list_entry + 'has the following duplicates:')
-                             % self.image.title(as_url=True))
+                    repme = (
+                        (self.list_entry + 'has the following duplicates:')
+                        % self.image.title(as_url=True))
 
                 for dup_page in duplicates:
-                    if (
-                        dup_page.title(as_url=True) ==
-                        self.image.title(as_url=True)
-                    ):
+                    if (dup_page.title(as_url=True)
+                            == self.image.title(as_url=True)):
                         # the image itself, not report also this as duplicate
                         continue
-                    repme += '\n** [[:%s%s]]' % (self.image_namespace,
-                                                 dup_page.title(as_url=True))
+                    repme += '\n** [[:{}{}]]'.format(
+                        self.image_namespace, dup_page.title(as_url=True))
 
                 result = self.report_image(self.imageName, self.rep_page,
                                            self.com, repme, addings=False)
@@ -1071,8 +1000,8 @@ class checkImagesBot(object):
         reported = True
         # Skip if the message is already there.
         if short_text in text_get:
-            pywikibot.output('%s is already in the report page.'
-                             % image_to_report)
+            pywikibot.output('{} is already in the report page.'
+                             .format(image_to_report))
             reported = False
         elif len(text_get) >= self.logFulNumber:
             if self.logFullError:
@@ -1122,7 +1051,7 @@ class checkImagesBot(object):
 
                     if not self.settingsData:
                         pywikibot.output(
-                            "Yo've set wrongly your settings, please take a "
+                            "You've set wrongly your settings, please take a "
                             'look to the relative page. (run without them)')
                         self.settingsData = None
                 except pywikibot.NoPage:
@@ -1147,9 +1076,9 @@ class checkImagesBot(object):
         """Load the list of the licenses."""
         catName = i18n.translate(self.site, category_with_licenses)
         if not catName:
-            raise pywikibot.Error(
-                'No licenses allowed provided, add that option to the code to '
-                'make the script working correctly')
+            raise i18n.TranslationError(
+                'No allowed licenses category provided in '
+                '"category_with_licenses" dict for your project!')
         pywikibot.output('\nLoading the allowed licenses...\n')
         cat = pywikibot.Category(self.site, catName)
         list_licenses = list(cat.articles())
@@ -1246,21 +1175,21 @@ class checkImagesBot(object):
                 if not self.licenses_found and licenses_TEST:
                     raise pywikibot.Error(
                         "Invalid or broken templates found in the image's "
-                        'page %s!' % self.image)
+                        'page {}!'.format(self.image))
             self.allLicenses = []
 
             if not self.list_licenses:
-                raise pywikibot.Error(
-                    'No licenses allowed provided, add that option to the '
-                    'code to make the script working correctly')
+                raise i18n.TranslationError(
+                    'No allowed licenses found in "category_with_licenses" '
+                    'category for your project!')
 
             # Found the templates ONLY in the image's description
             for template_selected in templatesInTheImageRaw:
                 tp = pywikibot.Page(self.site, template_selected)
                 for templateReal in self.licenses_found:
-                    if (tp.title(as_url=True, with_ns=False).lower() ==
-                            templateReal.title(as_url=True,
-                                               with_ns=False).lower()):
+                    if (tp.title(as_url=True, with_ns=False).lower()
+                            == templateReal.title(as_url=True,
+                                                  with_ns=False).lower()):
                         if templateReal not in self.allLicenses:
                             self.allLicenses.append(templateReal)
             break
@@ -1289,8 +1218,8 @@ class checkImagesBot(object):
                 pywikibot.output('File already fixed. Skipping.')
             else:
                 pywikibot.output(
-                    "The file's description for %s contains %s..."
-                    % (self.imageName, self.name_used))
+                    "The file's description for {} contains {}..."
+                    .format(self.imageName, self.name_used))
                 if self.mex_used.lower() == 'default':
                     self.mex_used = self.unvertext
                 if self.imagestatus_used:
@@ -1306,14 +1235,14 @@ class checkImagesBot(object):
                 self.some_problem = False
         else:
             if not self.seems_ok and self.license_found:
-                rep_text_license_fake = ((self.list_entry +
-                                          "seems to have a ''fake license'', "
-                                          'license detected: '
-                                          '<nowiki>%s</nowiki>') %
+                rep_text_license_fake = ((self.list_entry
+                                          + "seems to have a ''fake license'',"
+                                          ' license detected:'
+                                          ' <nowiki>%s</nowiki>') %
                                          (self.imageName, self.license_found))
                 printWithTimeZone(
-                    '%s seems to have a fake license: %s, reporting...'
-                    % (self.imageName, self.license_found))
+                    '{} seems to have a fake license: {}, reporting...'
+                    .format(self.imageName, self.license_found))
                 self.report_image(self.imageName,
                                   rep_text=rep_text_license_fake,
                                   addings=False)
@@ -1369,8 +1298,8 @@ class checkImagesBot(object):
         Let the users to fix the image's problem alone in the first x seconds.
         """
         printWithTimeZone(
-            'Skipping the files uploaded less than %s seconds ago..'
-            % wait_time)
+            'Skipping the files uploaded less than {} seconds ago..'
+            .format(wait_time))
         for page in generator:
             image = pywikibot.FilePage(page)
             try:
@@ -1383,16 +1312,21 @@ class checkImagesBot(object):
                 yield image
             else:
                 pywikibot.warning(
-                    'Skipping %s, uploaded %d %s ago..'
-                    % ((image.title(), delta.days, 'days')
-                       if delta.days > 0
-                       else (image.title(), delta.seconds, 'seconds')))
+                    'Skipping {}, uploaded {} {} ago..'
+                    .format(image.title(), delta.days, 'days')
+                    if delta.days > 0
+                    else (image.title(), delta.seconds, 'seconds'))
 
     def isTagged(self):
         """Understand if a file is already tagged or not."""
         # TODO: enhance and use textlib._MultiTemplateMatchBuilder
         # Is the image already tagged? If yes, no need to double-check, skip
-        for i in i18n.translate(self.site, txt_find):
+        no_license = i18n.translate(self.site, txt_find)
+        if not no_license:
+            raise i18n.TranslationError(
+                'No no-license templates provided in "txt_find" dict '
+                'for your project!')
+        for i in no_license:
             # If there are {{ use regex, otherwise no (if there's not the
             # {{ may not be a template and the regex will be wrong)
             if '{{' in i:
@@ -1430,7 +1364,7 @@ class checkImagesBot(object):
             mexCatched = tupla[8]
             for k in find_list:
                 if find_tipe.lower() == 'findonly':
-                    searchResults = re.findall(r'%s' % k.lower(),
+                    searchResults = re.findall(r'{}'.format(k.lower()),
                                                self.imageCheckText.lower())
                     if searchResults:
                         if searchResults[0] == self.imageCheckText.lower():
@@ -1443,7 +1377,7 @@ class checkImagesBot(object):
                             self.mex_used = mexCatched
                             break
                 elif find_tipe.lower() == 'find':
-                    if re.findall(r'%s' % k.lower(),
+                    if re.findall(r'{}'.format(k.lower()),
                                   self.imageCheckText.lower()):
                         self.some_problem = True
                         self.text_used = text
@@ -1480,31 +1414,37 @@ class checkImagesBot(object):
         HiddenTN = i18n.translate(self.site, HiddenTemplateNotification)
         self.unvertext = i18n.translate(self.site, n_txt)
         di = i18n.translate(self.site, delete_immediately)
-        dih = i18n.translate(self.site, delete_immediately_head, fallback=True)
-        din = i18n.translate(self.site, delete_immediately_notification,
-                             fallback=True) + ' ~~~~'
-        nh = i18n.translate(self.site, nothing_head, fallback=True)
+
+        # The header of the Unknown extension's message.
+        dih = i18n.twtranslate(self.site, 'checkimages-unknown-extension-head')
+        # Text that will be add if the bot find a unknown extension.
+        din = i18n.twtranslate(self.site,
+                               'checkimages-unknown-extension-msg') + ' ~~~~'
+        # Header that the bot will add if the image hasn't the license.
+        nh = i18n.twtranslate(self.site, 'checkimages-no-license-head')
+        # Summary of the delete immediately.
+        dels = i18n.twtranslate(self.site, 'checkimages-deletion-comment')
+
         nn = i18n.translate(self.site, nothing_notification)
-        dels = i18n.translate(self.site, msg_del_comm, fallback=True)
         smwl = i18n.translate(self.site, second_message_without_license)
 
         try:
             self.imageCheckText = self.image.get()
         except pywikibot.NoPage:
-            pywikibot.output('Skipping %s because it has been deleted.'
-                             % self.imageName)
+            pywikibot.output('Skipping {} because it has been deleted.'
+                             .format(self.imageName))
             return
         except pywikibot.IsRedirectPage:
-            pywikibot.output("Skipping %s because it's a redirect."
-                             % self.imageName)
+            pywikibot.output("Skipping {} because it's a redirect."
+                             .format(self.imageName))
             return
         # Delete the fields where the templates cannot be loaded
         regex_nowiki = re.compile(r'<nowiki>(.*?)</nowiki>', re.DOTALL)
         regex_pre = re.compile(r'<pre>(.*?)</pre>', re.DOTALL)
         self.imageCheckText = regex_nowiki.sub('', self.imageCheckText)
         self.imageCheckText = regex_pre.sub('', self.imageCheckText)
-        # Deleting the useless template from the description (before adding sth
-        # in the image the original text will be reloaded, don't worry).
+        # Deleting the useless template from the description (before adding
+        # sth in the image the original text will be reloaded, don't worry).
         if self.isTagged():
             printWithTimeZone('{} is already tagged...'.format(self.imageName))
             return
@@ -1551,8 +1491,8 @@ class checkImagesBot(object):
                         smwl)
             return
         else:
-            pywikibot.output('%s has only text and not the specific license...'
-                             % self.imageName)
+            pywikibot.output('{} has only text and not the specific '
+                             'license...'.format(self.imageName))
             if hiddenTemplateFound and HiddenTN:
                 notification = HiddenTN % self.imageName
             elif nn:
@@ -1570,7 +1510,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     # Command line configurable parameters
     repeat = True  # Restart after having check all the images?
@@ -1692,7 +1632,7 @@ def main(*args):
             elif len(arg) > 4:
                 catName = str(arg[5:])
             catSelected = pywikibot.Category(pywikibot.Site(),
-                                             'Category:%s' % catName)
+                                             'Category:{}'.format(catName))
             generator = catSelected.articles(namespaces=[6])
             repeat = False
         elif arg.startswith('-ref'):
@@ -1715,7 +1655,9 @@ def main(*args):
     # en-parameters
     if site.code not in project_inserted:
         pywikibot.output('Your project is not supported by this script.\n'
-                         'You have to edit the script and add it!')
+                         'To allow your project in the script you have to '
+                         'add a localization into the script and add your '
+                         'project to the "project_inserted" list!')
         return False
 
     # Reading the log of the new images if another generator is not given.
@@ -1723,8 +1665,8 @@ def main(*args):
         if limit == 1:
             pywikibot.output('Retrieving the latest file for checking...')
         else:
-            pywikibot.output('Retrieving the latest %d files for checking...'
-                             % limit)
+            pywikibot.output('Retrieving the latest {} files for checking...'
+                             .format(limit))
     while True:
         # Defing the Main Class.
         Bot = checkImagesBot(site, sendemailActive=sendemailActive,

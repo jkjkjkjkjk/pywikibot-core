@@ -12,7 +12,6 @@ Error: Base class, all exceptions should the subclass of this class.
   - InvalidTitle: Invalid page title
   - CaptchaError: Captcha is asked and config.solve_captcha == False
   - Server504Error: Server timed out with HTTP 504 code
-  - PageNotFound: Page not found (deprecated)
   - i18n.TranslationError: i18n/l10n message not available
   - UnknownExtension: Extension is not defined for this site
 
@@ -73,7 +72,7 @@ be aware of its status.
   - tools._NotImplementedWarning: do not use
   - NotImplementedWarning: functionality not implemented
 
-UserWarning: warnings targetted at users
+UserWarning: warnings targeted at users
 
   - config2._ConfigurationDeprecationWarning: user configuration file problems
   - login._PasswordFileWarning: password file problems
@@ -81,11 +80,11 @@ UserWarning: warnings targetted at users
   - FamilyMaintenanceWarning: missing information in family definition
 """
 #
-# (C) Pywikibot team, 2008-2018
+# (C) Pywikibot team, 2008-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from pywikibot.tools import (
     # __ to avoid conflict with ModuleDeprecationWrapper._deprecated
@@ -143,7 +142,7 @@ class PageRelatedError(Error):
 
     # Preformatted UNICODE message where the page title will be inserted
     # Override this in subclasses.
-    # u"Oh noes! Page %s is too funky, we should not delete it ;("
+    # 'Oh noes! Page %s is too funky, we should not delete it ;('
     message = None
 
     def __init__(self, page, message=None):
@@ -178,7 +177,7 @@ class PageSaveRelatedError(PageRelatedError):
 
     """Saving the page has failed."""
 
-    message = u"Page %s was not saved."
+    message = 'Page %s was not saved.'
 
     # This property maintains backwards compatibility with
     # the old PageNotSaved which inherited from Error
@@ -194,7 +193,7 @@ class OtherPageSaveError(PageSaveRelatedError):
 
     """Saving the page has failed due to uncatchable error."""
 
-    message = "Edit to page %(title)s failed:\n%(reason)s"
+    message = 'Edit to page %(title)s failed:\n%(reason)s'
 
     def __init__(self, page, reason):
         """Initializer.
@@ -222,7 +221,7 @@ class NoPage(PageRelatedError):
 
     """Page does not exist."""
 
-    message = u"Page %s doesn't exist."
+    message = "Page %s doesn't exist."
 
     pass
 
@@ -241,7 +240,7 @@ class NoMoveTarget(PageRelatedError):
 
     """Expected move target page not found."""
 
-    message = "Move target page of %s not found."
+    message = 'Move target page of %s not found.'
 
     pass
 
@@ -250,7 +249,7 @@ class PageLoadRelatedError(PageRelatedError):
 
     """Loading the contents of a Page object has failed."""
 
-    message = u"Page %s was not loaded."
+    message = 'Page %s was not loaded.'
 
 
 class InconsistentTitleReceived(PageLoadRelatedError):
@@ -308,7 +307,7 @@ class IsRedirectPage(PageRelatedError):
 
     """Page is a redirect page."""
 
-    message = u"Page %s is a redirect page."
+    message = 'Page %s is a redirect page.'
 
     pass
 
@@ -317,7 +316,7 @@ class IsNotRedirectPage(PageRelatedError):
 
     """Page is not a redirect page."""
 
-    message = u"Page %s is not a redirect page."
+    message = 'Page %s is not a redirect page.'
 
     pass
 
@@ -332,7 +331,7 @@ class CircularRedirect(PageRelatedError):
 
     """
 
-    message = u"Page %s is a circular redirect."
+    message = 'Page %s is a circular redirect.'
 
 
 class InterwikiRedirectPage(PageRelatedError):
@@ -344,9 +343,9 @@ class InterwikiRedirectPage(PageRelatedError):
 
     """
 
-    message = (u"Page redirects to a page on another Site.\n"
-               u"Page: %(page)s\n"
-               u"Target page: %(target_page)s on %(target_site)s.")
+    message = ('Page redirects to a page on another Site.\n'
+               'Page: %(page)s\n'
+               'Target page: %(target_page)s on %(target_site)s.')
 
     def __init__(self, page, target_page):
         """Initializer.
@@ -370,7 +369,7 @@ class LockedPage(PageSaveRelatedError):
 
     """Page is locked."""
 
-    message = u"Page %s is locked."
+    message = 'Page %s is locked.'
 
     pass
 
@@ -379,7 +378,7 @@ class LockedNoPage(LockedPage):
 
     """Title is locked against creation."""
 
-    message = u"Page %s does not exist and is locked preventing creation."
+    message = 'Page %s does not exist and is locked preventing creation.'
 
     pass
 
@@ -388,7 +387,7 @@ class CascadeLockedPage(LockedPage):
 
     """Page is locked due to cascading protection."""
 
-    message = u"Page %s is locked due to cascading protection."
+    message = 'Page %s is locked due to cascading protection.'
 
     pass
 
@@ -407,7 +406,7 @@ class NoCreateError(PageSaveRelatedError):
 
     """Parameter nocreate doesn't allow page creation."""
 
-    message = u"Page %s could not be created due to parameter nocreate"
+    message = 'Page %s could not be created due to parameter nocreate'
 
     pass
 
@@ -416,7 +415,7 @@ class EditConflict(PageSaveRelatedError):
 
     """There has been an edit conflict while uploading the page."""
 
-    message = u"Page %s could not be saved due to an edit conflict"
+    message = 'Page %s could not be saved due to an edit conflict'
 
     pass
 
@@ -425,7 +424,7 @@ class PageDeletedConflict(EditConflict):
 
     """Page was deleted since being retrieved."""
 
-    message = u"Page %s has been deleted since last retrieved."
+    message = 'Page %s has been deleted since last retrieved.'
 
     pass
 
@@ -434,7 +433,7 @@ class PageCreatedConflict(EditConflict):
 
     """Page was created by another user."""
 
-    message = u"Page %s has been created since last retrieved."
+    message = 'Page %s has been created since last retrieved.'
 
     pass
 
@@ -553,7 +552,7 @@ class NotEmailableError(PageRelatedError):
 
     """This user is not emailable."""
 
-    message = "%s is not emailable."
+    message = '%s is not emailable.'
 
     pass
 
@@ -586,7 +585,7 @@ class TimeoutError(Error):
     pass
 
 
-@__deprecated
+@__deprecated(since='20141214')
 class DeprecatedPageNotFoundError(Error):
 
     """Page not found (deprecated)."""
@@ -594,7 +593,7 @@ class DeprecatedPageNotFoundError(Error):
     pass
 
 
-@__deprecated
+@__deprecated(since='20141218')
 class _EmailUserError(UserRightsError, NotEmailableError):
 
     """Email related error."""

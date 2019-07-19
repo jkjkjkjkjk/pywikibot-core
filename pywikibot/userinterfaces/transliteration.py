@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Module to transliterate text."""
 #
-# (C) Pywikibot team, 2006-2018
+# (C) Pywikibot team, 2006-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 _trans = {
     'À': 'A', 'Á': 'A', 'Â': 'A', 'Ầ': 'A', 'Ấ': 'A', 'Ẫ': 'A', 'Ẩ': 'A',
@@ -119,7 +119,7 @@ _trans = {
     'х': 'kh', 'Ц': 'C', 'ц': 'c', 'Ч': 'Ch', 'ч': 'ch', 'Ш': 'Sh', 'ш': 'sh',
     'Щ': 'Shch', 'щ': 'shch', 'Ь': "'", 'ь': "'", 'Ъ': '"', 'ъ': '"',
     'Ю': 'Yu', 'ю': 'yu', 'Я': 'Ya', 'я': 'ya', 'Х': 'Kh', 'Χ': 'Kh',
-    # Additional Cyrillic letters, most occuring in only a few languages
+    # Additional Cyrillic letters, most occurring in only a few languages
     'Ы': 'Y', 'ы': 'y', 'Ё': 'Ë', 'ё': 'ë', 'Э': 'È', 'Ѐ': 'È', 'э': 'è',
     'ѐ': 'è', 'І': 'I', 'і': 'i', 'Ї': 'Ji', 'ї': 'ji', 'Є': 'Je', 'є': 'je',
     'Ґ': 'G', 'Ҝ': 'G', 'ґ': 'g', 'ҝ': 'g', 'Ђ': 'Dj', 'ђ': 'dj', 'Љ': 'Lj',
@@ -1113,7 +1113,7 @@ class transliterator(object):
             trans[char] = value
         self.trans = trans
 
-    def transliterate(self, char, default="?", prev="-", next="-"):
+    def transliterate(self, char, default='?', prev='-', next='-'):
         """
         Transliterate the character.
 
@@ -1141,7 +1141,7 @@ class transliterator(object):
         # Lao
         if char == 'ຫ':
             if next in 'ງຍນຣລຼຼວ':
-                return ""
+                return ''
             else:
                 return 'h'
         return default

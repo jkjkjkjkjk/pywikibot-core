@@ -7,8 +7,6 @@ The changes are not supposed to change the look of the rendered wiki page.
 
 The following parameters are supported:
 
-&params;
-
 -always           Don't prompt you for each replacement. Warning (see below)
                   has not to be confirmed. ATTENTION: Use this with care!
 
@@ -21,6 +19,10 @@ The following parameters are supported:
 -ignore:          Ignores if an error occurred and either skips the page or
                   only that method. It can be set to 'page' or 'method'.
 
+The following generators and filters are supported:
+
+&params;
+
 &warning;
 
 For further information see pywikibot/cosmetic_changes.py
@@ -31,7 +33,7 @@ For further information see pywikibot/cosmetic_changes.py
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 
@@ -59,7 +61,7 @@ class CosmeticChangesBot(MultipleSitesBot, ExistingPageBot, NoRedirectPageBot):
         """Initializer."""
         self.availableOptions.update({
             'async': False,
-            'summary': u'Robot: Cosmetic changes',
+            'summary': 'Robot: Cosmetic changes',
             'ignore': cosmetic_changes.CANCEL_ALL,
         })
         super(CosmeticChangesBot, self).__init__(**kwargs)
@@ -84,7 +86,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     options = {}
 
@@ -134,5 +136,5 @@ def main(*args):
         return False
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

@@ -5,7 +5,7 @@
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from datetime import datetime, timedelta
 
@@ -93,11 +93,13 @@ class TestArchiveBotFunctions(TestCase):
         self.assertEqual(archivebot.str2time('7d'), archivebot.str2time('1w'))
         self.assertEqual(archivebot.str2time('3y'), timedelta(1096))
         self.assertEqual(archivebot.str2time('3y', date), timedelta(1095))
-        self.assertRaises(archivebot.MalformedConfigError, archivebot.str2time, '4000@')
-        self.assertRaises(archivebot.MalformedConfigError, archivebot.str2time, '$1')
+        self.assertRaises(archivebot.MalformedConfigError, archivebot.str2time,
+                          '4000@')
+        self.assertRaises(archivebot.MalformedConfigError, archivebot.str2time,
+                          '$1')
 
     def test_checkstr(self):
-        """Test for extracting key and duration from shorthand notation of durations."""
+        """Test for extracting key and duration from shorthand notation."""
         self.assertEqual(archivebot.checkstr('400s'), ('s', '400'))
         with suppress_warnings('Time period without qualifier', UserWarning):
             self.assertEqual(archivebot.checkstr('3000'), ('s', '3000'))
@@ -143,8 +145,8 @@ class TestArchiveBot(TestCase):
         self.assertIsInstance(talk.threads, list)
         self.assertGreaterEqual(
             len(talk.threads), THREADS[code],
-            u'%d Threads found on %s,\n%d or more expected'
-            % (len(talk.threads), talk, THREADS[code]))
+            '{} Threads found on {},\n{} or more expected'
+            .format(len(talk.threads), talk, THREADS[code]))
 
         for thread in talk.threads:
             self.assertIsInstance(thread, archivebot.DiscussionThread)
@@ -160,7 +162,8 @@ class TestArchiveBot(TestCase):
                 self.assertIsInstance(thread.timestamp, datetime)
             except AssertionError:
                 if thread.code not in self.expected_failures:
-                    pywikibot.output('code %s: %s' % (thread.code, thread.content))
+                    pywikibot.output('code {}: {}'
+                                     .format(thread.code, thread.content))
                 raise
 
     expected_failures = ['ar', 'eo', 'pdc', 'th']
@@ -207,8 +210,9 @@ class TestArchiveBotAfterDateUpdate(TestCase):
         self.assertIsInstance(talk.threads, list)
         self.assertGreaterEqual(
             len(talk.threads), THREADS_WITH_UPDATED_FORMAT[code],
-            u'%d Threads found on %s,\n%d or more expected'
-            % (len(talk.threads), talk, THREADS_WITH_UPDATED_FORMAT[code]))
+            '{} Threads found on {},\n{} or more expected'
+            .format(len(talk.threads), talk,
+                    THREADS_WITH_UPDATED_FORMAT[code]))
 
         for thread in talk.threads:
             self.assertIsInstance(thread, archivebot.DiscussionThread)
@@ -224,7 +228,8 @@ class TestArchiveBotAfterDateUpdate(TestCase):
                 self.assertIsInstance(thread.timestamp, datetime)
             except AssertionError:
                 if thread.code not in self.expected_failures:
-                    pywikibot.output('code %s: %s' % (thread.code, thread.content))
+                    pywikibot.output('code {}: {}'
+                                     .format(thread.code, thread.content))
                 raise
 
     expected_failures = []
@@ -241,7 +246,7 @@ class TestDiscussionPageObject(TestCase):
     def testTwoThreadsWithCommentedOutThread(self):
         """Test recognizing two threads and ignoring a commented out thread.
 
-        Talk:For-pywikibot-archivebot must have:
+        Talk:For-pywikibot-archivebot must have::
 
          {{User:MiszaBot/config
          |archive = Talk:Main_Page/archive
@@ -257,9 +262,40 @@ class TestDiscussionPageObject(TestCase):
          == B ==
          foo bar bar bar
         """
-        page = pywikibot.Page(self.get_site(), 'Talk:For-pywikibot-archivebot')
+        site = self.get_site()
+        page = pywikibot.Page(site, 'Talk:For-pywikibot-archivebot')
+        tmpl = pywikibot.Page(site, 'User:MiszaBot/config')
         archiver = archivebot.PageArchiver(
-            page=page, tpl='User:MiszaBot/config', salt='', force=False)
+            page=page, template=tmpl, salt='', force=False)
+        page = archivebot.DiscussionPage(page, archiver)
+        page.load_page()
+        self.assertEqual([x.title for x in page.threads], ['A', 'B'])
+
+    def testThreadsWithSubsections(self):
+        """Test recognizing threads with subsections.
+
+        Talk:For-pywikibot-archivebot/subsections must have::
+
+         {{User:MiszaBot/config
+         |archive = Talk:Main_Page/archive
+         |algo = old(30d)
+         }}
+         = Front matter =
+         placeholder
+         == A ==
+         foo bar
+         === A1 ===
+         foo bar bar
+         ==== A11 ====
+         foo
+         == B ==
+         foo bar bar bar
+        """
+        site = self.get_site()
+        page = pywikibot.Page(site, 'Talk:For-pywikibot-archivebot/testcase2')
+        tmpl = pywikibot.Page(site, 'User:MiszaBot/config')
+        archiver = archivebot.PageArchiver(
+            page=page, template=tmpl, salt='', force=False)
         page = archivebot.DiscussionPage(page, archiver)
         page.load_page()
         self.assertEqual([x.title for x in page.threads], ['A', 'B'])

@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 """Test tools.chars package."""
 #
-# (C) Pywikibot team, 2015
+# (C) Pywikibot team, 2015-2018
 #
 # Distributed under the terms of the MIT license.
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import unicodedata
 
@@ -24,8 +24,10 @@ class CharsTestCase(TestCase):
 
     def test_replace(self):
         """Test replace_invisible."""
-        self.assertEqual(chars.replace_invisible('Hello world!'), 'Hello world!')
-        self.assertEqual(chars.replace_invisible('\u200eRTL\u200f'), '<200e>RTL<200f>')
+        self.assertEqual(
+            chars.replace_invisible('Hello world!'), 'Hello world!')
+        self.assertEqual(
+            chars.replace_invisible('\u200eRTL\u200f'), '<200e>RTL<200f>')
 
     def test_contains(self):
         """Test contains_invisible."""

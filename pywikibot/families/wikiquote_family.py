@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Family module for Wikiquote."""
 #
-# (C) Pywikibot team, 2005-2018
+# (C) Pywikibot team, 2005-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from pywikibot import family
 
@@ -18,24 +18,24 @@ class Family(family.SubdomainFamily, family.WikimediaFamily):
     name = 'wikiquote'
 
     closed_wikis = [
-        # See https://noc.wikimedia.org/conf/highlight.php?file=closed.dblist
+        # See https://noc.wikimedia.org/conf/highlight.php?file=dblists/closed.dblist  # noqa
         'als', 'am', 'ang', 'ast', 'bm', 'co', 'cr', 'ga', 'kk',
         'kr', 'ks', 'kw', 'lb', 'na', 'nds', 'qu', 'simple',
         'tk', 'tt', 'ug', 'vo', 'za', 'zh-min-nan',
     ]
 
     removed_wikis = [
-        # See https://noc.wikimedia.org/conf/highlight.php?file=deleted.dblist
+        # See https://noc.wikimedia.org/conf/highlight.php?file=dblists/deleted.dblist  # noqa
         'tokipona',
     ]
 
     languages_by_size = [
-        'en', 'it', 'pl', 'ru', 'cs', 'fa', 'de', 'pt', 'es', 'uk', 'sk', 'fr',
-        'bs', 'he', 'fi', 'tr', 'ca', 'lt', 'th', 'bg', 'sl', 'eo', 'hy', 'el',
-        'hr', 'zh', 'nn', 'id', 'ar', 'az', 'su', 'hu', 'li', 'ko', 'nl', 'ja',
-        'gu', 'sr', 'sv', 'gl', 'ur', 'la', 'te', 'ta', 'cy', 'et', 'no', 'ml',
-        'vi', 'be', 'kn', 'ku', 'eu', 'ro', 'hi', 'ka', 'da', 'sa', 'is', 'sq',
-        'sah', 'mr', 'br', 'af', 'uz', 'wo', 'ky',
+        'en', 'it', 'pl', 'ru', 'cs', 'fa', 'de', 'pt', 'es', 'uk', 'fr', 'sk',
+        'bs', 'he', 'ca', 'fi', 'tr', 'th', 'sl', 'lt', 'az', 'bg', 'zh', 'eo',
+        'hy', 'hr', 'el', 'su', 'nn', 'id', 'ar', 'sv', 'hu', 'li', 'ko', 'nl',
+        'et', 'ja', 'la', 'sr', 'gu', 'sah', 'gl', 'ta', 'ur', 'te', 'cy',
+        'be', 'no', 'ml', 'kn', 'ro', 'ku', 'eu', 'vi', 'hi', 'ka', 'da', 'sa',
+        'is', 'sq', 'br', 'mr', 'af', 'uz', 'wo', 'ky',
     ]
 
     category_redirect_templates = {
@@ -79,4 +79,4 @@ class Family(family.SubdomainFamily, family.WikimediaFamily):
             return 'utf-8', 'iso8859-2'
         if code == 'ru':
             return 'utf-8', 'iso8859-5'
-        return self.code2encoding(code),
+        return (self.code2encoding(code), )

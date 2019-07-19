@@ -7,9 +7,7 @@
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
-
-import re
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 from pywikibot import date
@@ -47,11 +45,8 @@ def translate(page=None, hints=(), auto=True, removebrackets=False,
             # we're currently working on ...
             if page is None:
                 continue
-            newname = page.title(with_ns=False)
-            # ... unless we do want brackets
-            if removebrackets:
-                newname = re.sub(re.compile(r'\W*?\(.*?\)\W*?',
-                                            re.UNICODE), ' ', newname)
+            newname = page.title(with_ns=False,
+                                 without_brackets=removebrackets)
         if codes.isdigit():
             codes = site.family.languages_by_size[:int(codes)]
         elif codes == 'all':
@@ -81,7 +76,7 @@ def translate(page=None, hints=(), auto=True, removebrackets=False,
         dict_name, value = date.getAutoFormat(sitelang, page.title())
         if dict_name:
             pywikibot.output(
-                u'TitleTranslate: %s was recognized as %s with value %d'
+                'TitleTranslate: %s was recognized as %s with value %d'
                 % (page.title(), dict_name, value))
             for entry_lang, entry in date.formats[dict_name].items():
                 if entry_lang not in site.languages():

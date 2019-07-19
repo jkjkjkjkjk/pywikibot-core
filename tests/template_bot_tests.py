@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Test template bot module."""
 #
-# (C) Pywikibot team, 2015-2016
+# (C) Pywikibot team, 2015-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 
@@ -35,7 +35,7 @@ class TestXMLPageGenerator(TestCase):
             site=self.site,
             text_predicate=predicate)
         pages = list(gen)
-        self.assertEqual(len(pages), 0)
+        self.assertIsEmpty(pages)
 
     def test_match(self):
         """Test pages with one match without parameters."""
@@ -47,9 +47,8 @@ class TestXMLPageGenerator(TestCase):
             site=self.site,
             text_predicate=predicate)
         pages = list(gen)
-        self.assertEqual(len(pages), 1)
-        self.assertPagelistTitles(pages, ['Pear'],
-                                  site=self.site)
+        self.assertLength(pages, 1)
+        self.assertPageTitlesEqual(pages, ['Pear'], site=self.site)
 
     def test_match_with_params(self):
         """Test pages with one match with parameters."""
@@ -61,9 +60,8 @@ class TestXMLPageGenerator(TestCase):
             site=self.site,
             text_predicate=predicate)
         pages = list(gen)
-        self.assertEqual(len(pages), 1)
-        self.assertPagelistTitles(pages, ['Pear'],
-                                  site=self.site)
+        self.assertLength(pages, 1)
+        self.assertPageTitlesEqual(pages, ['Pear'], site=self.site)
 
     def test_match_any(self):
         """Test pages with one of many matches."""
@@ -77,9 +75,8 @@ class TestXMLPageGenerator(TestCase):
             site=self.site,
             text_predicate=predicate)
         pages = list(gen)
-        self.assertEqual(len(pages), 1)
-        self.assertPagelistTitles(pages, ['Pear'],
-                                  site=self.site)
+        self.assertLength(pages, 1)
+        self.assertPageTitlesEqual(pages, ['Pear'], site=self.site)
 
         # reorder templates
         predicate = builder.search_any_predicate([template2, template1])
@@ -88,9 +85,8 @@ class TestXMLPageGenerator(TestCase):
             site=self.site,
             text_predicate=predicate)
         pages = list(gen)
-        self.assertEqual(len(pages), 1)
-        self.assertPagelistTitles(pages, ['Pear'],
-                                  site=self.site)
+        self.assertLength(pages, 1)
+        self.assertPageTitlesEqual(pages, ['Pear'], site=self.site)
 
     def test_match_msg(self):
         """Test pages with {{msg:..}}."""
@@ -103,9 +99,9 @@ class TestXMLPageGenerator(TestCase):
             site=self.site,
             text_predicate=predicate)
         pages = list(gen)
-        self.assertEqual(len(pages), 1)
-        self.assertPagelistTitles(pages, ['Fake page with msg'],
-                                  site=self.site)
+        self.assertLength(pages, 1)
+        self.assertPageTitlesEqual(pages, ['Fake page with msg'],
+                                   site=self.site)
 
     def test_match_unnecessary_template_prefix(self):
         """Test pages with {{template:..}}."""
@@ -118,8 +114,8 @@ class TestXMLPageGenerator(TestCase):
             site=self.site,
             text_predicate=predicate)
         pages = list(gen)
-        self.assertEqual(len(pages), 1)
-        self.assertPagelistTitles(
+        self.assertLength(pages, 1)
+        self.assertPageTitlesEqual(
             pages, ['Fake page with unnecessary template prefix'],
             site=self.site)
 
@@ -133,8 +129,8 @@ class TestXMLPageGenerator(TestCase):
             site=self.site,
             text_predicate=predicate)
         pages = list(gen)
-        self.assertEqual(len(pages), 1)
-        self.assertPagelistTitles(
+        self.assertLength(pages, 1)
+        self.assertPageTitlesEqual(
             pages, ['Fake page with nested template'],
             site=self.site)
 

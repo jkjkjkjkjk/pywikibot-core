@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Tests for the family module."""
 #
-# (C) Pywikibot team, 2014-2018
+# (C) Pywikibot team, 2014-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot.site
 
@@ -30,7 +30,8 @@ class TestFamily(TestCase):
     FAMILY_TYPEERROR_RE = (
         'Family.obsolete not updatable; '
         'use Family.interwiki_removals and Family.interwiki_replacements')
-    FROZENSET_TYPEERROR_RE = '\'frozenset\' object does not support item assignment'
+    FROZENSET_TYPEERROR_RE = ("'frozenset' object does not support item "
+                              'assignment')
     net = False
 
     def test_family_load_valid(self):
@@ -51,10 +52,6 @@ class TestFamily(TestCase):
             self.assertEqual(f.name, name)
             self.assertIsInstance(f.languages_by_size, list)
             self.assertGreaterEqual(set(f.langs), set(f.languages_by_size))
-            if len(f.langs) > 2 and f.name not in {
-                'wikimediachapter', 'vikidia', 'wikidata',
-            }:
-                self.assertNotEqual(f.languages_by_size, [])
             if isinstance(f, SingleSiteFamily):
                 self.assertIsNotNone(f.code)
                 self.assertIsNotNone(f.domain)
@@ -88,14 +85,14 @@ class TestFamily(TestCase):
         family = Family.load('wikipedia')
         other = 'wikipedia'
         self.assertEqual(family, other)
-        self.assertFalse(family != other)
+        self.assertFalse(family != other)  # noqa: H204
 
     def test_ne_family_with_string_repr_different_family(self):
         """Test that Family and string with different name are not equal."""
         family = Family.load('wikipedia')
         other = 'wikisource'
         self.assertNotEqual(family, other)
-        self.assertFalse(family == other)
+        self.assertFalse(family == other)  # noqa: H204
 
     def test_eq_family_with_string_repr_not_existing_family(self):
         """Test that Family and string with different name are not equal."""
@@ -114,17 +111,15 @@ class TestFamily(TestCase):
         # redirected code (see site tests test_alias_code_site)
         self.assertEqual(family.obsolete['dk'], 'da')
         # closed/locked site (see site tests test_locked_site)
-        self.assertEqual(family.obsolete['mh'], None)
+        self.assertIsNone(family.obsolete['mh'])
         # offline site (see site tests test_removed_site)
-        self.assertEqual(family.obsolete['ru-sib'], None)
+        self.assertIsNone(family.obsolete['ru-sib'])
 
     def test_get_obsolete_test(self):
         """Test WikimediaFamily default obsolete."""
         family = Family.load('test')
         self.assertIn('dk', family.obsolete)
         self.assertIn('dk', family.interwiki_replacements)
-        self.assertEqual(family.obsolete, family.interwiki_replacements)
-        self.assertEqual(family.interwiki_removals, set())
 
     def test_set_obsolete(self):
         """Test obsolete can be set."""
@@ -236,18 +231,20 @@ class TestFamilyUrlRegex(PatchingTestCase):
     def test_each_family(self):
         """Test each family builds a working regex."""
         for family in pywikibot.config.family_files:
-            self.current_family = family
-            family = Family.load(family)
-            for code in family.codes:
-                self.current_code = code
-                url = ('%s://%s%s/$1' % (family.protocol(code),
-                                         family.hostname(code),
-                                         family.path(code)))
-                # Families can switch off if they want to be detected using URL
-                # this applies for test:test (there is test:wikipedia)
-                if family._ignore_from_url or code in family._ignore_from_url:
-                    self.assertIsNone(family.from_url(url))
-                else:
+            with self.subTest(family=family):
+                if family in ('wowwiki', 'lyricwiki'):
+                    self.skipTest(
+                        'Family.from_url() does not work for {} (T215077)'
+                        .format(family))
+                self.current_family = family
+                family = Family.load(family)
+                for code in family.codes:
+                    self.current_code = code
+                    url = ('{}://{}{}/$1'.format(family.protocol(code),
+                                                 family.hostname(code),
+                                                 family.path(code)))
+                    # Families can switch off if they want to be detected using
+                    # URL. This applies for test:test (there is test:wikipedia)
                     self.assertEqual(family.from_url(url), code)
 
 
@@ -275,7 +272,8 @@ class TestOldFamilyMethod(DeprecationTestCase):
         self.assertEqual(f.name, 'i18n')
         self.assertDeprecationParts('pywikibot.site.Family',
                                     'pywikibot.family.Family.load')
-        self.assertDeprecationParts('fatal argument of pywikibot.family.Family.load')
+        self.assertDeprecationParts(
+            'fatal argument of pywikibot.family.Family.load')
 
     def test_old_site_family_function_invalid(self):
         """Test that an invalid family raised UnknownFamily exception."""
@@ -295,7 +293,8 @@ class TestOldFamilyMethod(DeprecationTestCase):
             'unknown')
         self.assertDeprecationParts('pywikibot.site.Family',
                                     'pywikibot.family.Family.load')
-        self.assertDeprecationParts('fatal argument of pywikibot.family.Family.load')
+        self.assertDeprecationParts(
+            'fatal argument of pywikibot.family.Family.load')
 
 
 if __name__ == '__main__':  # pragma: no cover

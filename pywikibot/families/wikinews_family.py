@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """Family module for Wikinews."""
 #
-# (C) Pywikibot team, 2005-2018
+# (C) Pywikibot team, 2005-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from pywikibot import family
 
@@ -18,14 +18,14 @@ class Family(family.SubdomainFamily, family.WikimediaFamily):
     name = 'wikinews'
 
     closed_wikis = [
-        # https://noc.wikimedia.org/conf/highlight.php?file=closed.dblist
+        # https://noc.wikimedia.org/conf/highlight.php?file=dblists/closed.dblist  # noqa
         'hu', 'sd', 'th',
     ]
 
     languages_by_size = [
-        'sr', 'en', 'fr', 'ru', 'de', 'pt', 'pl', 'es', 'it', 'zh', 'ar', 'cs',
-        'ca', 'nl', 'el', 'ta', 'sv', 'uk', 'fa', 'ro', 'tr', 'ja', 'sq', 'no',
-        'eo', 'fi', 'bs', 'ko', 'he', 'bg',
+        'sr', 'en', 'fr', 'ru', 'pt', 'de', 'pl', 'es', 'zh', 'it', 'ar', 'cs',
+        'ca', 'nl', 'el', 'ta', 'sv', 'uk', 'fa', 'bg', 'ro', 'fi', 'tr', 'ja',
+        'li', 'sq', 'no', 'eo', 'ko', 'bs', 'he',
     ]
 
     category_redirect_templates = {
@@ -48,5 +48,11 @@ class Family(family.SubdomainFamily, family.WikimediaFamily):
         'uk', 'zh',
     ]
 
-    # TODO:
-    # Change site_tests.py when wikinews will have doc_subpage.
+    # Subpages for documentation.
+    # TODO: List is incomplete, to be completed for missing languages.
+    doc_subpages = {
+        '_default': (('/doc', ),
+                     ['en', ]
+                     ),
+        'it': ('/man', ),
+    }

@@ -6,7 +6,7 @@
 # Distributed under the terms of the MIT license.
 #
 # The new wikivoyage family that is hosted at wikimedia
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from pywikibot import family
 
@@ -18,7 +18,7 @@ class Family(family.SubdomainFamily, family.WikimediaFamily):
     name = 'wikivoyage'
 
     languages_by_size = [
-        'en', 'de', 'fa', 'it', 'fr', 'pl', 'ru', 'nl', 'pt', 'zh', 'es', 'he',
+        'en', 'de', 'fa', 'pl', 'it', 'fr', 'ru', 'zh', 'nl', 'pt', 'es', 'he',
         'fi', 'vi', 'sv', 'el', 'ro', 'uk', 'bn', 'ps', 'hi',
     ]
 

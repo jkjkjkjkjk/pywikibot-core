@@ -5,7 +5,7 @@
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from pywikibot import config
 from pywikibot import family
@@ -17,7 +17,6 @@ class Family(family.WikimediaFamily):
     """Family class for Wikidata."""
 
     name = 'wikidata'
-    test_codes = ('test', 'beta')
 
     langs = {
         'wikidata': 'www.wikidata.org',

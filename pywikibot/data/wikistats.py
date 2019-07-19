@@ -1,20 +1,19 @@
 # -*- coding: utf-8 -*-
 """Objects representing WikiStats API."""
 #
-# (C) Pywikibot team, 2014-2018
+# (C) Pywikibot team, 2014-2019
 #
 # Distributed under the terms of the MIT license.
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
-import sys
 from io import BytesIO, StringIO
 
 import pywikibot
 from pywikibot.comms import http
+from pywikibot.tools import PY2, UnicodeType
 
-if sys.version_info[0] > 2:
+if not PY2:
     import csv
-    unicode = str
 else:
     try:
         import unicodecsv as csv
@@ -79,8 +78,8 @@ class WikiStats(object):
         'sourceforge',
     }
 
-    ALL_TABLES = ({MISC_SITES_TABLE} | WMF_MULTILANG_TABLES |
-                  OTHER_MULTILANG_TABLES | OTHER_TABLES)
+    ALL_TABLES = ({MISC_SITES_TABLE} | WMF_MULTILANG_TABLES
+                  | OTHER_MULTILANG_TABLES | OTHER_TABLES)
 
     ALL_KEYS = set(FAMILY_MAPPING.keys()) | ALL_TABLES
 
@@ -90,7 +89,7 @@ class WikiStats(object):
         self._raw = {}
         self._data = {}
 
-    def fetch(self, table, format="xml"):
+    def fetch(self, table, format='xml'):
         """
         Fetch data from WikiStats.
 
@@ -107,7 +106,7 @@ class WikiStats(object):
         url = self.url + path
 
         if table not in self.ALL_KEYS:
-            pywikibot.warning('WikiStats unknown table %s' % table)
+            pywikibot.warning('WikiStats unknown table ' + table)
 
         if table in self.FAMILY_MAPPING:
             table = self.FAMILY_MAPPING[table]
@@ -148,7 +147,7 @@ class WikiStats(object):
 
         data = self.raw_cached(table, 'csv')
 
-        if sys.version_info[0] > 2:
+        if not PY2:
             f = StringIO(data.decode('utf8'))
         else:
             f = BytesIO(data)
@@ -185,8 +184,8 @@ class WikiStats(object):
             site = {}
 
             for field in row.findall('field'):
-                name = unicode(field.get('name'))
-                site[name] = unicode(field.text)
+                name = UnicodeType(field.get('name'))
+                site[name] = UnicodeType(field.text)
 
             data.append(site)
 

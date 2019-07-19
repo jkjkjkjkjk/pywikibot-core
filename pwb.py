@@ -9,21 +9,18 @@ Run scripts using:
 and it will use the package directory to store all user files, will fix up
 search paths so the package does not need to be installed, etc.
 """
-# (C) Pywikibot team, 2012-2018
+# (C) Pywikibot team, 2012-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, print_function, unicode_literals
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
 
-# The following snippet was developed by Ned Batchelder (and others)
-# for coverage [1], with python 3 support [2] added later,
-# and is available under the BSD license (see [3])
-# [1] https://bitbucket.org/ned/coveragepy/src/b5abcee50dbe/coverage/execfile.py
-# [2] https://bitbucket.org/ned/coveragepy/src/fd5363090034/coverage/execfile.py
-# [3] https://bitbucket.org/ned/coveragepy/src/2c5fb3a8b81c/setup.py?at=default#cl-31
-
+from difflib import get_close_matches
+from importlib import import_module
 import os
 import sys
+from time import sleep
 import types
 
 from warnings import warn
@@ -35,14 +32,14 @@ versions_required_message = """
 Pywikibot is not available on:
 {version}
 
-This version of Pywikibot only supports Python 2.7.2+ or 3.4+.
+This version of Pywikibot only supports Python 2.7.4+ or 3.4+.
 """
 
 
 def python_is_supported():
     """Check that Python is supported."""
     # Any change to this must be copied to setup.py
-    return PYTHON_VERSION >= (3, 4, 0) or PY2 and PYTHON_VERSION >= (2, 7, 2)
+    return PYTHON_VERSION >= (3, 4, 0) or PY2 and PYTHON_VERSION >= (2, 7, 4)
 
 
 if not python_is_supported():
@@ -52,29 +49,15 @@ if not python_is_supported():
 pwb = None
 
 
-def remove_modules():
-    """Remove pywikibot modules."""
-    for name in list(sys.modules):
-        if name.startswith('pywikibot'):
-            del sys.modules[name]
-
-
-def tryimport_pwb():
-    """Try to import pywikibot.
-
-    If so, we need to patch pwb.argvu, too.
-    If pywikibot is not available, we create a mock object to remove the
-    need for if statements further on.
-    """
-    global pwb
-    try:
-        import pywikibot
-    except RuntimeError:
-        remove_modules()
-        os.environ['PYWIKIBOT_NO_USER_CONFIG'] = '2'
-        import pywikibot
-    pwb = pywikibot
-
+# The following snippet was developed by Ned Batchelder (and others)
+# for coverage [1], with python 3 support [2] added later,
+# and is available under the BSD license (see [3])
+# [1]
+# https://bitbucket.org/ned/coveragepy/src/b5abcee50dbe/coverage/execfile.py
+# [2]
+# https://bitbucket.org/ned/coveragepy/src/fd5363090034/coverage/execfile.py
+# [3]
+# https://bitbucket.org/ned/coveragepy/src/2c5fb3a8b81c/setup.py?at=default#cl-31
 
 def run_python_file(filename, argv, argvu, package=None):
     """Run a python file as if it were the main program on the command line.
@@ -83,15 +66,13 @@ def run_python_file(filename, argv, argvu, package=None):
     `args` is the argument array to present as sys.argv, as unicode strings.
 
     """
-    tryimport_pwb()
-
     # Create a module to serve as __main__
     old_main_mod = sys.modules['__main__']
     # it's explicitly using str() to bypass unicode_literals in Python 2
     main_mod = types.ModuleType(str('__main__'))
     sys.modules['__main__'] = main_mod
     main_mod.__file__ = filename
-    if sys.version_info[0] > 2:
+    if not PY2:
         main_mod.__builtins__ = sys.modules['builtins']
     else:
         main_mod.__builtins__ = sys.modules['__builtin__']
@@ -111,7 +92,7 @@ def run_python_file(filename, argv, argvu, package=None):
     try:
         with open(filename, 'rb') as f:
             source = f.read()
-        exec(compile(source, filename, "exec", dont_inherit=True),
+        exec(compile(source, filename, 'exec', dont_inherit=True),
              main_mod.__dict__)
     finally:
         # Restore the old __main__
@@ -162,91 +143,154 @@ else:
 args = sys.argv[(2 if filename else 1):]
 
 # Search for user-config.py before creating one.
+# If successful, user-config.py already exists in one of the candidate
+# directories. See config2.py for details on search order.
+# Use env var to communicate to config2.py pwb.py location (bug T74918).
+_pwb_dir = os.path.split(__file__)[0]
+if sys.platform == 'win32' and PY2:
+    _pwb_dir = str(_pwb_dir)
+os.environ['PYWIKIBOT_DIR_PWB'] = _pwb_dir
 try:
-    # If successful, user-config.py already exists in one of the candidate
-    # directories. See config2.py for details on search order.
-    # Use env var to communicate to config2.py pwb.py location (bug T74918).
-    _pwb_dir = os.path.split(__file__)[0]
-    if sys.platform == 'win32' and sys.version_info[0] < 3:
-        _pwb_dir = str(_pwb_dir)
-    os.environ['PYWIKIBOT_DIR_PWB'] = _pwb_dir
-    import pywikibot
-    pwb = pywikibot
+    import pywikibot as pwb
 except RuntimeError:
+    os.environ['PYWIKIBOT_NO_USER_CONFIG'] = '2'
+    import pywikibot as pwb
     # user-config.py to be created
     if filename is not None and not (filename.startswith('generate_')
                                      or filename == 'version.py'):
         print("NOTE: 'user-config.py' was not found!")
-        print("Please follow the prompts to create it:")
+        print('Please follow the prompts to create it:')
         run_python_file(os.path.join(_pwb_dir, 'generate_user_files.py'),
                         ['generate_user_files.py'],
                         ['generate_user_files.py'])
-        # because we have loaded pywikibot without user-config.py loaded, we need to re-start
-        # the entire process. Ask the user to do so.
+        # because we have loaded pywikibot without user-config.py loaded,
+        # we need to re-start the entire process. Ask the user to do so.
         print('Now, you have to re-execute the command to start your script.')
         sys.exit(1)
+
+
+def find_alternates(filename, script_paths):
+    """Search for similar filenames in the given script paths."""
+    from pywikibot import config, input_choice, output
+    from pywikibot.bot import ShowingListOption, QuitKeyboardInterrupt
+    from pywikibot.tools.formatter import color_format
+
+    assert config.pwb_close_matches > 0, \
+        'config.pwb_close_matches must be greater than 0'
+    assert 0.0 < config.pwb_cut_off < 1.0, \
+        'config.pwb_cut_off must be a float in range [0, 1]'
+
+    print('ERROR: {} not found! Misspelling?'.format(filename),
+          file=sys.stderr)
+
+    scripts = {}
+    for file_package in script_paths:
+        path = file_package.split('.')
+        for script_name in os.listdir(os.path.join(*path)):
+            # remove .py for better matching
+            name, _, suffix = script_name.rpartition('.')
+            if suffix == 'py' and not name.startswith('__'):
+                scripts[name] = os.path.join(*(path + [script_name]))
+
+    filename = filename[:-3]
+    similar_scripts = get_close_matches(filename, scripts,
+                                        config.pwb_close_matches,
+                                        config.pwb_cut_off)
+    if not similar_scripts:
+        return None
+
+    if len(similar_scripts) == 1:
+        script = similar_scripts[0]
+        wait_time = config.pwb_autostart_waittime
+        output(color_format(
+            'NOTE: Starting the most similar script '
+            '{lightyellow}{0}.py{default}\n'
+            '      in {1} seconds; type CTRL-C to stop.',
+            script, wait_time))
+        try:
+            sleep(wait_time)  # Wait a bit to let it be cancelled
+        except KeyboardInterrupt:
+            return None
+    else:
+        msg = '\nThe most similar scripts are:'
+        alternatives = ShowingListOption(similar_scripts, pre=msg, post='')
+        try:
+            prefix, script = input_choice('Which script to be run:',
+                                          alternatives, default='1')
+        except QuitKeyboardInterrupt:
+            return None
+        print()
+    return scripts[script]
+
+
+def find_filename(filename):
+    """Search for the filename in the given script paths."""
+    from pywikibot import config
+
+    script_paths = ['scripts',
+                    'scripts.maintenance',
+                    'scripts.userscripts']
+
+    if config.user_script_paths:
+        if isinstance(config.user_script_paths, (tuple, list)):
+            script_paths = config.user_script_paths + script_paths
+        else:
+            warn("'user_script_paths' must be a list or tuple,\n"
+                 'found: {0}. Ignoring this setting.'
+                 .format(type(config.user_script_paths)))
+
+    for file_package in script_paths:
+        paths = file_package.split('.') + [filename]
+        testpath = os.path.join(_pwb_dir, *paths)
+        if os.path.exists(testpath):
+            filename = testpath
+            break
+    else:
+        filename = find_alternates(filename, script_paths)
+    return filename
 
 
 def main():
     """Command line entry point."""
     global filename
-    if filename:
-        file_package = None
-        tryimport_pwb()
-        argvu = pwb.argvu[1:]
-        if not os.path.exists(filename):
-            script_paths = ['scripts',
-                            'scripts.maintenance',
-                            'scripts.archive',
-                            'scripts.userscripts']
-            from pywikibot import config
-            if config.user_script_paths:
-                if isinstance(config.user_script_paths, (tuple, list)):
-                    script_paths = config.user_script_paths + script_paths
-                else:
-                    warn("'user_script_paths' must be a list or tuple,\n"
-                         'found: {0}. Ignoring this setting.'
-                         ''.format(type(config.user_script_paths)))
-            for file_package in script_paths:
-                paths = file_package.split('.') + [filename]
-                testpath = os.path.join(_pwb_dir, *paths)
-                if os.path.exists(testpath):
-                    filename = testpath
-                    break
-            else:
-                print('ERROR: {} not found! Misspelling?'.format(filename),
-                      file=sys.stderr)
-                return True
-
-        # When both pwb.py and the filename to run are within the current
-        # working directory:
-        # a) set __package__ as if called using python -m scripts.blah.foo
-        # b) set __file__ to be relative, so it can be relative in backtraces,
-        #    and __file__ *appears* to be an unstable path to load data from.
-        # This is a rough (and quick!) emulation of 'package name' detection.
-        # a much more detailed implementation is in coverage's find_module.
-        # https://bitbucket.org/ned/coveragepy/src/default/coverage/execfile.py
-        cwd = abspath(os.getcwd())
-        if absolute_path == cwd:
-            absolute_filename = abspath(filename)[:len(cwd)]
-            if absolute_filename == cwd:
-                relative_filename = os.path.relpath(filename)
-                # remove the filename, and use '.' instead of path separator.
-                file_package = os.path.dirname(
-                    relative_filename).replace(os.sep, '.')
-                filename = os.path.join(os.curdir, relative_filename)
-
-        if file_package and file_package not in sys.modules:
-            try:
-                __import__(file_package)
-            except ImportError as e:
-                warn('Parent module %s not found: %s'
-                     % (file_package, e), ImportWarning)
-
-        run_python_file(filename, [filename] + args, argvu, file_package)
-        return True
-    else:
+    if not filename:
         return False
+
+    file_package = None
+    argvu = pwb.argvu[1:]
+
+    if not os.path.exists(filename):
+        filename = find_filename(filename)
+        if filename is None:
+            return True
+
+    # When both pwb.py and the filename to run are within the current
+    # working directory:
+    # a) set __package__ as if called using python -m scripts.blah.foo
+    # b) set __file__ to be relative, so it can be relative in backtraces,
+    #    and __file__ *appears* to be an unstable path to load data from.
+    # This is a rough (and quick!) emulation of 'package name' detection.
+    # a much more detailed implementation is in coverage's find_module.
+    # https://bitbucket.org/ned/coveragepy/src/default/coverage/execfile.py
+    cwd = abspath(os.getcwd())
+    if absolute_path == cwd:
+        absolute_filename = abspath(filename)[:len(cwd)]
+        if absolute_filename == cwd:
+            relative_filename = os.path.relpath(filename)
+            # remove the filename, and use '.' instead of path separator.
+            file_package = os.path.dirname(
+                relative_filename).replace(os.sep, '.')
+            filename = os.path.join(os.curdir, relative_filename)
+
+    if file_package and file_package not in sys.modules:
+        try:
+            import_module(file_package)
+        except ImportError as e:
+            warn('Parent module %s not found: %s'
+                 % (file_package, e), ImportWarning)
+
+    run_python_file(filename, [filename] + args, argvu, file_package)
+    return True
 
 
 if __name__ == '__main__':

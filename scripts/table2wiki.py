@@ -7,6 +7,8 @@ These command line parameters can be used to specify which pages to work on:
 
 &params;
 
+The following parameters are supported:
+
 -always           The bot won't ask for confirmation when putting
                   a page.
 
@@ -31,22 +33,24 @@ Example:
     python pwb.py table2wiki -xml:20050713_pages_current.xml -lang:de
 
 FEATURES
+
 Save against missing </td>
 Corrects attributes of tags
 
 KNOWN BUGS
+
 Broken HTML tables will most likely result in broken wiki tables!
 Please check every article you change.
 """
 #
 # (C) 2003 Thomas R. Koll, <tomk32@tomk32.de>
-# (C) Pywikibot team, 2003-2018
+# (C) Pywikibot team, 2003-2019
 #
 # Distributed under the terms of the MIT license.
 #
 # Automatically ported from compat branch by compat2core.py script
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import re
 
@@ -63,9 +67,7 @@ from pywikibot.tools import issue_deprecation_warning
 
 # This is required for the text that is shown when you run this script
 # with the parameter -help.
-docuReplacements = {
-    '&params;': pagegenerators.parameterHelp,
-}
+docuReplacements = {'&params;': pagegenerators.parameterHelp}  # noqa: N816
 
 
 class TableXmlDumpPageGenerator(object):
@@ -105,7 +107,7 @@ class Table2WikiRobot(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
 
         If the table already is a
         wiki table or contains a nested wiki table, tries to beautify it.
-        Returns the converted table, the number of warnings that occured and
+        Returns the converted table, the number of warnings that occurred and
         a list containing these warnings.
         Hint: if you give an entire page text as a parameter instead of a table
         only, this function will convert all HTML tables and will also try to
@@ -164,7 +166,7 @@ class Table2WikiRobot(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
         # <th> often people don't write them within <tr>, be warned!
         # <th> with attributes
         new_table = re.sub(
-            r"(?i)[\r\n]+<th(?P<attr> [^>]*?)>(?P<header>[\w\W]*?)<\/th>",
+            r'(?i)[\r\n]+<th(?P<attr> [^>]*?)>(?P<header>[\w\W]*?)<\/th>',
             r'\r\n!\g<attr> | \g<header>\r\n', new_table)
 
         # <th> without attributes
@@ -179,7 +181,8 @@ class Table2WikiRobot(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
             r'\r\n! \g<header>\r\n', new_table)
         if n > 0:
             warning_messages.append(
-                u'WARNING: found <th> without </th>. (%d occurences)\n' % n)
+                'WARNING: found <th> without </th>. ({0} occurrences)\n'
+                .format(n))
             warnings += n
 
         # <th> with attributes, without closing </th>
@@ -188,7 +191,8 @@ class Table2WikiRobot(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
             r'\n!\g<attr> | \g<header>\r\n', new_table)
         if n > 0:
             warning_messages.append(
-                'WARNING: found <th ...> without </th>. (%d occurences\n)' % n)
+                'WARNING: found <th ...> without </th>. ({0} occurrences\n)'
+                .format(n))
             warnings += n
 
         ##################
@@ -222,7 +226,8 @@ class Table2WikiRobot(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
             r'\r\n| \g<cell>\r\n', new_table)
         if n > 0:
             warning_messages.append(
-                u'<td> used where </td> was expected. (%d occurences)\n' % n)
+                '<td> used where </td> was expected. ({0} occurrences)\n'
+                .format(n))
             warnings += n
 
         # what is this for?
@@ -231,8 +236,8 @@ class Table2WikiRobot(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
             r'\r\n|\2 | \3\r\n', new_table)
         if n > 0:
             warning_messages.append(
-                u"WARNING: (sorry, bot code unreadable (1). I don't know why "
-                u"this warning is given.) (%d occurences)\n" % n)
+                "WARNING: (sorry, bot code unreadable (1). I don't know why "
+                'this warning is given.) ({0} occurrences)\n'.format(n))
 
         # fail save. sometimes people forget </td>
         # <td> without arguments, with missing </td>
@@ -240,16 +245,16 @@ class Table2WikiRobot(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
             r'(?i)<td>(?P<cell>[^<]*?)[\r\n]+',
             r'\r\n| \g<cell>\r\n', new_table)
         if n > 0:
-            warning_messages.append(u"NOTE: Found <td> without </td>. This "
-                                    u"shouldn't cause problems.\n")
+            warning_messages.append('NOTE: Found <td> without </td>. This '
+                                    "shouldn't cause problems.\n")
 
         # <td> with attributes, with missing </td>
         new_table, n = re.subn(
             r'(?i)[\r\n]*<td(?P<attr> [^>]*?)>(?P<cell>[\w\W]*?)[\r\n]+',
             r'\r\n|\g<attr> | \g<cell>\r\n', new_table)
         if n > 0:
-            warning_messages.append(u"NOTE: Found <td> without </td>. This "
-                                    u"shouldn't cause problems.\n")
+            warning_messages.append('NOTE: Found <td> without </td>. This '
+                                    "shouldn't cause problems.\n")
 
         ##################
         # Garbage collecting ;-)
@@ -276,7 +281,7 @@ class Table2WikiRobot(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
             r'\r\n!\1\2', new_table)
 
         ##################
-        # kills indention within tables. Be warned, it might seldom bring
+        # kills indentation within tables. Be warned, it might seldom bring
         # bad results.
         # True by default. Set 'deIndentTables = False' in user-config.py
         if config.deIndentTables:
@@ -326,7 +331,7 @@ class Table2WikiRobot(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
         while num != 0:
             # The same for header and cell tags ( ! or | ), but for these tags
             # the attribute part is finished by a | character. We don't want to
-            # change cell contents which accidentially contain an equal sign.
+            # change cell contents which accidentally contain an equal sign.
             # Group 1 and 2 are anologously to the previous regular expression,
             # group 3 are the remaining attribute key - value pairs.
             new_table, num = re.subn(
@@ -423,8 +428,8 @@ class Table2WikiRobot(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
                         'More opening than closing table tags. Skipping.')
                     return None, 0, 0
                 # if another table tag is opened before one is closed
-                elif (next_starting and
-                      next_starting.start() < next_ending.start()):
+                elif (next_starting
+                      and next_starting.start() < next_ending.start()):
                     offset += next_starting.end()
                     text = text[next_starting.end():]
                     depth += 1
@@ -440,7 +445,7 @@ class Table2WikiRobot(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
         Convert all HTML tables in text to wiki syntax.
 
         Returns the converted text, the number of converted tables and the
-        number of warnings that occured.
+        number of warnings that occurred.
         """
         text = self.markActiveTables(text)
 
@@ -474,23 +479,23 @@ class Table2WikiRobot(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
         # Check if there are any marked tags left
         if re.search('<##table##|</##table##>', new_text, re.IGNORECASE):
             pywikibot.error(
-                u'not all marked table start or end tags processed!')
+                'not all marked table start or end tags processed!')
             return
 
         if converted_tables == 0:
-            pywikibot.output(u"No changes were necessary.")
+            pywikibot.output('No changes were necessary.')
             return
 
         if warnings:
             if self.getOption('always') and self.getOption('skipwarning'):
                 pywikibot.output(
-                    'There were %i replacements that might lead to bad '
-                    'output. Skipping.' % warnings)
+                    'There were {0} replacements that might lead to bad '
+                    'output. Skipping.'.format(warnings))
                 return
             if not self.getOption('always'):
                 pywikibot.output(
-                    'There were %i replacements that might lead to bad '
-                    'output.' % warnings)
+                    'There were {0} replacements that might lead to bad '
+                    'output.'.format(warnings))
                 if not input_yn('Do you want to change the page anyway'):
                     return
 
@@ -505,8 +510,8 @@ class Table2WikiRobot(SingleSiteBot, ExistingPageBot, NoRedirectPageBot):
                 {'count': warnings}
             )
         self.put_current(new_text, summary=edit_summary,
-                         show_diff=not (self.getOption('quiet') and
-                                        self.getOption('always')))
+                         show_diff=not (self.getOption('quiet')
+                                        and self.getOption('always')))
 
 
 _marked_table_start_search = re.compile('<##table##', re.IGNORECASE).search
@@ -522,7 +527,7 @@ def main(*args):
     If args is an empty list, sys.argv is used.
 
     @param args: command line arguments
-    @type args: list of unicode
+    @type args: str
     """
     options = {}
     gen = None
@@ -579,5 +584,5 @@ WHERE old_text LIKE '%<table%'
         return False
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

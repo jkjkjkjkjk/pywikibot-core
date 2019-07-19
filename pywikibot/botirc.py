@@ -1,29 +1,28 @@
 # -*- coding: utf-8 -*-
 """
-User-interface related functions for building bots.
+WARNING: THIS MODULE EXISTS SOLELY TO PROVIDE BACKWARDS-COMPATIBILITY.
 
-Note: the script requires the Python IRC library
-http://python-irclib.sourceforge.net/
+IT MAY BE REMOVED SOON.
+
+Deprecated user-interface related functions for building bots.
+
+@note: the script requires the irc library
 """
 #
 # (C) Balasyum, 2008
-# (C) Pywikibot team, 2008-2018
+# (C) Pywikibot team, 2008-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
-
-# Note: the intention is to develop this module (at some point) into a Bot
-# class definition that can be subclassed to create new, functional bot
-# scripts, instead of writing each one from scratch.
-
+from __future__ import absolute_import, division, unicode_literals
 
 import re
 
 import pywikibot
+from pywikibot.tools import ModuleDeprecationWrapper
 
 try:
-    from ircbot import SingleServerIRCBot
+    from irc.bot import SingleServerIRCBot
 except ImportError as e:
     ircbot_import_error = e
 
@@ -36,7 +35,8 @@ except ImportError as e:
             raise ircbot_import_error
 
 
-_logger = "botirc"
+_logger = 'botirc'
+__all__ = ('IRCBot',)
 
 
 class IRCBot(pywikibot.Bot, SingleServerIRCBot):
@@ -50,11 +50,9 @@ class IRCBot(pywikibot.Bot, SingleServerIRCBot):
     """
 
     # Bot configuration.
-    # Only the keys of the dict can be passed as init options
+    # Only the keys of the dict can be passed as keyword arguments
     # The values are the default values
-    # Extend this in subclasses!
-    availableOptions = {
-    }
+    availableOptions = {}  # noqa: N815
 
     def __init__(self, site, channel, nickname, server, port=6667, **kwargs):
         """Initializer."""
@@ -63,11 +61,12 @@ class IRCBot(pywikibot.Bot, SingleServerIRCBot):
         self.channel = channel
         self.site = site
         self.other_ns = re.compile(
-            u'\x0314\\[\\[\x0307(%s)'
-            % u'|'.join(item.custom_name for item in site.namespaces.values()
-                        if item != 0))
-        self.api_url = self.site.apipath()
-        self.api_url += '?action=query&meta=siteinfo&siprop=statistics&format=xml'
+            '\x0314\\[\\[\x0307(%s)'
+            % '|'.join(item.custom_name for item in site.namespaces.values()
+                       if item != 0))
+        self.api_url = (
+            self.site.apipath()
+            + '?action=query&meta=siteinfo&siprop=statistics&format=xml')
         self.api_found = re.compile(r'articles="(.*?)"')
         self.re_edit = re.compile(
             r'^C14\[\[^C07(?P<page>.+?)^C14\]\]^C4 (?P<flags>.*?)^C10 ^C02'
@@ -77,7 +76,7 @@ class IRCBot(pywikibot.Bot, SingleServerIRCBot):
 
     def on_nicknameinuse(self, c, e):
         """Provide an alternative nickname."""
-        c.nick(c.get_nickname() + "_")
+        c.nick(c.get_nickname() + '_')
 
     def on_welcome(self, c, e):
         """Join channel."""
@@ -100,7 +99,7 @@ class IRCBot(pywikibot.Bot, SingleServerIRCBot):
             return
         if self.other_ns.match(msg):
             return
-        name = msg[8:msg.find(u'14', 9)]
+        name = msg[8:msg.find('14', 9)]
         text = pywikibot.comms.http.request(self.site, self.api_url)
         entry = self.api_found.findall(text)
         page = pywikibot.Page(self.site, name)
@@ -127,3 +126,11 @@ class IRCBot(pywikibot.Bot, SingleServerIRCBot):
     def on_quit(self, e, cmd):
         """Ignore quit request."""
         pass
+
+
+wrapper = ModuleDeprecationWrapper(__name__)
+wrapper._add_deprecated_attr(
+    'IRCBot',
+    replacement_name=('irc.bot.SingleServerIRCBot from irc library '
+                      'or EventStreams'),
+    since='20190509')

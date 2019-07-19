@@ -8,11 +8,11 @@ unless something has broken badly.
 These tests use special code 'write = -1' for edit failures.
 """
 #
-# (C) Pywikibot team, 2014-2018
+# (C) Pywikibot team, 2014-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 from pywikibot import (
@@ -44,7 +44,8 @@ class TestSaveFailure(TestCase):
     def test_protected(self):
         """Test that protected titles raise the appropriate exception."""
         if self.site.has_group('sysop'):
-            raise unittest.SkipTest('Testing failure of edit protected with a sysop account')
+            self.skipTest(
+                'Testing failure of edit protected with a sysop account')
         page = pywikibot.Page(self.site, 'Wikipedia:Create a new page')
         self.assertRaises(LockedPage, page.save)
 
@@ -90,7 +91,7 @@ class TestSaveFailure(TestCase):
     def test_no_recreate(self):
         """Test that Page.save with recreate disabled fails if page existed."""
         page = pywikibot.Page(self.site, 'User:John_Vandenberg/no_recreate')
-        self.assertRaisesRegex(OtherPageSaveError, 'Page .* doesn\'t exist',
+        self.assertRaisesRegex(OtherPageSaveError, "Page .* doesn't exist",
                                page.save, recreate=False)
 
 
@@ -108,12 +109,10 @@ class TestActionFailure(TestCase):
         """Test that site.movepage raises the appropriate exceptions."""
         mysite = self.get_site()
         mainpage = self.get_mainpage()
-        try:
-            mysite.tokens['move']
-        except KeyError:
-            raise unittest.SkipTest(
-                "movepage test requires 'move' token not given to user on %s"
-                % self.site)
+        if 'move' not in mysite.tokens:
+            self.skipTest(
+                "movepage test requires 'move' token not given to user on {}"
+                .format(self.site))
 
         self.assertRaises(Error, mysite.movepage,
                           mainpage, mainpage.title(), 'test')
@@ -160,14 +159,14 @@ class TestWikibaseSaveTest(WikibaseTestCase):
             item.addClaim, claim)
 
     def test_WbMonolingualText_invalid_text(self):
-        """Attempt adding a monolingual text with an invalid non-string text."""
+        """Attempt adding a monolingual text with invalid non-string text."""
         repo = self.get_repo()
         item = pywikibot.ItemPage(repo, 'Q68')
-        claim = self._make_WbMonolingualText_claim(repo, text=123456, language='en')
+        claim = self._make_WbMonolingualText_claim(repo, text=123456,
+                                                   language='en')
         self.assertRaisesRegex(
             OtherPageSaveError,
-            r'Edit to page \[\[(wikidata:test:)?Q68]] failed:\n'
-            r'invalid-snak: Invalid snak data.',
+            r'Edit to page \[\[(wikidata:test:)?Q68]] failed:',
             item.addClaim, claim)
 
     def test_math_invalid_function(self):

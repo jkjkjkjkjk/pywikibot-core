@@ -1,22 +1,17 @@
 # -*- coding: utf-8 -*-
 """Objects representing Mediawiki log entries."""
 #
-# (C) Pywikibot team, 2007-2018
+# (C) Pywikibot team, 2007-2019
 #
 # Distributed under the terms of the MIT license.
 #
-from __future__ import absolute_import, unicode_literals
-
-import sys
+from __future__ import absolute_import, division, unicode_literals
 
 import pywikibot
 from pywikibot.exceptions import Error, HiddenKeyError
-from pywikibot.tools import deprecated, classproperty
+from pywikibot.tools import deprecated, classproperty, UnicodeType
 
-if sys.version_info[0] > 2:
-    basestring = (str, )
-
-_logger = "wiki"
+_logger = 'wiki'
 
 
 class LogDict(dict):
@@ -32,7 +27,7 @@ class LogDict(dict):
 
     def __missing__(self, key):
         """Debug when the key is missing."""
-        pywikibot.debug(u"API log entry received:\n" + repr(self),
+        pywikibot.debug('API log entry received:\n' + repr(self),
                         _logger)
         if ((key in ('ns', 'title', 'pageid', 'logpage', 'params', 'action')
              and 'actionhidden' in self)
@@ -51,15 +46,16 @@ class LogEntry(object):
     # Log type expected. None for every type, or one of the (letype) str :
     # block/patrol/etc...
     # Overridden in subclasses.
-    _expectedType = None
+    _expected_type = None
 
     def __init__(self, apidata, site):
         """Initialize object from a logevent dict returned by MW API."""
         self.data = LogDict(apidata)
         self.site = site
-        if self._expectedType is not None and self._expectedType != self.type():
-            raise Error("Wrong log type! Expecting %s, received %s instead."
-                        % (self._expectedType, self.type()))
+        expected_type = self._expected_type
+        if expected_type is not None and expected_type != self.type():
+            raise Error('Wrong log type! Expecting %s, received %s instead.'
+                        % (expected_type, self.type()))
         self.data._type = self.type()
 
     def __repr__(self):
@@ -94,7 +90,7 @@ class LogEntry(object):
         if 'params' in self.data:
             return self.data['params']
         else:  # try old mw style preceding mw 1.19
-            return self.data[self._expectedType]
+            return self.data[self._expected_type]
 
     def logid(self):
         """Return the id of the log entry."""
@@ -130,7 +126,7 @@ class LogEntry(object):
         return self._page
 
     def type(self):
-        """The type of thie logentry."""
+        """The type of this logentry."""
         return self.data['type']
 
     def action(self):
@@ -191,7 +187,7 @@ class BlockEntry(LogEntry):
     expiry and flags are not available on unblock log entries.
     """
 
-    _expectedType = 'block'
+    _expected_type = 'block'
 
     def __init__(self, apidata, site):
         """Initializer."""
@@ -224,14 +220,15 @@ class BlockEntry(LogEntry):
 
         It raises an Error if the entry is an unblocking log entry.
 
-        @rtype: list of flag strings
+        @return: list of flags strings
+        @rtype: list
         """
         if self.action() == 'unblock':
             return []
         if not hasattr(self, '_flags'):
             self._flags = self._params['flags']
             # pre mw 1.19 returned a delimited string.
-            if isinstance(self._flags, basestring):
+            if isinstance(self._flags, UnicodeType):
                 if self._flags:
                     self._flags = self._flags.split(',')
                 else:
@@ -271,28 +268,30 @@ class RightsEntry(LogEntry):
 
     """Rights log entry."""
 
-    _expectedType = 'rights'
+    _expected_type = 'rights'
 
     @property
     def oldgroups(self):
         """Return old rights groups."""
-        if 'old' in self._params:  # old mw style
-            return self._params['old'].split(',') if self._params['old'] else []
-        return self._params['oldgroups']
+        params = self._params
+        if 'old' in params:  # old mw style
+            return params['old'].split(',') if params['old'] else []
+        return params['oldgroups']
 
     @property
     def newgroups(self):
         """Return new rights groups."""
-        if 'new' in self._params:  # old mw style
-            return self._params['new'].split(',') if self._params['new'] else []
-        return self._params['newgroups']
+        params = self._params
+        if 'new' in params:  # old mw style
+            return params['new'].split(',') if params['new'] else []
+        return params['newgroups']
 
 
 class UploadEntry(LogEntry):
 
     """Upload log entry."""
 
-    _expectedType = 'upload'
+    _expected_type = 'upload'
 
     def page(self):
         """
@@ -309,7 +308,7 @@ class MoveEntry(LogEntry):
 
     """Move log entry."""
 
-    _expectedType = 'move'
+    _expected_type = 'move'
 
     @deprecated('target_ns.id', since='20150518')
     def new_ns(self):
@@ -339,7 +338,11 @@ class MoveEntry(LogEntry):
 
     @property
     def target_page(self):
-        """Return target page object."""
+        """
+        Return target page object.
+
+        @rtype: pywikibot.Page
+        """
         if not hasattr(self, '_target_page'):
             self._target_page = pywikibot.Page(self.site, self.target_title)
         return self._target_page
@@ -358,11 +361,15 @@ class PatrolEntry(LogEntry):
 
     """Patrol log entry."""
 
-    _expectedType = 'patrol'
+    _expected_type = 'patrol'
 
     @property
     def current_id(self):
-        """Return the current id."""
+        """
+        Return the current id.
+
+        @rtype: int
+        """
         # key has been changed in mw 1.19; try the new mw style first
         # sometimes it returns strs sometimes ints
         return int(self._params['curid']
@@ -370,7 +377,11 @@ class PatrolEntry(LogEntry):
 
     @property
     def previous_id(self):
-        """Return the previous id."""
+        """
+        Return the previous id.
+
+        @rtype: int
+        """
         # key has been changed in mw 1.19; try the new mw style first
         # sometimes it returns strs sometimes ints
         return int(self._params['previd']
@@ -468,7 +479,7 @@ class LogEntryFactory(object):
                             if logtype is not None
                             else OtherLogEntry.__name__)
             cls._logtypes[logtype] = type(
-                classname, bases, {'_expectedType': logtype})
+                classname, bases, {'_expected_type': logtype})
         return cls._logtypes[logtype]
 
     def _createFromData(self, logdata):
